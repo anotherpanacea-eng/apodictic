@@ -1,5 +1,6 @@
 """Offline public-contract regressions for opt-in parsed response evidence."""
 
+import copy
 import io
 import json
 import math
@@ -35,6 +36,7 @@ def fake_network(routes, calls):
         calls.append(url)
         for needle, value in routes.items():
             if needle in url:
+                value = copy.deepcopy(value)  # each request parses a distinct object
                 if _observe is not None:
                     _observe("parsed", value, "2026-01-01T00:00:00Z", None, None)
                 return value
@@ -297,7 +299,9 @@ class ResponseEvidenceTests(unittest.TestCase):
                 return self.raw
 
         for raw, category in ((b"\xff", "utf8-decode-failure"),
-                              (b"not JSON", "json-parse-failure")):
+                              (b"not JSON", "json-parse-failure"),
+                              (b'{"extra":' + b"9" * 5000 + b"}",
+                               "json-parse-failure")):
             with self.subTest(category=category):
                 body = Body(raw)
                 ledger = ReliabilityLedger()
@@ -375,6 +379,40 @@ class ResponseEvidenceTests(unittest.TestCase):
             store.response_evidence()
         with self.assertRaisesRegex(RuntimeError, "incomplete"):
             store.save_response_evidence(str(Path(self.tmp.name) / "partial.json"))
+
+    def test_cache_origin_hash_failure_closes_prior_evidence(self):
+        cache = ResponseCache()
+        store = ProvenanceStore(record_responses=True)
+        self.resolve({"ref_id": "first", "title": TITLE}, cache=cache, provenance=store)
+        cache.get(f"crossref:search:{TITLE}:")["extra"] = 10 ** 5000
+        with self.assertRaises(ValueError):
+            self.resolve({"ref_id": "second", "title": TITLE},
+                         cache=cache, provenance=store)
+        with self.assertRaisesRegex(RuntimeError, "incomplete"):
+            store.response_evidence()
+        with self.assertRaisesRegex(RuntimeError, "incomplete"):
+            store.save_response_evidence(str(Path(self.tmp.name) / "partial-cache.json"))
+
+    def test_wayback_existing_shape_failure_keeps_circuit_accounting(self):
+        dead_probe = {"status": 404, "live": False, "check_status": "not-found",
+                      "method": "HEAD", "attempts": [], "wayback_allowed": True}
+        invalid = {"archived_snapshots": None, "extra": math.nan}
+        for enabled in (False, True):
+            with self.subTest(enabled=enabled):
+                ledger = ReliabilityLedger()
+                store = ProvenanceStore(record_responses=enabled)
+                for number in range(3):
+                    with patch.object(api, "_check_url", return_value=dead_probe), \
+                         patch.object(api, "_fetch_json_network",
+                                      side_effect=fake_network({**EMPTY,
+                                          "archive.org/wayback/available?": invalid}, [])), \
+                         patch.object(api.time, "sleep"):
+                        api.resolve_citation({"ref_id": str(number),
+                                              "url": f"https://example.org/{number}"},
+                                             ResponseCache(), store, ledger=ledger)
+                wayback = ledger.snapshot()["providers"]["wayback"]
+                self.assertEqual((wayback["errors"], wayback["ok"], wayback["circuit"]),
+                                 (3, 0, "open"))
 
     def test_export_aliases_and_atomic_failure(self):
         target = Path(self.tmp.name) / "existing.json"

@@ -144,7 +144,18 @@ def _fetch_json_network(url: str, headers: dict | None = None, timeout: int = 15
     for attempt in range(_HTTP_MAX_RETRIES + 1):
         try:
             with urllib.request.urlopen(req, timeout=timeout) as resp:
-                return observed(json.loads(resp.read().decode("utf-8")))
+                raw = resp.read()
+                try:
+                    parsed = json.loads(raw.decode("utf-8"))
+                except UnicodeDecodeError as e:
+                    return observed({"_error": str(e), "_url": url},
+                                    kind="failure", category="utf8-decode-failure")
+                except (ValueError, RecursionError) as e:
+                    # Includes the interpreter's integer-digit limit, whose
+                    # json.loads error is a plain ValueError.
+                    return observed({"_error": str(e), "_url": url},
+                                    kind="failure", category="json-parse-failure")
+                return observed(parsed)
         except urllib.error.HTTPError as e:
             last_error = e
             if e.code in _RETRYABLE_STATUS and attempt < _HTTP_MAX_RETRIES:
@@ -161,15 +172,6 @@ def _fetch_json_network(url: str, headers: dict | None = None, timeout: int = 15
                 continue
             return observed({"_error": str(e), "_url": url},
                             kind="failure", category="transport-error")
-        except json.JSONDecodeError as e:
-            return observed({"_error": str(e), "_url": url},
-                            kind="failure", category="json-parse-failure")
-        except UnicodeDecodeError as e:
-            return observed({"_error": str(e), "_url": url},
-                            kind="failure", category="utf8-decode-failure")
-        except RecursionError as e:
-            return observed({"_error": str(e), "_url": url},
-                            kind="failure", category="json-parse-failure")
     return observed({"_error": str(last_error), "_url": url},
                     kind="failure", category="transport-error")
 
@@ -374,13 +376,16 @@ def check_wayback(url: str, ledger=None, _observe=None) -> dict:
         response = _fetch_json_network(endpoint)
     else:
         response = _fetch_json_network(endpoint, _observe=_observe)
-    if not is_admitted_json(response):
-        if ledger is not None:
-            ledger.record("wayback", response)
-        return {"_error": "invalid-json-value"}
+    # Preserve the preexisting invalid-snapshot outage accounting first. A
+    # newly detected bad extra field on an otherwise valid snapshot remains
+    # incomplete without manufacturing a transport outage.
     if (isinstance(response, dict) and "_skipped" in response) or (
             not _is_error(response) and _wayback_snapshot(response)[0] == "invalid"):
         response = {"_error": "invalid-wayback-response"}
+    elif not is_admitted_json(response):
+        if ledger is not None:
+            ledger.record("wayback", response)
+        return {"_error": "invalid-json-value"}
     if ledger is not None:
         ledger.record("wayback", response)
     return response
@@ -786,8 +791,14 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
         value = cache.get(key, ttl_seconds=ttl)
         if value is None or not provenance.record_responses:
             return value, None
-        origin, observed_at = cache.response_origin(key, value)
-        local_failure = cache.local_failure_category(key, value)
+        try:
+            origin, observed_at = cache.response_origin(key, value)
+            local_failure = cache.local_failure_category(key, value)
+        except Exception:
+            # These checks hash an admitted cached value. If that operation
+            # fails, earlier events cannot be exported as a complete run.
+            provenance._evidence_incomplete = True
+            raise
         if not is_admitted_json(value):
             index = provenance._record_response(ref_id, source, kind="cache_invalid",
                                                 outcome="invalid", origin="legacy_cache",
