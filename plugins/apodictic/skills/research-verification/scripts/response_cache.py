@@ -24,6 +24,8 @@ import hashlib
 import time
 from pathlib import Path
 
+from provenance import is_admitted_json, json_value_sha256
+
 
 class ResponseCache:
     """In-memory cache with optional disk persistence and optional TTL freshness."""
@@ -33,6 +35,7 @@ class ResponseCache:
         # Parallel freshness stamps for in-memory entries (seconds, or None when
         # freshness is unknown — e.g. a legacy disk file lacking a stamp).
         self._stamp: dict[str, float | None] = {}
+        self._response_origin: dict[str, dict | None] = {}
         self._hits = 0
         self._misses = 0
         self._cache_dir = Path(cache_dir) if cache_dir else None
@@ -69,6 +72,7 @@ class ResponseCache:
                 # Drop the stale in-memory copy and fall through to disk/miss.
                 del self._memory[key]
                 self._stamp.pop(key, None)
+                self._response_origin.pop(key, None)
             else:
                 self._hits += 1
                 return self._memory[key]
@@ -85,6 +89,9 @@ class ResponseCache:
                     return None
                 self._memory[key] = payload
                 self._stamp[key] = cached_at
+                self._response_origin[key] = (
+                    raw.get("_response_evidence") if isinstance(raw, dict)
+                    and "_cached_at" in raw and "_payload" in raw else None)
                 self._hits += 1
                 return payload
             except (json.JSONDecodeError, OSError):
@@ -98,7 +105,8 @@ class ResponseCache:
             return False
         return (self._now() - cached_at) > ttl_seconds
 
-    def set(self, key: str, value: dict, ttl: float | None = None) -> None:
+    def set(self, key: str, value: dict, ttl: float | None = None,
+            *, evidence_meta: dict | None = None) -> None:
         """Store a response in cache. Transient error payloads (dicts containing
         `_error`, e.g. a retry-exhausted 429/5xx) are kept MEMORY-ONLY and never
         written to disk — otherwise a temporary outage would stick across runs and
@@ -113,6 +121,7 @@ class ResponseCache:
         written regardless of any ttl — preserving the no-sticky-error rule."""
         now = self._now()
         self._memory[key] = value
+        self._response_origin[key] = dict(evidence_meta) if evidence_meta else None
         if isinstance(value, dict) and "_error" in value:
             # No-sticky-error: memory-only, no stamp, never to disk — even with a
             # TTL. This is the load-bearing Phase 5 invariant; the envelope must
@@ -123,10 +132,35 @@ class ResponseCache:
         disk = self._disk_path(key)
         if disk:
             envelope = {"_cached_at": now, "_payload": value}
+            if evidence_meta:
+                envelope["_response_evidence"] = dict(evidence_meta)
             try:
                 disk.write_text(json.dumps(envelope, default=str))
             except OSError:
                 pass
+
+    def response_origin(self, key: str, value) -> tuple[str, str | None]:
+        """Return a proven parse time only for a bound evidence-enabled value."""
+        meta = self._response_origin.get(key)
+        if (isinstance(meta, dict) and meta.get("kind") == "provider_json"
+                and isinstance(meta.get("observed_at"), str)
+                and isinstance(meta.get("payload_sha256"), str)
+                and is_admitted_json(value)
+                and json_value_sha256(value) == meta["payload_sha256"]):
+            return "cache", meta["observed_at"]
+        return "legacy_cache", None
+
+    def local_failure_category(self, key: str, value) -> str | None:
+        """Recognize an explicitly tagged, digest-bound in-memory local failure."""
+        meta = self._response_origin.get(key)
+        if (isinstance(meta, dict) and meta.get("kind") == "local_failure"
+                and meta.get("category") in {"http-error", "transport-error",
+                                              "json-parse-failure", "utf8-decode-failure"}
+                and isinstance(meta.get("payload_sha256"), str)
+                and is_admitted_json(value)
+                and json_value_sha256(value) == meta["payload_sha256"]):
+            return meta["category"]
+        return None
 
     def stats(self) -> dict:
         """Return cache statistics."""
