@@ -325,6 +325,8 @@ Before calling systemic failure, confirm:
 2. You assessed patterns across acts, not single weak sections.
 3. You measured people-level consequence, not only lore elegance.
 4. Ambiguity is evaluated for pattern and effect, not penalized by default.
+5. You checked whether narrative structure is the bottleneck before calling the world thin (SD, SI or TI Detached). A single-POV quest can show the world through only one lens; thinness that comes from structure is a structural note, not an integration failure.
+6. You did not fire PL-1 or SD flags on sparse or plain prose by itself. If attention logic (what the POV notices, ignores and takes for granted) is world-native, or every major choice is world-conditioned, integration can be strong at low detail.
 
 ### Special Caution Zones
 

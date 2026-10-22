@@ -293,6 +293,10 @@ Commit classification before proceeding. Classification cannot be revised by sub
 | **Memoir / autofiction** | Subjective truth plus ethical framing when depicting others | **Self-Exonerating Frame** — narrator's self-justification suppresses others' subjectivity | RR-2, PF-3, HW-2 | CR-1 for voice-specific diction if harm framing remains explicit |
 | **SFF** | Allegorical distance with clear internal ethics | **Allegory Evasion** — coded real-world dynamics used without responsibility for implications | RR-1, PF-1, HW-1 | CR-3 when invented lexicons are internally coherent and non-derogatory |
 
+Mode notes:
+- SFF: before coding RR-1 or PF-1 on an invented culture, count how many elements (appearance markers, behavior, social role, plot function) line up with a single real-world group. One or two incidental matches is a false positive; a systematic multi-element mapping codes normally.
+- Dark romance / erotic: do not flag consensual kink or power exchange that stays inside the genre's norms (consent signaled, fantasy framing, content warnings) as PF-1 or PF-4 for the power dynamic alone. Flag only where the genre's own safety apparatus is missing.
+
 Mode calibration is especially important here because reception risk norms vary dramatically across genres. What's an Alert in YA may be a Note in literary fiction and a false positive in dark romance.
 
 ---
