@@ -353,10 +353,10 @@ Phase 1 + Phase 2 combined:
 
 | Level | Meaning | When it applies |
 |---|---|---|
-| `full-text verified` | Read the actual source content | OA PDF retrieved, URL fetched, or full text available |
-| `abstract-only verified` | Checked against abstract | Source exists, metadata matches, but full text behind paywall |
-| `metadata-only verified` | Confirmed existence and metadata | Source resolves in API but no content accessible |
-| `unretrievable` | Cannot access source at any tier | Dead link, no API match, insufficient metadata |
+| `full-text verified` | Actual source content was acquired and read | A separate content-read step records the text and its provenance; Phase 1 resolution alone cannot earn this tier |
+| `abstract-only verified` | Checked against a read abstract | Source content beyond the abstract was not read |
+| `metadata-only verified` | Metadata or locator evidence only | API metadata match, OA PDF link, direct URL liveness, or Wayback availability; a locator alone does not establish bibliographic identity or source arguments |
+| `unretrievable` | No completed source resolution | A not-found or not-checked path, distinguished by `resolution_status` |
 
 When the verifier cannot get enough source access, it says so explicitly. It does not bluff verification.
 
@@ -599,21 +599,19 @@ Flags fired: {list CV codes}
 ## Flagged Citations
 | Ref ID | Location | Claim | Citation | Type | Source Type | Confidence | Fit Verdict | Currency | Flags | Severity | Repair Note |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | §2, ¶3 | "23% of YRA cases..." | CJCC 2022 Report | statistic | institutional | full-text | SUPPORTED | current | — | — | — |
-| 2 | §4, ¶1 | "Schiraldi argues..." | Schiraldi 2021 | paraphrase | primary | abstract-only | PARTIAL | current | CV5 | Should-Fix | Source hedges more than manuscript suggests |
+| 1 | §2, ¶3 | "23% of YRA cases..." | CJCC 2022 Report | statistic | institutional | metadata-only | pending content review | current | — | — | Locator evidence alone cannot support the statistic |
+| 2 | §4, ¶1 | "Schiraldi argues..." | Schiraldi 2021 | paraphrase | primary | metadata-only | pending content review | current | — | — | Read source content before judging the paraphrase |
 | ... | | | | | | | | | | | |
 
 ## Citation Detail (per flagged citation)
-For each citation with flags or non-SUPPORTED verdicts, include:
+For each citation with flags, an incomplete check, or a pending content verdict, include:
 
 ```
 ### Ref 2: Schiraldi 2021
-Manuscript says source argues: "Schiraldi argues that community-based alternatives reduce recidivism by 40%"
-Source actually argues: "Our findings suggest community-based programs may contribute to modest reductions in rearrest rates (12-18%) in the studied jurisdictions"
-Gap: Certainty inflation (suggests → argues), precision inflation (modest → 40%), scope lift (studied jurisdictions → general)
-Flags: CV5 (Paraphrase Inflation), CV6 (Scope Lift)
-Resolution: CrossRef DOI match → Unpaywall OA PDF → full-text verified
-Provenance: stored API response ref #2-CR, #2-UP
+Manuscript makes a paraphrase claim; its fit remains pending a source-content read.
+Resolution: Crossref DOI match → Unpaywall OA PDF locator → metadata-only verified
+Access limit: The PDF link was recorded, but source content was not read; no paraphrase or support verdict follows from these API responses.
+Provenance: stored metadata responses #2-CR, #2-UP; add separate source-content evidence before a content verdict
 ```
 
 ## Repair Queue

@@ -565,7 +565,6 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
                 best_oa = up_result.get("best_oa_location", {})
                 if best_oa and best_oa.get("url_for_pdf"):
                     result["oa_url"] = best_oa["url_for_pdf"]
-                    result["confidence"] = "full-text verified"
 
             result["resolution_status"] = "resolved"
             result["degraded_providers"] = ledger.degraded_providers() if ledger else []
@@ -611,7 +610,6 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
                         best_oa = up_result.get("best_oa_location", {})
                         if best_oa and best_oa.get("url_for_pdf"):
                             result["oa_url"] = best_oa["url_for_pdf"]
-                            result["confidence"] = "full-text verified"
                 result["resolution_status"] = "resolved"
                 result["degraded_providers"] = ledger.degraded_providers() if ledger else []
                 return result
@@ -709,7 +707,7 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
             not_checked.append("url-check")
         if url_status["check_status"] == "live":
             result["resolved"] = True
-            result["confidence"] = "full-text verified"
+            result["confidence"] = "metadata-only verified"
             result["source_tier"] = "direct-url"
             result["metadata"] = {"url": url}
             result["resolution_status"] = "resolved"
@@ -740,7 +738,7 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
                 not_checked.append("wayback")
             if availability == "available":
                 result["resolved"] = True
-                result["confidence"] = "full-text verified"  # #368 is separate.
+                result["confidence"] = "metadata-only verified"
                 result["source_tier"] = "wayback"
                 result["metadata"] = {"url": url, "wayback_url": snapshot_url}
                 result["resolution_status"] = "resolved"
