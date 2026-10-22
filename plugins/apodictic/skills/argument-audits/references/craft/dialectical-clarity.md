@@ -732,7 +732,7 @@ The argument relies exclusively on institutional, quantitative, or detached auth
 
 **FM-A19: Authority Overreach**
 Signature: WR2 + SM1 (misrouted authority).
-An expert whose credentials are in domain X makes claims in domain Y, leveraging credibility earned in one field to make claims in another. The text presents the authority as if domain expertise were fungible. An economist testifying about psychology. A clinician making policy recommendations. A legal scholar making empirical claims. The authority is real but structurally mismatched to the claim.
+An expert whose credentials are in domain X makes claims in domain Y, leveraging credibility earned in one field to make claims in another. The text presents the authority as if domain expertise were fungible. An economist testifying about psychology. A clinician making policy recommendations. A legal scholar making empirical claims. The authority is real but structurally mismatched to the claim. Test the domain of the specific claim, not the authority's headline title. Do not fire when the authority has demonstrable training, publication or institutional role in the claim's domain as well; interdisciplinary expertise is not overreach.
 
 ### Dynamic Failures
 
@@ -756,7 +756,7 @@ Hedging language appears in early sections ("may," "suggests," "in some cases") 
 
 **FM-A18: Implementation Blindspot**
 Signature: AT3 + clean CL/SM/WR/BP on the problem and principle, but total absence of execution analysis.
-The proposal proves the problem exists and argues the principle compellingly. But it never addresses how the proposed solution would actually work: cost, timeline, institutional capacity, political feasibility, unintended consequences. The argument is complete on paper and useless in practice. Common in advocacy, academic policy proposals, and open letters. The editorial instruction is not to write the implementation plan, but to diagnose that one is missing.
+The proposal proves the problem exists and argues the principle compellingly. But it never addresses how the proposed solution would actually work: cost, timeline, institutional capacity, political feasibility, unintended consequences. The argument is complete on paper and useless in practice. Common in advocacy, academic policy proposals, and open letters. The editorial instruction is not to write the implementation plan, but to diagnose that one is missing. Calibrate by form: an op-ed or open letter may legitimately omit implementation detail that a policy brief or grant proposal cannot. In short-form advocacy, fire FM-A18 only when the piece presents itself as a proposal to be executed.
 
 ---
 
@@ -834,6 +834,8 @@ The three canonical worked examples (`core-editor/references/example-argument-st
 | **Hostile audience** | OB3, OB4, AC2, BP5 | Tonal warmth or narrative invitation | Treating any concession as weakness |
 | **Sympathetic audience** | AC3, BP2, NE3 | Exhaustive defense of uncontested basics | Treating audience agreement as structural adequacy |
 | **Mixed audience** | AC1, AC4, WR0, BP6 | Highly technical shorthand | Assuming one support form will satisfy everyone |
+
+Additional guards: do not fire OB0 on a sympathetic-audience form that does not require objection handling (fundraising appeal, internal organizing document); do not read a narrowly scoped, defensive argument for a hostile audience as lacking ambition or stakes; do not flag deliberate register shifts for a mixed audience (narrative, then data, then policy) as inconsistency, since that is multi-audience layering.
 
 ### Calibration for Length
 

@@ -61,6 +61,7 @@ Track per-character state across volumes: traits, capabilities, relationships, k
 - **CS-KNOW**: Character doesn't know what prior volumes established they know (knowledge regression)
 - **CS-DRIFT**: Character capabilities, personality, or competencies shift without causal architecture
 - **CS-RULE**: Character state change is mediated by a world rule (drugs, magic, environmental effects) — flag requires consistency in both CS and WR channels
+- **CS-CHRONO**: Events across volumes produce impossible chronology (ages, seasons, travel times, pregnancies, time-gap durations) even though each volume's internal timeline is consistent. Check every volume boundary: the error lives in the gap, so single-volume continuity checks cannot catch it.
 
 **Severity guide:**
 - Gist-level violations (personality, relationship dynamics, emotional position) are higher severity than detail-level violations (physical descriptions, minor facts)
@@ -179,6 +180,7 @@ Before flagging, verify:
 - Bleakness is not automatically broken hope
 - New protagonist is not automatically broken continuity
 - Remembered trivia is not the same as preserved pressure
+- Calibrate to a gap-reader's gist recall, not to your own verbatim recall of the prior volume; a detail-level discrepancy only a back-to-back rereader would notice stays a local note unless it breaks a consequence
 
 ---
 

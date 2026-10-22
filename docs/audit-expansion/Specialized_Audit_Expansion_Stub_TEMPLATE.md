@@ -131,7 +131,7 @@ hard gates.
 Complete all five research questions before writing the audit.
 
 Output file:
-`[audit-slug]-level-setting.md`
+`docs/[audit-slug]-level-setting.md` (research only: it never ships in the plugin, so carry every operational rule into the audit itself)
 
 The audit draft should not read like scholarship,
 but the research should be visible in flag specificity and thresholds.

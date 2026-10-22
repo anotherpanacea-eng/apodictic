@@ -83,25 +83,7 @@ const NOT_CARDED = new Set([
   // (1) Sub-references (files[1:]) of an already-carded audit — level-setting /
   //     computational / stub companions that ride along with a card's primary.
   "craft/ai-prose-calibration-distributional.md",
-  "craft/ai-prose-calibration-level-setting.md",
-  "craft/argument-persuasion-level-setting.md",
-  "craft/argument-red-team-level-setting.md",
-  "craft/compression-audit-level-setting.md",
-  "craft/decision-pressure-level-setting.md",
-  "craft/dialectical-clarity-level-setting.md",
   "craft/rhetorical-stance-triage.md",
-  "craft/female-interiority-level-setting.md",
-  "craft/force-architecture-level-setting.md",
-  "craft/literary-craft-level-setting.md",
-  "craft/reception-risk-level-setting.md",
-  "craft/series-continuity-level-setting.md",
-  "craft/stakes-system-level-setting.md",
-  "genre/grimdark-level-setting.md",
-  "genre/horror-craft-level-setting.md",
-  "genre/mystery-thriller-architecture-level-setting.md",
-  "genre/sff-worldbuilding-level-setting.md",
-  "genre/supernatural-horror-level-setting.md",
-  "tag/cozy-tag-level-setting.md",
   // (2) Pre-existing standalone audits not carded in any registry section —
   //     advisory/opt-in surfaces that predate this gate. Carding them (if they
   //     should be web-marketed) is tracked separately; allowlisted so the gate

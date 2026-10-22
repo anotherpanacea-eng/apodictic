@@ -468,7 +468,7 @@ def _vocabulary_migration_errors():
         return []  # host bundle lacks repo-only active examples
     rels = [
         "plugins/apodictic/skills/argument-audits/references/craft/dialectical-clarity.md",
-        "plugins/apodictic/skills/argument-audits/references/craft/dialectical-clarity-level-setting.md",
+        "docs/dialectical-clarity-level-setting.md",
         "evals/fixtures/argument-benchmark/personal-essay-narrative-arg/groundtruth.md",
         "docs/argument-benchmark-calibration-round.md",
         "sample-dialectical-clarity-letter.html",

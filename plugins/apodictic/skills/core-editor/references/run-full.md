@@ -281,7 +281,6 @@ Each audit has its own reference file in the owning family listed in `specialize
 
 #### Stakes System Audit
 **Module:** `narrative-craft-audits/references/craft/stakes-system.md`
-**Level-setting:** `narrative-craft-audits/references/craft/stakes-system-level-setting.md`
 
 Evaluates whether the manuscript's stakes system functions as a coherent escalation and consequence engine. Six channels: Stakes Texture (STX), Pressure Conversion (PC), Immediacy Management (IM), Escalation Geometry (EG), Multi-Axis Pressure (MP), Climax Load (CL). 22 named diagnostic flags.
 
@@ -294,7 +293,6 @@ Evaluates whether the manuscript's stakes system functions as a coherent escalat
 
 #### Decision Pressure Audit
 **Module:** `narrative-craft-audits/references/craft/decision-pressure.md`
-**Level-setting:** `narrative-craft-audits/references/craft/decision-pressure-level-setting.md`
 
 Evaluates whether major character decisions are believable under the manuscript's pressure environment. Seven channels: Alternative Visibility (AV), Constraint Specificity (CS), Information-State Integrity (IS), Emotion-Cognition Coherence (EC), Reasoning Fidelity (RF), Tradeoff Reality (TR), Pivot Integrity (PV). 23 named diagnostic flags.
 
@@ -333,7 +331,6 @@ Evaluates emotional precision, earned moments, sentiment tracking, and felt tran
 
 #### Force Architecture
 **Module:** `narrative-craft-audits/references/craft/force-architecture.md`
-**Level-setting:** `narrative-craft-audits/references/craft/force-architecture-level-setting.md`
 
 Evaluates whether physical conflict events produce legible, causal, persistent, meaningful change — or are spectacle loops. 25 flags across 6 dimensions. 8 mode calibrations.
 
@@ -345,7 +342,6 @@ Evaluates whether physical conflict events produce legible, causal, persistent, 
 
 #### Literary Craft Deep Dive
 **Module:** `narrative-craft-audits/references/craft/literary-craft.md`
-**Level-setting:** `narrative-craft-audits/references/craft/literary-craft-level-setting.md`
 
 Evaluates whether literary-mode techniques (defamiliarization, image systems, subtext, recognition architecture) do narrative work or are cosmetic. 22 flags across 5+1 dimensions. 9 genre-hybrid calibrations.
 

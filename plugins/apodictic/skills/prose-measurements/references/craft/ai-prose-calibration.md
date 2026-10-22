@@ -262,8 +262,6 @@ A specific instance of lexical genericism worth flagging by name. The pattern: "
 
 The subtype is *earned* (rare) when the character cannot name what they are feeling and the prose registers that incapacity as part of the experience. It is *unearned* (common) when the prose, not the character, is failing to commit. The diagnostic question: would naming the failure to name ("she had no word for it") be sharper than the indefinite gesture?
 
-See `ai-prose-calibration-level-setting.md` for earned and unearned examples.
-
 **Severity:**
 - **Spot** — one scene lacks grounding; adjacent scenes are specific
 - **Pattern** — bridge scenes and dialogue scenes consistently foggy; action scenes grounded
@@ -347,13 +345,13 @@ The diagnostic is whether the shift serves the prose. Authorial-controlled regis
 
 **Assistant Frame** — Direct assistant-register intrusions in narrative prose. Throat-clearing before points ("Here's the thing about grief—"). Resumptive parroting in interiority (a character restating what just happened before reacting to it). Sycophantic or evaluative framing ("The remarkable thing was..."). Metacommentary on the difficulty or complexity of what's being described ("It was a complicated feeling, one that resisted easy categorization").
 
-*Named pattern within Assistant Frame: Pseudo-Aphorism.* "X is the Y of Z" or "X as Y" formulations that aspire to maxim register without earning the standing of a maxim. Often followed by a real image or specification that does the work the aphorism gestured at. Cut the aphorism, keep the image. See `ai-prose-calibration-level-setting.md` for earned and unearned examples.
+*Named pattern within Assistant Frame: Pseudo-Aphorism.* "X is the Y of Z" or "X as Y" formulations that aspire to maxim register without earning the standing of a maxim. Often followed by a real image or specification that does the work the aphorism gestured at. Unearned when a nearby image or specification does the work the aphorism gestured at: cut the aphorism, keep the image. Earned (rare) when the line carries weight alone as a maxim and no following image is doing its work: keep it.
 
 *In fiction, this should be near-zero.* A narrator can be self-aware, but self-awareness and assistant framing are different registers. The test: would an essayist write this sentence, or would a chatbot?
 
 **Hedge Drift** — Epistemic hedging at densities that suggest LLM caution rather than narrative uncertainty. "In some ways," "to a certain extent," "it could be said that," "arguably," "there was a sense in which." Individual uses are often legitimate — characters doubt, narrators qualify. The flag fires on accumulation: when a passage hedges more than the character's psychology or the narrative situation warrants.
 
-*Named pattern within Hedge Drift: Negation Hedge.* "Not X." / "Not X, exactly." / "Not X. Not Y." Narrator pretends to make a careful discrimination. The pattern is *earned* when the character is actively sorting, cataloguing, or refusing the wrong word — the negation IS the cognitive act. *Unearned* when the next sentence does the work the negation pretended to. See level-setting reference.
+*Named pattern within Hedge Drift: Negation Hedge.* "Not X." / "Not X, exactly." / "Not X. Not Y." Narrator pretends to make a careful discrimination. The pattern is *earned* when the character is actively sorting, cataloguing, or refusing the wrong word — the negation IS the cognitive act. *Unearned* when the next sentence does the work the negation pretended to.
 
 *Flagged by density and spread, not single use.* Three hedges in a paragraph of genuine uncertainty is voice. Three hedges per page across a chapter is drift.
 
@@ -447,8 +445,6 @@ The voice-attribution layer. Answers the question that distributional analysis a
 **Run only when voice-bearing material is identifiable.** For fiction, this means each character's voice register and the narrator's. For argument-shaped nonfiction, this means the writer's persona, the audience's expectations, the argument's stakes. Without that input, source triage is unreliable; report Layer C as unavailable and stop after Step 4.
 
 **Why this layer matters.** Almost all the AI-prose work depends on being able to ask "whose voice is this, and is that voice doing real work or pretending to?" Pattern-matching surface tells without that triage produces the failure mode common in external critiques: generic recommendations that flatten character voice in the name of cleaning up prose. Source triage prevents that failure by making voice attribution the precondition for every cut.
-
-**See `ai-prose-calibration-level-setting.md` for the full source-triage examples library.**
 
 #### The Payoff Test
 
@@ -698,8 +694,6 @@ This audit diagnoses prose-level patterns. It does not:
 - Suggest specific word substitutions for generic phrasing
 
 The salvage plan (Keep/Recast/Replace) tells the author *what to do*. It does not do it for them. "Recast this passage with sensory specificity" is a diagnostic instruction. "The room smelled of burnt coffee and old paper" is content invention. The audit produces the former, never the latter.
-
-The level-setting reference (`ai-prose-calibration-level-setting.md`) contains generic illustrative examples of earned vs. unearned patterns. These are calibration aids, not generated prose for the manuscript under audit. Do not adapt them as substitutions; deploy the writer's voice in revision.
 
 ---
 

@@ -406,6 +406,7 @@ Use when beta reports "couldn't follow the fight" or when LG flags cluster. Cogn
 4. Quiet aftermath can pass if consequence is behaviorally visible.
 5. Protagonist survival can pass if justified by established rules/resources.
 6. Withdrawn POV can pass if dissociation/shock is the cognitive anchor.
+7. Stylized repetition can pass: ritual, trance or dissociative patterning across force events is not ES-2 if the repetition itself carries meaning that the text registers and that changes in function or residue across instances.
 
 ---
 

@@ -275,6 +275,13 @@ Structural recalibration notes:
 | Open letter | visible audience choice and stakes ownership | `PS1`, `PS5` |
 | Advocacy journalism | conviction without sequencing collapse | `PS4`, `PS11` |
 
+**False-positive guards.** Before firing a signature risk, check the form:
+- Academic article: do not fire `PS6` on a thesis that arrives after literature review and method when the discipline expects that order.
+- Testimony: do not fire `PS10` on formal legislative or legal register; colloquial register is the risk there.
+- Policy brief (`PS9`) and op-ed (`PS7`): compression and minimal concession are expected. Fire only when the burden logic, or the work the concession has to do, is missing, not when it is short.
+- Open letter: layered address to several audiences is not `PS1`; fire only when the layers collapse into one undifferentiated strategy.
+- Advocacy journalism: mobilizing existing supporters is not `PS11` by itself; name the strategy rather than penalizing it.
+
 ---
 
 ## Integration with Other Modules
