@@ -242,23 +242,60 @@ def check_wayback(url: str, ledger=None) -> dict:
                        provider="wayback", ledger=ledger) or {}
 
 
-def check_retraction(doi: str) -> dict:
-    """Check CrossRef metadata for retraction or correction notices."""
-    result = resolve_crossref_doi(doi)
-    if not result or "_error" in result:
-        return {"doi": doi, "retracted": None, "error": "Could not resolve DOI"}
+def _crossref_message(response, doi: str) -> dict | None:
+    """Accept only metadata for the requested DOI, never a failed or partial hit."""
+    if not isinstance(response, dict) or "_error" in response or "_skipped" in response:
+        return None
+    message = response.get("message")
+    if not isinstance(message, dict) or not message:
+        return None
+    identity = message.get("DOI")
+    if (not isinstance(identity, str) or not identity.strip() or not doi.strip()
+            or identity.strip().casefold() != doi.strip().casefold()):
+        return None
+    return message
 
-    message = result.get("message", {})
-    updates = message.get("update-to", [])
-    retracted = any(u.get("type") == "retraction" for u in updates)
-    corrected = any(u.get("type") in ("correction", "erratum") for u in updates)
 
+def _crossref_update_health(message: dict) -> dict:
+    """`updated-by` concerns this work; `update-to` concerns a notice's target."""
+    incoming = message.get("updated-by")
+    outgoing = message.get("update-to")
+    incoming = [] if incoming is None else incoming
+    outgoing = [] if outgoing is None else outgoing
+    uncertain = not isinstance(incoming, list)
+    kinds = set()
+    if isinstance(incoming, list):
+        for relation in incoming:
+            if (not isinstance(relation, dict)
+                    or not isinstance(relation.get("type"), str)
+                    or not relation["type"].strip()
+                    or not isinstance(relation.get("DOI"), str)
+                    or not relation["DOI"].strip()):
+                uncertain = True
+                continue
+            kind = relation["type"].strip().casefold()
+            if kind not in ("retraction", "correction", "erratum"):
+                uncertain = True
+            kinds.add(kind)
     return {
-        "doi": doi,
-        "retracted": retracted,
-        "corrected": corrected,
-        "updates": updates
+        "retracted": True if "retraction" in kinds else None if uncertain else False,
+        "corrected": True if kinds.intersection(("correction", "erratum")) else None if uncertain else False,
+        "updated_by": incoming,
+        "update_to": outgoing,
     }
+
+
+def check_retraction(doi: str) -> dict:
+    """Check notices updating a Crossref work, without confusing their targets."""
+    message = _crossref_message(resolve_crossref_doi(doi), doi)
+    if message is None:
+        return {"doi": doi, "retracted": None, "corrected": None,
+                "error": "Could not resolve DOI"}
+    health = _crossref_update_health(message)
+    return {"doi": doi, "retracted": health["retracted"],
+            "corrected": health["corrected"],
+            "updates": health["update_to"],  # legacy outbound relationship field
+            "updated_by": health["updated_by"], "update_to": health["update_to"]}
 
 # ---------------------------------------------------------------------------
 # Resolution pipeline
@@ -331,25 +368,31 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
         cr_result = cache.get(cache_key, ttl_seconds=_meta_ttl)
         if cr_result is None:
             cr_result = resolve_crossref_doi(doi, ledger=ledger)
-            if _unanswered(cr_result):
-                # Degraded (skip) OR failed (error after retries): the provider
-                # did not answer → NOT-CHECKED for this citation, and do not
-                # cache a non-answer (a transient 5xx/timeout is not a fact).
+            if _unanswered(cr_result) or _crossref_message(cr_result, doi) is None:
+                # Skipped, failed, or invalid DOI metadata is NOT-CHECKED for
+                # this citation. Do not cache a non-answer as a source fact.
                 not_checked.append("crossref")
             else:
                 cache.set(cache_key, cr_result, ttl=_meta_ttl)
             time.sleep(RATE_LIMIT_DELAY)
 
-        if cr_result and "_error" not in cr_result and "message" in cr_result:
+        msg = _crossref_message(cr_result, doi)
+        if msg is None and "crossref" not in not_checked:
+            not_checked.append("crossref")
+        if msg is not None:
             prov_ref = provenance.store(ref_id, "crossref", cr_result)
             result["provenance_refs"].append(prov_ref)
-            msg = cr_result["message"]
-            # Retraction (Phase 5) is derived from the SAME CrossRef metadata
-            # (message.update-to) — no second CrossRef call. A retracted source is a
-            # citation problem the audit must not silently pass.
-            if any(u.get("type") == "retraction" for u in msg.get("update-to", [])):
+            # Derive health from this same response, including cache hits.
+            health = _crossref_update_health(msg)
+            result["updated_by"] = health["updated_by"]
+            result["update_to"] = health["update_to"]
+            if health["retracted"] is True:
                 result["retracted"] = True
                 result["retraction_note"] = "Source is retracted per CrossRef metadata."
+            elif health["retracted"] is None:
+                result["retracted"] = None
+            if health["corrected"] is not False:
+                result["corrected"] = health["corrected"]
             result["resolved"] = True
             result["confidence"] = "metadata-only verified"
             result["source_tier"] = "crossref-doi"
