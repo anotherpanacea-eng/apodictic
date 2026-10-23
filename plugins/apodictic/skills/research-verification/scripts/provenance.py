@@ -10,16 +10,180 @@ enforced by audit trail, not by prompt instruction.
 """
 
 import json
+import copy
+import hashlib
+import math
+import os
+import tempfile
 import time
+from datetime import datetime, timezone
 from pathlib import Path
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def is_admitted_json(value) -> bool:
+    """Accept exactly finite, acyclic parsed JSON values, without coercion."""
+    active = set()
+
+    def valid(node):
+        if node is None or type(node) in (bool, int):
+            return True
+        if type(node) is float:
+            return math.isfinite(node)
+        if type(node) is str:
+            return not any(0xD800 <= ord(char) <= 0xDFFF for char in node)
+        if type(node) not in (list, dict):
+            return False
+        identity = id(node)
+        if identity in active:
+            return False
+        active.add(identity)
+        try:
+            if type(node) is list:
+                return all(valid(item) for item in node)
+            return all(type(key) is str and valid(key) and valid(item)
+                       for key, item in node.items())
+        finally:
+            active.remove(identity)
+
+    try:
+        return valid(value)
+    except RecursionError:
+        return False
+
+
+def json_value_sha256(value) -> str:
+    """Digest a previously admitted parsed JSON value, never HTTP wire bytes."""
+    encoded = json.dumps(value, sort_keys=True, separators=(",", ":"),
+                         ensure_ascii=False, allow_nan=False).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 class ProvenanceStore:
     """Stores API response provenance for citation verification."""
 
-    def __init__(self):
+    def __init__(self, record_responses: bool = False):
         self.entries: list[dict] = []
         self._counter = 0
+        self.record_responses = record_responses
+        self._events: list[dict] = []
+        self._evidence_incomplete = False
+        self._citation_index: int | None = None
+
+    def _record_response(self, ref_id, source, *, kind, outcome, origin,
+                         payload=None, observed_at=None, category=None, status=None,
+                         details=None):
+        if not self.record_responses:
+            return None
+        if self._evidence_incomplete:
+            raise RuntimeError("response evidence collection is incomplete")
+        event = {
+            "event_id": f"response-{len(self._events) + 1}",
+            "citation_index": self._citation_index,
+            "ref_id": ref_id,
+            "source": source,
+            "kind": kind,
+            "outcome": outcome,
+            "origin": origin,
+            "observed_at": observed_at,
+            "recorded_at": _utc_now(),
+            "prov_ref": None,
+        }
+        if kind == "json_value":
+            if not is_admitted_json(payload):
+                raise ValueError("invalid parsed JSON evidence value")
+            try:
+                snapshot = copy.deepcopy(payload)
+                digest = json_value_sha256(snapshot)
+            except Exception:
+                self._evidence_incomplete = True
+                raise
+            event.update(representation="parsed-json-value-v1", payload=snapshot,
+                         payload_sha256=digest)
+        if category is not None:
+            event["category"] = category
+        if status is not None:
+            event["status"] = status
+        if details:
+            event.update(details)
+        self._events.append(event)
+        return len(self._events) - 1
+
+    def _observe_parsed(self, ref_id, source, value, *, origin, observed_at):
+        if is_admitted_json(value):
+            return self._record_response(ref_id, source, kind="json_value",
+                                         outcome="invalid", origin=origin,
+                                         payload=value, observed_at=observed_at)
+        return self._record_response(ref_id, source,
+                                     kind="request_failure" if origin == "fresh" else "cache_invalid",
+                                     outcome="invalid",
+                                     origin="local" if origin == "fresh" else origin,
+                                     category="invalid-json-value")
+
+    def _finish_response(self, event_index, outcome, prov_ref=None):
+        if event_index is None:
+            return
+        event = self._events[event_index]
+        if event["kind"] == "json_value":
+            event["outcome"] = outcome
+        if prov_ref is not None:
+            event["prov_ref"] = prov_ref
+
+    def _cache_metadata(self, event_index):
+        if event_index is None:
+            return None
+        event = self._events[event_index]
+        if event["kind"] != "json_value" or event["origin"] != "fresh":
+            return None
+        return {"kind": "provider_json", "observed_at": event["observed_at"],
+                "payload_sha256": event["payload_sha256"]}
+
+    def response_evidence(self) -> dict:
+        if not self.record_responses:
+            raise RuntimeError("response evidence was not enabled")
+        if self._evidence_incomplete:
+            raise RuntimeError("response evidence collection is incomplete")
+        try:
+            return copy.deepcopy({"schema": "apodictic.response-evidence.v1",
+                                  "events": self._events})
+        except Exception:
+            self._evidence_incomplete = True
+            raise
+
+    def save_response_evidence(self, path: str) -> str:
+        document = self.response_evidence()
+        # Verify and serialize before creating a temporary destination.
+        try:
+            for event in document["events"]:
+                if event["kind"] == "json_value":
+                    if (not is_admitted_json(event["payload"]) or
+                            json_value_sha256(event["payload"]) != event["payload_sha256"]):
+                        raise RuntimeError("response evidence digest mismatch")
+            encoded = json.dumps(document, indent=2, ensure_ascii=False,
+                                 allow_nan=False).encode("utf-8")
+        except Exception:
+            self._evidence_incomplete = True
+            raise
+        target = Path(path)
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(mode="wb", dir=target.parent,
+                                             prefix=f".{target.name}.", suffix=".tmp",
+                                             delete=False) as stream:
+                temporary = Path(stream.name)
+                stream.write(encoded)
+            os.replace(temporary, target)
+            temporary = None  # replacement is the success commit point
+        finally:
+            if temporary is not None:
+                try:
+                    temporary.unlink(missing_ok=True)
+                except OSError:
+                    pass
+        return str(path)
 
     def store(self, ref_id: str, source: str, response: dict) -> str:
         """

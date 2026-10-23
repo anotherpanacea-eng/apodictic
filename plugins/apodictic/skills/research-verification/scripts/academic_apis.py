@@ -27,7 +27,7 @@ import urllib.error
 from pathlib import Path
 
 from response_cache import ResponseCache
-from provenance import ProvenanceStore
+from provenance import ProvenanceStore, is_admitted_json, _utc_now
 from api_reliability import (
     ProviderBudget,
     CircuitBreaker,
@@ -82,7 +82,8 @@ def _retry_after_delay(exc, fallback: float) -> float:
 
 
 def _fetch_json(url: str, headers: dict | None = None, timeout: int = 15,
-                provider: str | None = None, ledger: "ReliabilityLedger | None" = None) -> dict | None:
+                provider: str | None = None, ledger: "ReliabilityLedger | None" = None,
+                _observe=None) -> dict | None:
     """Fetch a URL and parse as JSON. Retries 429/5xx and transient network errors
     with bounded exponential backoff (honoring Retry-After). On exhaustion returns
     the existing {_error} dict so callers are unchanged.
@@ -98,9 +99,16 @@ def _fetch_json(url: str, headers: dict | None = None, timeout: int = 15,
     today's behavior (AC-13)."""
     if ledger is not None and provider is not None:
         if not ledger.allow_call(provider):
+            if _observe is not None:
+                category = ("circuit-open" if ledger.breaker.is_open(provider)
+                            else "budget-exhausted")
+                _observe("skip", None, None, category, None)
             return {"_skipped": True, "_provider": provider, "_url": url}
 
-    result = _fetch_json_network(url, headers, timeout)
+    if _observe is None:
+        result = _fetch_json_network(url, headers, timeout)
+    else:
+        result = _fetch_json_network(url, headers, timeout, _observe=_observe)
 
     # Record the outcome of a call that actually fired so the breaker can open on
     # consecutive failures. allow_call() already charged the budget above.
@@ -109,7 +117,8 @@ def _fetch_json(url: str, headers: dict | None = None, timeout: int = 15,
     return result
 
 
-def _fetch_json_network(url: str, headers: dict | None = None, timeout: int = 15) -> dict | None:
+def _fetch_json_network(url: str, headers: dict | None = None, timeout: int = 15,
+                        _observe=None) -> dict | None:
     """The Phase 5 network call (backoff / Retry-After / no-sticky-error shape),
     factored out so the reliability gate/record wraps a single body."""
     req_headers = {"User-Agent": f"APODICTIC/1.0 (mailto:{CROSSREF_MAILTO})"}
@@ -126,27 +135,53 @@ def _fetch_json_network(url: str, headers: dict | None = None, timeout: int = 15
         req.add_unredirected_header("x-api-key", S2_API_KEY)
     delay = _HTTP_BACKOFF_BASE
     last_error = None
+    def observed(value, *, kind="parsed", category=None, status=None):
+        if _observe is not None:
+            _observe(kind, value, _utc_now() if kind == "parsed" else None,
+                     category, status)
+        return value
+
+    terminal = None
     for attempt in range(_HTTP_MAX_RETRIES + 1):
         try:
             with urllib.request.urlopen(req, timeout=timeout) as resp:
-                return json.loads(resp.read().decode("utf-8"))
+                raw = resp.read()
         except urllib.error.HTTPError as e:
             last_error = e
             if e.code in _RETRYABLE_STATUS and attempt < _HTTP_MAX_RETRIES:
                 time.sleep(_retry_after_delay(e, delay))
                 delay *= 2
                 continue
-            return {"_error": str(e), "_url": url, "_status": e.code}
+            terminal = ({"_error": str(e), "_url": url, "_status": e.code},
+                        "failure", "http-error", e.code)
         except (urllib.error.URLError, TimeoutError) as e:
             last_error = e
             if attempt < _HTTP_MAX_RETRIES:
                 time.sleep(delay)
                 delay *= 2
                 continue
-            return {"_error": str(e), "_url": url}
-        except json.JSONDecodeError as e:
-            return {"_error": str(e), "_url": url}
-    return {"_error": str(last_error), "_url": url}
+            terminal = ({"_error": str(e), "_url": url}, "failure", "transport-error", None)
+        else:
+            try:
+                parsed = json.loads(raw.decode("utf-8"))
+            except UnicodeDecodeError as e:
+                terminal = ({"_error": str(e), "_url": url},
+                            "failure", "utf8-decode-failure", None)
+            except (ValueError, RecursionError) as e:
+                # Includes the interpreter's integer-digit limit, whose
+                # json.loads error is a plain ValueError.
+                terminal = ({"_error": str(e), "_url": url},
+                            "failure", "json-parse-failure", None)
+            else:
+                terminal = (parsed, "parsed", None, None)
+        break
+    if terminal is None:
+        terminal = ({"_error": str(last_error), "_url": url},
+                    "failure", "transport-error", None)
+    value, kind, category, status = terminal
+    # Evidence collection is outside retry and parse handlers. Its exceptions
+    # cannot manufacture another request or be relabeled as network failures.
+    return observed(value, kind=kind, category=category, status=status)
 
 
 def _valid_probe_url(url) -> bool:
@@ -205,22 +240,24 @@ def _check_url(url: str, timeout: int = 10) -> dict:
 # Individual API resolvers
 # ---------------------------------------------------------------------------
 
-def resolve_crossref_doi(doi: str, ledger=None) -> dict:
+def resolve_crossref_doi(doi: str, ledger=None, _observe=None) -> dict:
     """Resolve a DOI via CrossRef."""
     url = f"https://api.crossref.org/works/{urllib.parse.quote(doi, safe='')}"
-    return _fetch_json(url, provider="crossref", ledger=ledger)
+    return _fetch_json(url, provider="crossref", ledger=ledger, _observe=_observe)
 
 
-def search_crossref(title: str, author: str = "", rows: int = 5, ledger=None) -> dict:
+def search_crossref(title: str, author: str = "", rows: int = 5, ledger=None,
+                    _observe=None) -> dict:
     """Search CrossRef by bibliographic query."""
     params = {"query.bibliographic": title, "rows": str(rows)}
     if author:
         params["query.author"] = author
     qs = urllib.parse.urlencode(params)
-    return _fetch_json(f"https://api.crossref.org/works?{qs}", provider="crossref", ledger=ledger)
+    return _fetch_json(f"https://api.crossref.org/works?{qs}", provider="crossref",
+                       ledger=ledger, _observe=_observe)
 
 
-def search_semantic_scholar(query: str, limit: int = 5, ledger=None) -> dict:
+def search_semantic_scholar(query: str, limit: int = 5, ledger=None, _observe=None) -> dict:
     """Search Semantic Scholar."""
     params = {
         "query": query,
@@ -229,7 +266,7 @@ def search_semantic_scholar(query: str, limit: int = 5, ledger=None) -> dict:
     }
     qs = urllib.parse.urlencode(params)
     return _fetch_json(f"https://api.semanticscholar.org/graph/v1/paper/search?{qs}",
-                       provider="semantic-scholar", ledger=ledger)
+                       provider="semantic-scholar", ledger=ledger, _observe=_observe)
 
 
 def get_s2_citations(paper_id: str, direction: str = "citations", limit: int = 20, ledger=None) -> dict:
@@ -242,7 +279,8 @@ def get_s2_citations(paper_id: str, direction: str = "citations", limit: int = 2
     ) or {}
 
 
-def search_openalex(query: str, author: str = "", per_page: int = 5, ledger=None) -> dict:
+def search_openalex(query: str, author: str = "", per_page: int = 5, ledger=None,
+                    _observe=None) -> dict:
     """Search OpenAlex."""
     params = {
         "search": query,
@@ -252,20 +290,22 @@ def search_openalex(query: str, author: str = "", per_page: int = 5, ledger=None
     if author:
         params["filter"] = f"author.search:{author}"
     qs = urllib.parse.urlencode(params)
-    return _fetch_json(f"https://api.openalex.org/works?{qs}", provider="openalex", ledger=ledger)
+    return _fetch_json(f"https://api.openalex.org/works?{qs}", provider="openalex",
+                       ledger=ledger, _observe=_observe)
 
 
-def search_core(query: str, limit: int = 5, ledger=None) -> dict:
+def search_core(query: str, limit: int = 5, ledger=None, _observe=None) -> dict:
     """Search CORE (431M papers)."""
     params = {"q": query, "limit": str(limit)}
     qs = urllib.parse.urlencode(params)
-    return _fetch_json(f"https://api.core.ac.uk/v3/search/works?{qs}", provider="core", ledger=ledger)
+    return _fetch_json(f"https://api.core.ac.uk/v3/search/works?{qs}", provider="core",
+                       ledger=ledger, _observe=_observe)
 
 
-def check_unpaywall(doi: str, ledger=None) -> dict:
+def check_unpaywall(doi: str, ledger=None, _observe=None) -> dict:
     """Check Unpaywall for OA access."""
     url = f"https://api.unpaywall.org/v2/{urllib.parse.quote(doi, safe='')}?email={OPENALEX_MAILTO}"
-    return _fetch_json(url, provider="unpaywall", ledger=ledger)
+    return _fetch_json(url, provider="unpaywall", ledger=ledger, _observe=_observe)
 
 
 def search_pubmed(query: str, retmax: int = 5, ledger=None) -> dict:
@@ -276,16 +316,30 @@ def search_pubmed(query: str, retmax: int = 5, ledger=None) -> dict:
                        provider="pubmed", ledger=ledger) or {}
 
 
-def check_wayback(url: str, ledger=None) -> dict:
+def check_wayback(url: str, ledger=None, _observe=None) -> dict:
     """Check availability; validate shape before ledger records the call."""
     encoded = urllib.parse.quote(url, safe="")
     endpoint = f"https://archive.org/wayback/available?url={encoded}"
     if ledger is not None and not ledger.allow_call("wayback"):
+        if _observe is not None:
+            category = ("circuit-open" if ledger.breaker.is_open("wayback")
+                        else "budget-exhausted")
+            _observe("skip", None, None, category, None)
         return {"_skipped": True, "_provider": "wayback", "_url": endpoint}
-    response = _fetch_json_network(endpoint)
+    if _observe is None:
+        response = _fetch_json_network(endpoint)
+    else:
+        response = _fetch_json_network(endpoint, _observe=_observe)
+    # Preserve the preexisting invalid-snapshot outage accounting first. A
+    # newly detected bad extra field on an otherwise valid snapshot remains
+    # incomplete without manufacturing a transport outage.
     if (isinstance(response, dict) and "_skipped" in response) or (
             not _is_error(response) and _wayback_snapshot(response)[0] == "invalid"):
         response = {"_error": "invalid-wayback-response"}
+    elif not is_admitted_json(response):
+        if ledger is not None:
+            ledger.record("wayback", response)
+        return {"_error": "invalid-json-value"}
     if ledger is not None:
         ledger.record("wayback", response)
     return response
@@ -315,7 +369,8 @@ def _wayback_snapshot(response) -> tuple[str, str | None]:
 
 def _crossref_message(response, doi: str) -> dict | None:
     """Accept only metadata for the requested DOI, never a failed or partial hit."""
-    if not isinstance(response, dict) or "_error" in response or "_skipped" in response:
+    if (not is_admitted_json(response) or not isinstance(response, dict)
+            or "_error" in response or "_skipped" in response):
         return None
     message = response.get("message")
     if not isinstance(message, dict) or not message:
@@ -565,7 +620,7 @@ def _core_projection(hit: dict) -> dict:
 
 def _search_view(response, provider: str) -> tuple[list[dict], bool]:
     """Return a matching view and whether the original answer was incomplete."""
-    if _unanswered(response) or not isinstance(response, dict):
+    if not is_admitted_json(response) or _unanswered(response) or not isinstance(response, dict):
         return [], True
     if provider == "crossref":
         message = response.get("message")
@@ -598,7 +653,7 @@ def _search_view(response, provider: str) -> tuple[list[dict], bool]:
 
 
 def _valid_unpaywall(response) -> bool:
-    if _unanswered(response) or not isinstance(response, dict):
+    if not is_admitted_json(response) or _unanswered(response) or not isinstance(response, dict):
         return False
     location = response.get("best_oa_location")
     if location is None:
@@ -643,6 +698,84 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
     found/not-found split (AC-13 — additive, no behavior change).
     """
     ref_id = citation.get("ref_id", "unknown")
+
+    def request(source, function, *args, **kwargs):
+        if not provenance.record_responses:
+            return function(*args, **kwargs), None
+        observations = []
+
+        def observe(kind, value, observed_at, category, status):
+            try:
+                if kind == "parsed":
+                    index = provenance._observe_parsed(ref_id, source, value,
+                                                       origin="fresh", observed_at=observed_at)
+                else:
+                    index = provenance._record_response(
+                        ref_id, source,
+                        kind="skip" if kind == "skip" else "request_failure",
+                        outcome=("skipped" if kind == "skip" else
+                                 "invalid" if category in ("json-parse-failure", "utf8-decode-failure")
+                                 else "failed"),
+                        origin="local", category=category, status=status)
+            except Exception:
+                provenance._evidence_incomplete = True
+                raise
+            observations.append(index)
+
+        value = function(*args, **kwargs, _observe=observe)
+        if len(observations) != 1:
+            provenance._evidence_incomplete = True
+            raise RuntimeError("requester did not report exactly one final response")
+        return value, observations[0]
+
+    def cached(key, source, ttl):
+        value = cache.get(key, ttl_seconds=ttl)
+        if value is None or not provenance.record_responses:
+            return value, None
+        try:
+            origin, observed_at = cache.response_origin(key, value)
+            local_failure = cache.local_failure_category(key, value)
+        except Exception:
+            # These checks hash an admitted cached value. If that operation
+            # fails, earlier events cannot be exported as a complete run.
+            provenance._evidence_incomplete = True
+            raise
+        if not is_admitted_json(value):
+            index = provenance._record_response(ref_id, source, kind="cache_invalid",
+                                                outcome="invalid", origin="legacy_cache",
+                                                category="invalid-json-value")
+        elif isinstance(value, dict) and "_error" in value and local_failure:
+            index = provenance._record_response(
+                ref_id, source, kind="request_failure", outcome="failed", origin="cache",
+                category=local_failure)
+        elif (origin == "legacy_cache" and isinstance(value, dict)
+              and ("_error" in value or "_skipped" in value)):
+            index = provenance._record_response(ref_id, source,
+                                                kind="cache_unclassified",
+                                                outcome="unclassified", origin="legacy_cache",
+                                                category="unknown-marker-origin")
+        else:
+            index = provenance._observe_parsed(ref_id, source, value, origin=origin,
+                                               observed_at=observed_at)
+        return value, index
+
+    def finish(index, outcome, prov_ref=None):
+        provenance._finish_response(index, outcome, prov_ref)
+
+    def cache_meta(index):
+        return provenance._cache_metadata(index)
+
+    def search_outcome(rows, incomplete, selected=False):
+        return "selected" if selected else "invalid" if incomplete else "no_match" if rows else "empty"
+
+    def unpaywall_outcome(response):
+        if not _valid_unpaywall(response):
+            return "invalid"
+        location = response.get("best_oa_location")
+        if not location:
+            return "empty"
+        return "selected" if location.get("url_for_pdf") else "no_match"
+
     doi = citation.get("doi", "")
     url = citation.get("url", "")
     title = citation.get("title", "")
@@ -666,9 +799,10 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
     # --- Tier 2: DOI resolution ---
     if doi:
         cache_key = f"crossref:doi:{doi}"
-        cr_result = cache.get(cache_key, ttl_seconds=_meta_ttl)
+        cr_result, cr_event = cached(cache_key, "crossref-doi", _meta_ttl)
         if cr_result is None:
-            cr_result = resolve_crossref_doi(doi, ledger=ledger)
+            cr_result, cr_event = request("crossref-doi", resolve_crossref_doi,
+                                          doi, ledger=ledger)
             msg = _crossref_message(cr_result, doi)
             try:
                 projected = _crossref_projection(msg, doi_path=True) if msg is not None else None
@@ -679,7 +813,8 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
                 # this citation. Do not cache a non-answer as a source fact.
                 not_checked.append("crossref")
             else:
-                cache.set(cache_key, cr_result, ttl=_meta_ttl)
+                cache.set(cache_key, cr_result, ttl=_meta_ttl,
+                          evidence_meta=cache_meta(cr_event))
             time.sleep(RATE_LIMIT_DELAY)
 
         msg = _crossref_message(cr_result, doi)
@@ -689,9 +824,18 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
             projected = None
         if projected is None and "crossref" not in not_checked:
             not_checked.append("crossref")
+        if projected is None:
+            identity = (cr_result.get("message") if isinstance(cr_result, dict)
+                        and is_admitted_json(cr_result) else None)
+            finish(cr_event, "no_match" if isinstance(identity, dict)
+                   and isinstance(identity.get("DOI"), str)
+                   and identity["DOI"].strip()
+                   and identity["DOI"].strip().casefold() != doi.strip().casefold()
+                   else "invalid")
         if projected is not None:
             prov_ref = provenance.store(ref_id, "crossref", cr_result)
             result["provenance_refs"].append(prov_ref)
+            finish(cr_event, "selected", prov_ref)
             # Derive health from this same response, including cache hits.
             health = _crossref_update_health(msg)
             result["updated_by"] = health["updated_by"]
@@ -713,11 +857,13 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
             # skip/error here does not flip resolution_status to NOT-CHECKED —
             # but a transient non-answer must still not be cached as fact.
             up_key = f"unpaywall:{doi}"
-            up_result = cache.get(up_key, ttl_seconds=_meta_ttl)
+            up_result, up_event = cached(up_key, "unpaywall", _meta_ttl)
             if up_result is None:
-                up_result = check_unpaywall(doi, ledger=ledger)
+                up_result, up_event = request("unpaywall", check_unpaywall,
+                                              doi, ledger=ledger)
                 if _valid_unpaywall(up_result):
-                    cache.set(up_key, up_result, ttl=_meta_ttl)
+                    cache.set(up_key, up_result, ttl=_meta_ttl,
+                              evidence_meta=cache_meta(up_event))
                 time.sleep(RATE_LIMIT_DELAY)
 
             if up_result and _valid_unpaywall(up_result):
@@ -726,6 +872,9 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
                 best_oa = up_result.get("best_oa_location", {})
                 if best_oa and best_oa.get("url_for_pdf"):
                     result["oa_url"] = best_oa["url_for_pdf"]
+                finish(up_event, unpaywall_outcome(up_result), prov_ref)
+            else:
+                finish(up_event, unpaywall_outcome(up_result))
 
             result["resolution_status"] = "resolved"
             result["degraded_providers"] = ledger.degraded_providers() if ledger else []
@@ -735,24 +884,28 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
     if title:
         # CrossRef search
         cache_key = f"crossref:search:{title}:{author}"
-        cr_result = cache.get(cache_key, ttl_seconds=_meta_ttl)
+        cr_result, cr_event = cached(cache_key, "crossref-search", _meta_ttl)
         if cr_result is None:
-            cr_result = search_crossref(title, author, ledger=ledger)
+            cr_result, cr_event = request("crossref-search", search_crossref,
+                                          title, author, ledger=ledger)
             items, incomplete = _search_view(cr_result, "crossref")
             if not incomplete:
-                cache.set(cache_key, cr_result, ttl=_meta_ttl)
+                cache.set(cache_key, cr_result, ttl=_meta_ttl,
+                          evidence_meta=cache_meta(cr_event))
             time.sleep(RATE_LIMIT_DELAY)
         else:
             items, incomplete = _search_view(cr_result, "crossref")
         if incomplete:
             not_checked.append("crossref")
 
+        match = None
         if items:
             from fuzzy_match import best_match
             match = best_match(title, author, year, items, source="crossref")
             if match:
                 prov_ref = provenance.store(ref_id, "crossref-search", cr_result)
                 result["provenance_refs"].append(prov_ref)
+                finish(cr_event, "selected", prov_ref)
                 result["resolved"] = True
                 result["confidence"] = "metadata-only verified"
                 result["source_tier"] = "crossref-search"
@@ -761,11 +914,13 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
                 found_doi = match.get("doi", "")
                 if found_doi:
                     up_key = f"unpaywall:{found_doi}"
-                    up_result = cache.get(up_key, ttl_seconds=_meta_ttl)
+                    up_result, up_event = cached(up_key, "unpaywall", _meta_ttl)
                     if up_result is None:
-                        up_result = check_unpaywall(found_doi, ledger=ledger)
+                        up_result, up_event = request("unpaywall", check_unpaywall,
+                                                      found_doi, ledger=ledger)
                         if _valid_unpaywall(up_result):
-                            cache.set(up_key, up_result, ttl=_meta_ttl)
+                            cache.set(up_key, up_result, ttl=_meta_ttl,
+                                      evidence_meta=cache_meta(up_event))
                         time.sleep(RATE_LIMIT_DELAY)
                     if up_result and _valid_unpaywall(up_result):
                         prov_ref = provenance.store(ref_id, "unpaywall", up_result)
@@ -773,30 +928,39 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
                         best_oa = up_result.get("best_oa_location", {})
                         if best_oa and best_oa.get("url_for_pdf"):
                             result["oa_url"] = best_oa["url_for_pdf"]
+                        finish(up_event, unpaywall_outcome(up_result), prov_ref)
+                    else:
+                        finish(up_event, unpaywall_outcome(up_result))
                 result["resolution_status"] = "resolved"
                 result["degraded_providers"] = ledger.degraded_providers() if ledger else []
                 return result
 
+        finish(cr_event, search_outcome(items, incomplete, bool(match)))
+
         # Semantic Scholar search
         cache_key = f"s2:search:{title}:{author}"
-        s2_result = cache.get(cache_key, ttl_seconds=_meta_ttl)
+        s2_result, s2_event = cached(cache_key, "semantic-scholar", _meta_ttl)
         if s2_result is None:
-            s2_result = search_semantic_scholar(f"{title} {author}".strip(), ledger=ledger)
+            s2_result, s2_event = request("semantic-scholar", search_semantic_scholar,
+                                          f"{title} {author}".strip(), ledger=ledger)
             papers, incomplete = _search_view(s2_result, "semantic-scholar")
             if not incomplete:
-                cache.set(cache_key, s2_result, ttl=_meta_ttl)
+                cache.set(cache_key, s2_result, ttl=_meta_ttl,
+                          evidence_meta=cache_meta(s2_event))
             time.sleep(RATE_LIMIT_DELAY)
         else:
             papers, incomplete = _search_view(s2_result, "semantic-scholar")
         if incomplete:
             not_checked.append("semantic-scholar")
 
+        match = None
         if papers:
             from fuzzy_match import best_match
             match = best_match(title, author, year, papers, source="s2")
             if match:
                 prov_ref = provenance.store(ref_id, "semantic-scholar", s2_result)
                 result["provenance_refs"].append(prov_ref)
+                finish(s2_event, "selected", prov_ref)
                 result["resolved"] = True
                 result["confidence"] = "abstract-only verified" if match.get("abstract") else "metadata-only verified"
                 result["source_tier"] = "semantic-scholar"
@@ -805,26 +969,32 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
                 result["degraded_providers"] = ledger.degraded_providers() if ledger else []
                 return result
 
+        finish(s2_event, search_outcome(papers, incomplete, bool(match)))
+
         # OpenAlex search
         cache_key = f"openalex:search:{title}:{author}"
-        oa_result = cache.get(cache_key, ttl_seconds=_meta_ttl)
+        oa_result, oa_event = cached(cache_key, "openalex", _meta_ttl)
         if oa_result is None:
-            oa_result = search_openalex(title, author, ledger=ledger)
+            oa_result, oa_event = request("openalex", search_openalex,
+                                          title, author, ledger=ledger)
             works, incomplete = _search_view(oa_result, "openalex")
             if not incomplete:
-                cache.set(cache_key, oa_result, ttl=_meta_ttl)
+                cache.set(cache_key, oa_result, ttl=_meta_ttl,
+                          evidence_meta=cache_meta(oa_event))
             time.sleep(RATE_LIMIT_DELAY)
         else:
             works, incomplete = _search_view(oa_result, "openalex")
         if incomplete:
             not_checked.append("openalex")
 
+        match = None
         if works:
             from fuzzy_match import best_match
             match = best_match(title, author, year, works, source="openalex")
             if match:
                 prov_ref = provenance.store(ref_id, "openalex", oa_result)
                 result["provenance_refs"].append(prov_ref)
+                finish(oa_event, "selected", prov_ref)
                 result["resolved"] = True
                 result["confidence"] = "metadata-only verified"
                 result["source_tier"] = "openalex"
@@ -833,14 +1003,17 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
                 result["degraded_providers"] = ledger.degraded_providers() if ledger else []
                 return result
 
+        finish(oa_event, search_outcome(works, incomplete, bool(match)))
+
         # CORE search
         cache_key = f"core:search:{title}"
-        core_result = cache.get(cache_key, ttl_seconds=_meta_ttl)
+        core_result, core_event = cached(cache_key, "core", _meta_ttl)
         if core_result is None:
-            core_result = search_core(title, ledger=ledger)
+            core_result, core_event = request("core", search_core, title, ledger=ledger)
             hits, incomplete = _search_view(core_result, "core")
             if not incomplete:
-                cache.set(cache_key, core_result, ttl=_meta_ttl)
+                cache.set(cache_key, core_result, ttl=_meta_ttl,
+                          evidence_meta=cache_meta(core_event))
             time.sleep(RATE_LIMIT_DELAY)
         else:
             hits, incomplete = _search_view(core_result, "core")
@@ -850,6 +1023,7 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
         if hits:
             prov_ref = provenance.store(ref_id, "core", core_result)
             result["provenance_refs"].append(prov_ref)
+            finish(core_event, "selected", prov_ref)
             result["resolved"] = True
             result["confidence"] = "abstract-only verified" if hits[0].get("abstract") else "metadata-only verified"
             result["source_tier"] = "core"
@@ -862,6 +1036,8 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
             result["degraded_providers"] = ledger.degraded_providers() if ledger else []
             return result
 
+        finish(core_event, search_outcome(hits, incomplete))
+
     # --- Tier 4: URL check + Wayback ---
     if url:
         # URL liveness is not budget/breaker-gated (it is not one of the seven
@@ -871,6 +1047,20 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
         result["url_check"] = url_status
         prov_ref = provenance.store(ref_id, "url-check", url_status)
         result["provenance_refs"].append(prov_ref)
+        if provenance.record_responses:
+            safe_error = url_status.get("_error")
+            if safe_error not in {"invalid-url", "http-incomplete", "transport-error"}:
+                safe_error = "probe-error" if safe_error else None
+            probe_status = url_status.get("status")
+            probe_method = url_status.get("method")
+            provenance._record_response(
+                ref_id, "url-check", kind="url_probe",
+                outcome={"live": "probe_live", "not-found": "probe_dead"}.get(
+                    url_status["check_status"], "probe_incomplete"),
+                origin="local", category=safe_error,
+                details={"method": probe_method if probe_method in {"HEAD", "GET"} else None,
+                         "status": probe_status if type(probe_status) is int else None,
+                         "prov_ref": prov_ref})
         if url_status["check_status"] == "not-checked":
             not_checked.append("url-check")
         if url_status["check_status"] == "live":
@@ -884,24 +1074,33 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
         elif url_status["wayback_allowed"]:
             # Try Wayback
             cache_key = f"wayback:{url}"
-            wb_result = cache.get(cache_key, ttl_seconds=_wb_ttl)
+            wb_result, wb_event = cached(cache_key, "wayback", _wb_ttl)
             if wb_result is not None and _wayback_snapshot(wb_result)[0] == "invalid":
+                finish(wb_event, "invalid")
                 wb_result = None  # A legacy malformed cache entry is no negative fact.
             if wb_result is None:
-                wb_result = check_wayback(url, ledger=ledger)
+                wb_result, wb_event = request("wayback", check_wayback,
+                                              url, ledger=ledger)
                 if _unanswered(wb_result):
                     not_checked.append("wayback")  # skip OR error → NOT-CHECKED; don't cache
-                elif _wayback_snapshot(wb_result)[0] == "invalid":
+                elif not is_admitted_json(wb_result) or _wayback_snapshot(wb_result)[0] == "invalid":
                     wb_result = {"_error": "invalid-wayback-response"}
                     not_checked.append("wayback")
                 else:
-                    cache.set(cache_key, wb_result, ttl=_wb_ttl)
+                    cache.set(cache_key, wb_result, ttl=_wb_ttl,
+                              evidence_meta=cache_meta(wb_event))
                 time.sleep(RATE_LIMIT_DELAY)
+            elif not is_admitted_json(wb_result):
+                # A newly detected invalid extra field cannot add a refetch.
+                wb_result = {"_error": "invalid-wayback-response"}
+                not_checked.append("wayback")
             # A skip is not a network retrieval, but recording its sentinel
             # still explains why this resolution path was incomplete.
             provenance_ref = provenance.store(ref_id, "wayback", wb_result)
             result["provenance_refs"].append(provenance_ref)
             availability, snapshot_url = _wayback_snapshot(wb_result)
+            finish(wb_event, "selected" if availability == "available" else
+                   "empty" if availability == "absent" else "invalid", provenance_ref)
             if availability == "invalid" and "wayback" not in not_checked:
                 not_checked.append("wayback")
             if availability == "available":
@@ -924,8 +1123,19 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
     return result
 
 
+def _evidence_destination_aliases(path: str, destination: str) -> bool:
+    left, right = Path(path), Path(destination)
+    if left.resolve(strict=False) == right.resolve(strict=False):
+        return True
+    try:
+        return os.path.samefile(left, right)
+    except OSError:
+        return False
+
+
 def resolve_batch(citations: list[dict], output_path: str | None = None,
-                  *, strict: bool = False, sidecar_dir: str | None = None) -> dict:
+                  *, strict: bool = False, sidecar_dir: str | None = None,
+                  response_evidence_path: str | None = None) -> dict:
     """Resolve a batch of citations. Returns the batch `output` dict.
 
     A per-run ReliabilityLedger (per-provider budget + circuit breaker) is
@@ -949,16 +1159,26 @@ def resolve_batch(citations: list[dict], output_path: str | None = None,
     deterministic `Citation_Reliability.json` sidecar into that directory. Opt-in
     and additive — it does not alter `output` or the in-`output` reliability
     block."""
+    ledger_on = reliability_enabled()
+    if response_evidence_path is not None:
+        destinations = [output_path] if output_path else []
+        if sidecar_dir is not None and ledger_on:
+            destinations.append(str(Path(sidecar_dir) / "Citation_Reliability.json"))
+        if any(_evidence_destination_aliases(response_evidence_path, destination)
+               for destination in destinations):
+            raise ValueError("response evidence destination aliases another output")
     cache = ResponseCache(_default_cache_dir())
-    provenance = ProvenanceStore()
-    ledger = ReliabilityLedger() if reliability_enabled() else None
+    provenance = ProvenanceStore(record_responses=response_evidence_path is not None)
+    ledger = ReliabilityLedger() if ledger_on else None
     results = []
 
     for i, citation in enumerate(citations):
+        provenance._citation_index = i if response_evidence_path is not None else None
         print(f"Resolving {i+1}/{len(citations)}: {citation.get('title', citation.get('doi', citation.get('url', '?')))[:60]}...",
               file=sys.stderr)
         result = resolve_citation(citation, cache, provenance, ledger=ledger)
         results.append(result)
+    provenance._citation_index = None
 
     summary = {
         "total": len(results),
@@ -1001,6 +1221,9 @@ def resolve_batch(citations: list[dict], output_path: str | None = None,
         output["reliability"] = snapshot
         if decision["halt"]:
             print(f"[api_reliability] {decision['reason']}", file=sys.stderr)
+
+    if response_evidence_path is not None:
+        provenance.save_response_evidence(response_evidence_path)
 
     if output_path:
         Path(output_path).write_text(json.dumps(output, indent=2, default=str))
