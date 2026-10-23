@@ -1,4 +1,9 @@
-"""Offline Crossref update-direction regressions for standalone and DOI resolution."""
+"""Offline Crossref update-direction regressions for standalone and DOI resolution.
+
+Fixtures are Crossref API responses captured 2026-10-22 from
+https://api.crossref.org/works/10.1016%2FS0140-6736%2897%2911096-0 (the article)
+and https://api.crossref.org/works/10.1016%2FS0140-6736%2810%2960175-4 (its notice).
+"""
 
 import json
 import sys
@@ -85,6 +90,43 @@ class RetractionDirectionTests(unittest.TestCase):
                           self.standalone(doi, base)["corrected"]), (False, False))
         base["message"]["updated-by"] = [{"DOI": "10.1234/notice", "type": "unknown"}]
         self.assertIsNone(self.standalone(doi, base)["retracted"])
+
+    def test_self_updates_survive_incoming_uncertainty_without_mutating_evidence(self):
+        doi = "10.1234/synthetic"
+        for kind, positive, other in (("retraction", "retracted", "corrected"),
+                                      ("correction", "corrected", "retracted")):
+            for incoming in ([], None, "malformed", [None]):
+                with self.subTest(kind=kind, incoming=incoming):
+                    response = {"message": {"DOI": doi, "title": ["Synthetic work"],
+                        "updated-by": incoming,
+                        "update-to": [{"DOI": " 10.1234/SYNTHETIC ", "type": kind}]}}
+                    before = json.dumps(response, sort_keys=True)
+                    standalone = self.standalone(doi, response)
+                    result, _, calls = self.pipeline(doi, response)
+                    for health in (standalone, result):
+                        self.assertIs(health[positive], True)
+                        self.assertIs(health.get(other, False),
+                                      False if incoming in ([], None) else None)
+                        self.assertEqual(health["update_to"], response["message"]["update-to"])
+                    self.assertEqual(calls, 1)
+                    self.assertEqual(json.dumps(response, sort_keys=True), before)
+        for target in ("10.1234/another-work", "", " ", None, 7):
+            response = {"message": {"DOI": doi, "update-to": [
+                {"DOI": target, "type": "retraction"}]}}
+            self.assertIsNot(self.standalone(doi, response)["retracted"], True)
+
+    def test_cached_self_update_and_incoming_correction_both_survive(self):
+        doi = "10.1234/synthetic"
+        response = {"message": {"DOI": doi, "title": ["Synthetic work"],
+            "updated-by": [{"DOI": "10.1234/notice", "type": "correction"}, None],
+            "update-to": [{"DOI": doi, "type": "retraction"}]}}
+        with tempfile.TemporaryDirectory() as tmp:
+            cache = ResponseCache(tmp)
+            cache.set(f"crossref:doi:{doi}", response)
+            result, _, calls = self.pipeline(doi, None, cache)
+        self.assertEqual(calls, 0)
+        self.assertIs(result["retracted"], True)
+        self.assertIs(result["corrected"], True)
 
     def test_invalid_metadata_remains_unknown_and_does_not_crash(self):
         doi = "10.1234/synthetic"

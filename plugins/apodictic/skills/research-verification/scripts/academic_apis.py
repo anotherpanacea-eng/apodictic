@@ -162,82 +162,28 @@ def _valid_probe_url(url) -> bool:
         return False
 
 
-class _ProbeRedirectError(Exception):
-    def __init__(self, code: str):
-        self.code = code
-
-
-class _ProbeRedirectHandler(urllib.request.HTTPRedirectHandler):
-    """Preserve the probe method and reject unsafe syntax before each redirect."""
-
-    def __init__(self, original: str):
-        self.seen = {original}
-        self.hops = 0
-        self.final_url = original
-
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
-        if not isinstance(newurl, str) or any(ord(c) < 32 or ord(c) == 127 for c in newurl):
-            raise _ProbeRedirectError("invalid-redirect")
-        target = urllib.parse.urljoin(req.full_url, newurl)
-        if not _valid_probe_url(target):
-            raise _ProbeRedirectError("invalid-redirect")
-        if target in self.seen:
-            raise _ProbeRedirectError("redirect-loop")
-        if self.hops >= 5:
-            raise _ProbeRedirectError("redirect-limit")
-        self.hops += 1
-        self.seen.add(target)
-        self.final_url = target
-        return urllib.request.Request(target, method=req.get_method(),
-                                      headers={"User-Agent": "APODICTIC/1.0"})
-
-    def http_error_302(self, req, fp, code, msg, headers):
-        # urllib's default handler drains fp.read() before following a redirect.
-        # Even a liveness check must never consume source/redirect body bytes.
-        location = headers.get("Location") or headers.get("URI")
-        try:
-            if not location:
-                raise _ProbeRedirectError("redirect-missing-location")
-            next_req = self.redirect_request(req, fp, code, msg, headers, location)
-        finally:
-            fp.close()
-        return self.parent.open(next_req, timeout=req.timeout)
-
-    http_error_301 = http_error_303 = http_error_307 = http_error_308 = http_error_302
-
-
 def _probe_url_leg(url: str, method: str, timeout: int) -> dict:
-    redirect = _ProbeRedirectHandler(url)
+    """One liveness request; urllib follows and bounds redirects."""
+    req = urllib.request.Request(url, method=method, headers={"User-Agent": "APODICTIC/1.0"})
     try:
-        opener = urllib.request.build_opener(redirect)
-        req = urllib.request.Request(url, method=method,
-                                     headers={"User-Agent": "APODICTIC/1.0"})
-        with opener.open(req, timeout=timeout) as response:
-            return {"method": method, "status": response.status,
-                    "final_url": response.geturl(), "redirects": redirect.hops}
+        with urllib.request.build_opener().open(req, timeout=timeout) as response:
+            return {"method": method, "status": response.status, "final_url": response.geturl()}
     except urllib.error.HTTPError as exc:
-        try:
-            return {"method": method, "status": exc.code,
-                    "final_url": redirect.final_url, "redirects": redirect.hops}
-        finally:
-            exc.close()
-    except _ProbeRedirectError as exc:
-        return {"method": method, "status": None, "final_url": redirect.final_url,
-                "redirects": redirect.hops, "error_code": exc.code}
-    except (urllib.error.URLError, TimeoutError, OSError, ValueError,
-            http.client.HTTPException):
-        return {"method": method, "status": None, "final_url": redirect.final_url,
-                "redirects": redirect.hops, "error_code": "transport-error"}
+        exc.close()
+        return {"method": method, "status": exc.code, "final_url": exc.geturl()}
+    except (OSError, ValueError, http.client.HTTPException):
+        return {"method": method, "status": None, "final_url": None,
+                "error_code": "transport-error"}
 
 
 def _check_url(url: str, timeout: int = 10) -> dict:
-    """Bounded URL liveness only: HEAD, then GET after HEAD 403/405."""
+    """Bounded URL liveness only: HEAD, then GET after HEAD 403/405/501."""
     if not _valid_probe_url(url):
         return {"url": url, "status": None, "live": False, "check_status": "not-checked",
                 "method": None, "attempts": [], "final_url": None,
                 "wayback_allowed": False, "_error": "invalid-url"}
     attempts = [_probe_url_leg(url, "HEAD", timeout)]
-    if attempts[0]["status"] in {403, 405} and "error_code" not in attempts[0]:
+    if attempts[0]["status"] in {403, 405, 501} and "error_code" not in attempts[0]:
         attempts.append(_probe_url_leg(url, "GET", timeout))
     terminal = attempts[-1]
     status = terminal["status"]
@@ -382,26 +328,32 @@ def _crossref_message(response, doi: str) -> dict | None:
 
 
 def _crossref_update_health(message: dict) -> dict:
-    """`updated-by` concerns this work; `update-to` concerns a notice's target."""
+    """Incoming notices and same-DOI in-situ updates concern this work."""
     incoming = message.get("updated-by")
     outgoing = message.get("update-to")
     incoming = [] if incoming is None else incoming
     outgoing = [] if outgoing is None else outgoing
     uncertain = not isinstance(incoming, list)
     kinds = set()
-    if isinstance(incoming, list):
-        for relation in incoming:
-            if (not isinstance(relation, dict)
-                    or not isinstance(relation.get("type"), str)
-                    or not relation["type"].strip()
-                    or not isinstance(relation.get("DOI"), str)
-                    or not relation["DOI"].strip()):
-                uncertain = True
-                continue
-            kind = relation["type"].strip().casefold()
-            if kind not in ("retraction", "correction", "erratum"):
-                uncertain = True
-            kinds.add(kind)
+    relations = list(incoming) if isinstance(incoming, list) else []
+    own_doi = message.get("DOI")
+    if isinstance(own_doi, str) and own_doi.strip() and isinstance(outgoing, list):
+        relations.extend(relation for relation in outgoing
+                         if isinstance(relation, dict)
+                         and isinstance(relation.get("DOI"), str)
+                         and relation["DOI"].strip().casefold() == own_doi.strip().casefold())
+    for relation in relations:
+        if (not isinstance(relation, dict)
+                or not isinstance(relation.get("type"), str)
+                or not relation["type"].strip()
+                or not isinstance(relation.get("DOI"), str)
+                or not relation["DOI"].strip()):
+            uncertain = True
+            continue
+        kind = relation["type"].strip().casefold()
+        if kind not in ("retraction", "correction", "erratum"):
+            uncertain = True
+        kinds.add(kind)
     return {
         "retracted": True if "retraction" in kinds else None if uncertain else False,
         "corrected": True if kinds.intersection(("correction", "erratum")) else None if uncertain else False,
@@ -447,23 +399,6 @@ def _unanswered(resp) -> bool:
     either skipped before the call (degraded) or errored after retries. Both
     mean the tier is NOT-CHECKED for this citation, never NOT-FOUND."""
     return _is_skipped(resp) or _is_error(resp)
-
-
-class _ResolutionLedger(ReliabilityLedger):
-    """Keep the existing index ledger honest about URL-origin incompletes."""
-
-    unresolved_not_checked = 0
-
-    def snapshot(self) -> dict:
-        result = super().snapshot()
-        if self.unresolved_not_checked and result["coverage"]["clean"]:
-            result["coverage"]["note"] = (
-                "Index providers not degraded; "
-                f"{self.unresolved_not_checked} citation(s) NOT-CHECKED on an "
-                "incomplete resolution path. Clean index coverage does not "
-                "establish URL or archive completeness."
-            )
-        return result
 
 
 def resolve_citation(citation: dict, cache: ResponseCache, provenance: ProvenanceStore,
@@ -783,7 +718,7 @@ def resolve_batch(citations: list[dict], output_path: str | None = None,
     block."""
     cache = ResponseCache(_default_cache_dir())
     provenance = ProvenanceStore()
-    ledger = _ResolutionLedger() if reliability_enabled() else None
+    ledger = ReliabilityLedger() if reliability_enabled() else None
     results = []
 
     for i, citation in enumerate(citations):
@@ -804,8 +739,6 @@ def resolve_batch(citations: list[dict], output_path: str | None = None,
         "not_checked": sum(1 for r in results if r.get("resolution_status") == "not-checked"),
         "not_found": sum(1 for r in results if r.get("resolution_status") == "not-found"),
     }
-    if ledger is not None:
-        ledger.unresolved_not_checked = summary["not_checked"]
 
     output = {
         "summary": summary,

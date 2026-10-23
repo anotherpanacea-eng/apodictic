@@ -155,14 +155,15 @@ additive and never altering a pre-existing value, so the legacy result/summary
 keys are unchanged.
 
 Direct URL liveness remains run-local and uncached. Its `url_check` result
-records a bounded HEAD check and, only after HEAD 403/405, one bounded GET
-liveness fallback; neither reads or verifies source text. `not_checked_providers`
+records a bounded HEAD check and, only after HEAD 403/405/501, one bounded GET
+liveness fallback; neither verifies source text. `not_checked_providers`
 may include `url-check` even when index `coverage` is CLEAN. Wayback's valid
 empty `archived_snapshots` and explicit `closest.available:false` are negative;
 missing or malformed availability metadata is incomplete and is not cached as
 absence. A valid archive locator can still resolve after a failed direct check.
-The URL syntax gate rejects invalid/non-HTTP(S)/credentialed input and redirect
-targets; it is not a DNS, localhost, private-address or SSRF policy.
+The URL syntax gate rejects invalid/non-HTTP(S)/credentialed input; urllib
+follows and bounds redirects. It is not a DNS, localhost, private-address or
+SSRF policy.
 
 ### 4.4 Prose contract (LLM-facing)
 
