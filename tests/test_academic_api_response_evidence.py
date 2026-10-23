@@ -244,7 +244,7 @@ class ResponseEvidenceTests(unittest.TestCase):
         dead_probe = {"url": "https://example.org/x", "status": 404, "live": False,
                       "check_status": "not-found", "method": "HEAD",
                       "attempts": [{"method": "HEAD", "status": 404,
-                                    "final_url": "https://example.org/x", "redirects": 0}],
+                                    "final_url": "https://example.org/x"}],
                       "final_url": "https://example.org/x", "wayback_allowed": True}
         cache = ResponseCache()
         cache.set("wayback:https://example.org/x", {"archived_snapshots": None})
@@ -604,12 +604,12 @@ class ResponseEvidenceTests(unittest.TestCase):
                          ("old evidence", "old result"))
 
         source.write_text(json.dumps([{"ref_id": "r", "doi": DOI}]))
-        ledger = api._ResolutionLedger(budget=ProviderBudget({"crossref": 0}))
+        ledger = api.ReliabilityLedger(budget=ProviderBudget({"crossref": 0}))
         with patch.object(sys, "argv", ["academic_apis.py", "batch", "--input", str(source),
                                         "--output", str(result), "--strict",
                                         "--response-evidence", str(evidence)]), \
              patch.object(api, "reliability_enabled", return_value=True), \
-             patch.object(api, "_ResolutionLedger", return_value=ledger), \
+             patch.object(api, "ReliabilityLedger", return_value=ledger), \
              patch.object(api, "_default_cache_dir",
                           return_value=str(Path(self.tmp.name) / "strict-cache")), \
              patch.object(api, "_fetch_json_network",
