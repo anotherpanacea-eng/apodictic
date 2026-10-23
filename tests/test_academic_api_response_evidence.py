@@ -243,7 +243,7 @@ class ResponseEvidenceTests(unittest.TestCase):
         dead_probe = {"url": "https://example.org/x", "status": 404, "live": False,
                       "check_status": "not-found", "method": "HEAD",
                       "attempts": [{"method": "HEAD", "status": 404,
-                                    "final_url": "https://example.org/x", "redirects": 0}],
+                                    "final_url": "https://example.org/x"}],
                       "final_url": "https://example.org/x", "wayback_allowed": True}
         cache = ResponseCache()
         cache.set("wayback:https://example.org/x", {"archived_snapshots": None})

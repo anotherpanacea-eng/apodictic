@@ -197,72 +197,18 @@ def _valid_probe_url(url) -> bool:
         return False
 
 
-class _ProbeRedirectError(Exception):
-    def __init__(self, code: str):
-        self.code = code
-
-
-class _ProbeRedirectHandler(urllib.request.HTTPRedirectHandler):
-    """Preserve the probe method and reject unsafe syntax before each redirect."""
-
-    def __init__(self, original: str):
-        self.seen = {original}
-        self.hops = 0
-        self.final_url = original
-
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
-        if not isinstance(newurl, str) or any(ord(c) < 32 or ord(c) == 127 for c in newurl):
-            raise _ProbeRedirectError("invalid-redirect")
-        target = urllib.parse.urljoin(req.full_url, newurl)
-        if not _valid_probe_url(target):
-            raise _ProbeRedirectError("invalid-redirect")
-        if target in self.seen:
-            raise _ProbeRedirectError("redirect-loop")
-        if self.hops >= 5:
-            raise _ProbeRedirectError("redirect-limit")
-        self.hops += 1
-        self.seen.add(target)
-        self.final_url = target
-        return urllib.request.Request(target, method=req.get_method(),
-                                      headers={"User-Agent": "APODICTIC/1.0"})
-
-    def http_error_302(self, req, fp, code, msg, headers):
-        # urllib's default handler drains fp.read() before following a redirect.
-        # Even a liveness check must never consume source/redirect body bytes.
-        location = headers.get("Location") or headers.get("URI")
-        try:
-            if not location:
-                raise _ProbeRedirectError("redirect-missing-location")
-            next_req = self.redirect_request(req, fp, code, msg, headers, location)
-        finally:
-            fp.close()
-        return self.parent.open(next_req, timeout=req.timeout)
-
-    http_error_301 = http_error_303 = http_error_307 = http_error_308 = http_error_302
-
-
 def _probe_url_leg(url: str, method: str, timeout: int) -> dict:
-    redirect = _ProbeRedirectHandler(url)
+    """One liveness request; urllib follows and bounds redirects."""
+    req = urllib.request.Request(url, method=method, headers={"User-Agent": "APODICTIC/1.0"})
     try:
-        opener = urllib.request.build_opener(redirect)
-        req = urllib.request.Request(url, method=method,
-                                     headers={"User-Agent": "APODICTIC/1.0"})
-        with opener.open(req, timeout=timeout) as response:
-            return {"method": method, "status": response.status,
-                    "final_url": response.geturl(), "redirects": redirect.hops}
+        with urllib.request.build_opener().open(req, timeout=timeout) as response:
+            return {"method": method, "status": response.status, "final_url": response.geturl()}
     except urllib.error.HTTPError as exc:
-        try:
-            return {"method": method, "status": exc.code,
-                    "final_url": redirect.final_url, "redirects": redirect.hops}
-        finally:
-            exc.close()
-    except _ProbeRedirectError as exc:
-        return {"method": method, "status": None, "final_url": redirect.final_url,
-                "redirects": redirect.hops, "error_code": exc.code}
-    except (urllib.error.URLError, TimeoutError, OSError, ValueError,
-            http.client.HTTPException):
-        return {"method": method, "status": None, "final_url": redirect.final_url,
-                "redirects": redirect.hops, "error_code": "transport-error"}
+        exc.close()
+        return {"method": method, "status": exc.code, "final_url": exc.geturl()}
+    except (OSError, ValueError, http.client.HTTPException):
+        return {"method": method, "status": None, "final_url": None,
+                "error_code": "transport-error"}
 
 
 def _check_url(url: str, timeout: int = 10) -> dict:
@@ -734,23 +680,6 @@ def _crossref_doi_metadata(message: dict, doi: str) -> dict:
     }
 
 
-class _ResolutionLedger(ReliabilityLedger):
-    """Keep the existing index ledger honest about URL-origin incompletes."""
-
-    unresolved_not_checked = 0
-
-    def snapshot(self) -> dict:
-        result = super().snapshot()
-        if self.unresolved_not_checked and result["coverage"]["clean"]:
-            result["coverage"]["note"] = (
-                "Index providers not degraded; "
-                f"{self.unresolved_not_checked} citation(s) NOT-CHECKED on an "
-                "incomplete resolution path. Clean index coverage does not "
-                "establish URL or archive completeness."
-            )
-        return result
-
-
 def resolve_citation(citation: dict, cache: ResponseCache, provenance: ProvenanceStore,
                      ledger: "ReliabilityLedger | None" = None) -> dict:
     """
@@ -1119,15 +1048,11 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
         prov_ref = provenance.store(ref_id, "url-check", url_status)
         result["provenance_refs"].append(prov_ref)
         if provenance.record_responses:
-            terminal_probe = url_status["attempts"][-1] if url_status["attempts"] else {}
             safe_error = url_status.get("_error")
-            if safe_error not in {"invalid-url", "http-incomplete", "transport-error",
-                                  "invalid-redirect", "redirect-loop", "redirect-limit",
-                                  "redirect-missing-location"}:
+            if safe_error not in {"invalid-url", "http-incomplete", "transport-error"}:
                 safe_error = "probe-error" if safe_error else None
             probe_status = url_status.get("status")
             probe_method = url_status.get("method")
-            redirects = terminal_probe.get("redirects", 0)
             provenance._record_response(
                 ref_id, "url-check", kind="url_probe",
                 outcome={"live": "probe_live", "not-found": "probe_dead"}.get(
@@ -1135,7 +1060,6 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
                 origin="local", category=safe_error,
                 details={"method": probe_method if probe_method in {"HEAD", "GET"} else None,
                          "status": probe_status if type(probe_status) is int else None,
-                         "redirects": redirects if type(redirects) is int and redirects >= 0 else 0,
                          "prov_ref": prov_ref})
         if url_status["check_status"] == "not-checked":
             not_checked.append("url-check")
@@ -1245,7 +1169,7 @@ def resolve_batch(citations: list[dict], output_path: str | None = None,
             raise ValueError("response evidence destination aliases another output")
     cache = ResponseCache(_default_cache_dir())
     provenance = ProvenanceStore(record_responses=response_evidence_path is not None)
-    ledger = _ResolutionLedger() if ledger_on else None
+    ledger = ReliabilityLedger() if ledger_on else None
     results = []
 
     for i, citation in enumerate(citations):
@@ -1268,8 +1192,6 @@ def resolve_batch(citations: list[dict], output_path: str | None = None,
         "not_checked": sum(1 for r in results if r.get("resolution_status") == "not-checked"),
         "not_found": sum(1 for r in results if r.get("resolution_status") == "not-found"),
     }
-    if ledger is not None:
-        ledger.unresolved_not_checked = summary["not_checked"]
 
     output = {
         "summary": summary,
