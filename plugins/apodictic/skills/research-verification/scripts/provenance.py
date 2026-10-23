@@ -83,35 +83,46 @@ def _summarize(response: dict) -> str:
         return f"ERROR: {response['_error']}"
 
     # CrossRef
-    if "message" in response and "DOI" in response.get("message", {}):
+    if isinstance(response.get("message"), dict) and "DOI" in response["message"]:
         msg = response["message"]
-        title = msg.get("title", [""])[0] if isinstance(msg.get("title"), list) else msg.get("title", "")
-        return f"CrossRef: {title[:80]}"
+        title = msg.get("title")
+        if isinstance(title, list):
+            title = title[0] if title and isinstance(title[0], str) else ""
+        if isinstance(title, str) and title:
+            return f"CrossRef: {title[:80]}"
+        return "CrossRef: title unavailable"
 
     # Semantic Scholar
     if "data" in response:
         items = response["data"]
-        if items and isinstance(items, list):
-            return f"S2: {len(items)} results, first: {items[0].get('title', '')[:60]}"
+        if isinstance(items, list):
+            if items and isinstance(items[0], dict) and isinstance(items[0].get("title"), str):
+                return f"S2: {len(items)} results, first: {items[0]['title'][:60]}"
+            return f"S2: {len(items)} results"
 
     # OpenAlex
-    if "results" in response and "meta" in response:
+    if isinstance(response.get("results"), list) and "meta" in response:
         results = response["results"]
-        count = response.get("meta", {}).get("count", len(results))
+        meta = response.get("meta")
+        count = meta.get("count", len(results)) if isinstance(meta, dict) else len(results)
+        if type(count) is not int or count < 0:
+            count = len(results)
         return f"OpenAlex: {count} results"
 
     # Wayback
     if "archived_snapshots" in response:
-        closest = response.get("archived_snapshots", {}).get("closest", {})
-        if closest.get("available"):
+        snapshots = response.get("archived_snapshots")
+        closest = snapshots.get("closest", {}) if isinstance(snapshots, dict) else {}
+        if isinstance(closest, dict) and closest.get("available"):
             return f"Wayback: available, {closest.get('timestamp', '')}"
         return "Wayback: no snapshot"
 
     # Unpaywall
     if "best_oa_location" in response:
         oa = response.get("best_oa_location", {})
-        if oa:
-            return f"Unpaywall: OA at {oa.get('url_for_pdf', 'no PDF')[:60]}"
+        if isinstance(oa, dict) and oa:
+            pdf = oa.get("url_for_pdf")
+            return f"Unpaywall: OA at {pdf[:60]}" if isinstance(pdf, str) and pdf else "Unpaywall: no PDF"
         return "Unpaywall: no OA"
 
     # Generic
