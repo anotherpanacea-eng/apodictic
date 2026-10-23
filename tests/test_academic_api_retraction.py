@@ -1,4 +1,9 @@
-"""Offline Crossref update-direction regressions for standalone and DOI resolution."""
+"""Offline Crossref update-direction regressions for standalone and DOI resolution.
+
+Fixtures are Crossref API responses captured 2026-10-22 from
+https://api.crossref.org/works/10.1016%2FS0140-6736%2897%2911096-0 (the article)
+and https://api.crossref.org/works/10.1016%2FS0140-6736%2810%2960175-4 (its notice).
+"""
 
 import json
 import sys
