@@ -353,14 +353,14 @@ Phase 1 + Phase 2 combined:
 
 | Level | Meaning | When it applies |
 |---|---|---|
-| `full-text verified` | Read the actual source content | OA PDF retrieved, URL fetched, or full text available |
-| `abstract-only verified` | Checked against abstract | Source exists, metadata matches, but full text behind paywall |
-| `metadata-only verified` | Confirmed existence and metadata | Source resolves in API but no content accessible |
-| `unretrievable` | Cannot access source at any tier | Dead link, no API match, insufficient metadata |
+| `full-text verified` | Actual source content was acquired and read | A separate content-read step records the text and its provenance; Phase 1 resolution alone cannot earn this tier |
+| `abstract-only verified` | Checked against a read abstract | Source content beyond the abstract was not read |
+| `metadata-only verified` | Metadata or locator evidence only | API metadata match, OA PDF link, direct URL liveness, or Wayback availability; a locator alone does not establish bibliographic identity or source arguments |
+| `unretrievable` | No completed source resolution | A not-found or not-checked path, distinguished by `resolution_status` |
 
 When the verifier cannot get enough source access, it says so explicitly. It does not bluff verification.
 
-**Provider reliability — NOT-FOUND vs. NOT-CHECKED (research-reliability-layer).** An `unretrievable` confidence is not all one thing. `academic_apis.py` already classifies this per result: each result carries an authoritative **`resolution_status ∈ {resolved, not-found, not-checked}`** (with a `not_checked_providers` list naming the skipped indices for that citation), and the batch carries a per-run `reliability` block (`coverage.degraded_providers`, per-provider circuit/budget state). The machine sets `resolution_status = "not-checked"` **only** when a provider that was actually on *this* citation's resolution path was cut short (circuit opened, budget exhausted, error rate > 50%) — the source is **NOT-CHECKED** (we couldn't look), not **NOT-FOUND** (we looked and it isn't there). **Read each result's own `resolution_status`/`not_checked_providers` and report NOT-CHECKED iff that result's `resolution_status == "not-checked"` — do *not* re-derive it from the run-level `coverage.degraded_providers` set.** A provider can be run-level degraded yet never have been on a given citation's path (e.g. Wayback degraded while a title-only citation never reaches the URL tier); that citation is a genuine `not-found`, and over-reporting it as NOT-CHECKED would understate a real CV1/CV2 candidate. The run-level `coverage.degraded_providers` set drives the **Source coverage** line and blind-spot routing (below), not the per-citation verdict. This is a one-directional honesty rule: degradation can only *downgrade* certainty (NOT-FOUND → disclosed NOT-CHECKED), never upgrade a verdict. A genuine NOT-FOUND (`resolution_status == "not-found"`) is still a real CV1/CV2 candidate; a NOT-CHECKED is not — it is a coverage gap to disclose.
+**Resolution completeness — NOT-FOUND vs. NOT-CHECKED (research-reliability-layer).** An `unretrievable` confidence is not all one thing. `academic_apis.py` classifies each result with **`resolution_status ∈ {resolved, not-found, not-checked}`** and names incomplete paths in `not_checked_providers`. A provider error/skip, an incomplete direct-URL check (`url-check`), or unusable Wayback availability metadata can make the citation **NOT-CHECKED** (we could not finish looking), not **NOT-FOUND**. **Read each result's own `resolution_status`/`not_checked_providers`; never derive its verdict from run-level `coverage.degraded_providers`.** That run-level set describes index-provider coverage only. It can be CLEAN while a particular URL remains NOT-CHECKED, or DEGRADED because of a provider never used on a given citation's path. The strict halt uses only unresolved incompletes actually blocked by a degraded index provider; its causal count is narrower than the public batch `summary.not_checked`, which includes URL-only failures. A completed direct 404/410 plus a valid negative Wayback availability response can support observed locator absence, subject to earlier incomplete paths; it is not proof that the cited work does not exist. A genuine NOT-FOUND is a CV1/CV2 candidate; a NOT-CHECKED is a coverage gap to disclose.
 
 ---
 
@@ -545,7 +545,7 @@ When comparing manuscript hedging to source hedging, flag any mismatch in either
 3. If three or more central citations fail in one corridor, escalate from spot-check findings to **CV12** cluster warning. The argument has a structural evidence problem.
 4. If source access is blocked or paywalled, say so explicitly. Record as `metadata-only verified` or `unretrievable`. Do not bluff verification.
 5. Never upgrade a citation verdict based on the author's stated intentions. Verify what is on the page.
-6. **Degraded coverage is a disclosable blind spot (research-reliability-layer).** A DEGRADED `Source coverage` state (one or more providers in `reliability.coverage.degraded_providers`) on a high-stakes / Pre-DE-Prerequisite run is itself a blind spot. Route it to `run-synthesis.md` § 3 Blind Spot / Absence Inventory ("citation provenance not fully verified — {provider} degraded; the {N} not-checked citations are a coverage gap, not confirmed absences"), exactly as a declined Citation Verifier routes. The `{N} not-checked citations` is the count of results whose own `resolution_status == "not-checked"` — **not** the count of all citations on a degraded run (a degraded provider may never have been on a given citation's path, leaving it a genuine `not-found`). Do not let the actually-not-checked citations be swallowed into the resolution rate as if they were searched and found absent.
+6. **Degraded coverage is a disclosable blind spot (research-reliability-layer).** A DEGRADED `Source coverage` state (one or more providers in `reliability.coverage.degraded_providers`) on a high-stakes / Pre-DE-Prerequisite run is itself a blind spot. Route it to `run-synthesis.md` § 3 Blind Spot / Absence Inventory ("citation provenance not fully verified — {provider} degraded; {N} citations not checked across incomplete index and URL paths"), exactly as a declined Citation Verifier routes. The public `{N} not-checked citations` is the count of results whose own `resolution_status == "not-checked"` — **not** the count of all citations on a degraded run and not necessarily the strict halt's narrower causal subset. Do not let actually-not-checked citations be swallowed into the resolution rate as if they were searched and found absent.
 
 ---
 
@@ -583,11 +583,12 @@ Resolved: {N}/{N}
   Metadata-only: {N}
   Unretrievable: {N}
     Not-found (looked, absent): {N}
-    Not-checked (provider degraded — coverage gap): {N}
+    Not-checked (incomplete index or URL/archive check): {N}
 Source coverage: CLEAN  |  DEGRADED — {provider} ({circuit open / budget exhausted / error rate > 50%})
-  When DEGRADED: any UNRETRIEVABLE verdict on a citation whose only candidate
-  index was a degraded provider is reported as NOT-CHECKED, not NOT-FOUND. The
-  not-checked count above is a coverage gap to disclose, not a CV1/CV2 finding.
+  An UNRETRIEVABLE citation with an incomplete index or URL/archive check is
+  NOT-CHECKED, not NOT-FOUND. The not-checked count above includes both kinds
+  of coverage gap, even when index Source coverage is CLEAN; it is not a
+  CV1/CV2 finding.
 Verdicts: {N} supported, {N} supported with caveat, {N} partial/overclaimed,
           {N} misrepresented, {N} unretrievable, {N} outdated, {N} needs expert review
 Flags fired: {list CV codes}
@@ -596,23 +597,27 @@ Flags fired: {list CV codes}
 {Ordered by severity. Only items hitting hard gates.}
 
 ## Flagged Citations
+The rows below are synthetic examples, not findings about real publications.
+"Pending content review" records an unfinished check, not a content-fit verdict.
 | Ref ID | Location | Claim | Citation | Type | Source Type | Confidence | Fit Verdict | Currency | Flags | Severity | Repair Note |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | §2, ¶3 | "23% of YRA cases..." | CJCC 2022 Report | statistic | institutional | full-text | SUPPORTED | current | — | — | — |
-| 2 | §4, ¶1 | "Schiraldi argues..." | Schiraldi 2021 | paraphrase | primary | abstract-only | PARTIAL | current | CV5 | Should-Fix | Source hedges more than manuscript suggests |
+| 1 | §2, ¶3 | "23% of cases..." | Example Agency Report | statistic | institutional | metadata-only | pending content review | current | — | — | Locator evidence alone cannot support the statistic |
+| 2 | §4, ¶1 | "The study proves a 40% reduction..." | Example Study | paraphrase | primary | full-text | PARTIAL / OVERCLAIMED | current | CV5, CV6 | Should-Fix | Preserve the source's uncertainty, measure and population |
 | ... | | | | | | | | | | | |
 
 ## Citation Detail (per flagged citation)
-For each citation with flags or non-SUPPORTED verdicts, include:
+For each citation with flags, an incomplete check, or a non-SUPPORTED or pending content verdict, include:
 
 ```
-### Ref 2: Schiraldi 2021
-Manuscript says source argues: "Schiraldi argues that community-based alternatives reduce recidivism by 40%"
-Source actually argues: "Our findings suggest community-based programs may contribute to modest reductions in rearrest rates (12-18%) in the studied jurisdictions"
-Gap: Certainty inflation (suggests → argues), precision inflation (modest → 40%), scope lift (studied jurisdictions → general)
+### Ref 2: Example Study (synthetic worked Phase 2 example)
+Manuscript says: "The study proves community programs reduce recidivism by 40%."
+Source says: "Our findings suggest these programs may reduce rearrest by 12–18% in the studied districts."
+Gap: Certainty inflation (suggest → prove), numeric inflation (12–18% → 40%), a changed outcome measure, and scope lift (studied districts → general).
+Fit verdict: PARTIAL / OVERCLAIMED
 Flags: CV5 (Paraphrase Inflation), CV6 (Scope Lift)
-Resolution: CrossRef DOI match → Unpaywall OA PDF → full-text verified
-Provenance: stored API response ref #2-CR, #2-UP
+Resolution: Crossref DOI match → Unpaywall OA PDF locator (Phase 1: metadata-only verified) → separate recorded Phase 2 source-content read → full-text verified
+Provenance: stored metadata responses #2-CR, #2-UP; separate source-content evidence #2-FT records the passage and its location used for this comparison.
+Access limit: Without #2-FT, this remains pending content review, like Ref 1; a locator alone earns neither full-text confidence nor a support verdict. The resolver does not perform the separate content read.
 ```
 
 ## Repair Queue

@@ -137,9 +137,13 @@ opened OR its budget exhausted OR `errors/calls > 0.5` with `calls >= 4`.
 ### 4.3 Per-result `resolution_status` and the batch `reliability` block
 
 Each result gains `resolution_status ∈ {resolved, not-found, not-checked}` and
-`degraded_providers`. `not-checked` iff a tier that could plausibly have resolved
-the citation was cut short by a degraded provider; `not-found` iff every healthy
-provider returned no match; `resolved` otherwise. The Firewall is
+`degraded_providers`. `not-checked` includes an incomplete direct-URL probe,
+an unusable Wayback availability response, or a provider path cut short by an
+error, budget or circuit; `not-found` requires completed negative checks on
+every relevant path; `resolved` means a permitted path found a source locator.
+For URL-only citations, a completed 404/410 plus a valid negative Wayback
+availability response can establish observed locator absence, not universal
+absence of the cited work. The Firewall is
 one-directional: `resolution_status` is never `"resolved"` on an unresolved
 result. `resolve_batch`'s `output` gains a top-level `reliability` key
 (`ledger.snapshot()`) next to `cache_stats`, and the `summary` gains
@@ -149,6 +153,17 @@ top-level `reliability` block is **omitted**; the additive per-result
 keys still appear (computed without a ledger — `degraded_providers` is then `[]`),
 additive and never altering a pre-existing value, so the legacy result/summary
 keys are unchanged.
+
+Direct URL liveness remains run-local and uncached. Its `url_check` result
+records a bounded HEAD check and, only after HEAD 403/405/501, one bounded GET
+liveness fallback; neither verifies source text. `not_checked_providers`
+may include `url-check` even when index `coverage` is CLEAN. Wayback's valid
+empty `archived_snapshots` and explicit `closest.available:false` are negative;
+missing or malformed availability metadata is incomplete and is not cached as
+absence. A valid archive locator can still resolve after a failed direct check.
+The URL syntax gate rejects invalid/non-HTTP(S)/credentialed input; urllib
+follows and bounds redirects. It is not a DNS, localhost, private-address or
+SSRF policy.
 
 ### 4.4 Prose contract (LLM-facing)
 
@@ -277,11 +292,15 @@ availability of the same module if/when it invokes the batch client.
   inventory, matching the field-recon decline path) — that default is UNCHANGED.
   A `--strict` opt-in now *also* HALTS a high-stakes run: `resolve_batch(...,
   strict=True)` (CLI `batch --strict`) evaluates `api_reliability.strict_halt_decision`
-  and, iff coverage is DEGRADED (≥1 degraded provider) **and** ≥1 citation ended
-  NOT-CHECKED, adds a `strict` sub-block to the `reliability` block
+  and, iff coverage is DEGRADED (≥1 degraded provider) **and** ≥1 unresolved
+  NOT-CHECKED citation was causally blocked by an actually degraded index
+  provider, adds a `strict` sub-block to the `reliability` block
   (`{enabled, halt: true, reason, degraded_providers, not_checked}`) and exits
   `STRICT_HALT_EXIT_CODE` (3) so the caller stops rather than emit a degraded
-  verdict as a clean not-found. The halt is **one-directional**: a clean run, a
+  verdict as a clean not-found. The public `summary.not_checked` still includes
+  all incomplete citations, including URL-only failures; the private strict
+  decision count is the causal index-provider subset. Thus URL-only failure
+  plus unrelated index degradation does not halt. The halt is **one-directional**: a clean run, a
   non-strict run, or a genuine all-healthy NOT-FOUND (NOT-FOUND ≠ NOT-CHECKED)
   never halts, and with `APODICTIC_RELIABILITY=off` there is no degradation signal
   so it can never fire. Non-strict output is byte-identical to before (no `strict`
