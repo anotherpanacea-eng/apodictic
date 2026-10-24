@@ -9,6 +9,7 @@ Learned from PhilLit's anti-hallucination architecture: provenance is
 enforced by audit trail, not by prompt instruction.
 """
 
+import copy
 import json
 import time
 from pathlib import Path
@@ -17,11 +18,17 @@ from pathlib import Path
 class ProvenanceStore:
     """Stores API response provenance for citation verification."""
 
-    def __init__(self):
+    def __init__(self, record_responses: bool = False):
         self.entries: list[dict] = []
         self._counter = 0
+        # Opt-in: keep the full parsed response for every tier the resolver
+        # reads, used or not, so an "unretrievable" claim traces to what each
+        # tier actually returned.
+        self.record_responses = record_responses
+        self.responses: list[dict] = []
 
-    def store(self, ref_id: str, source: str, response: dict) -> str:
+    def store(self, ref_id: str, source: str, response: dict, *,
+              outcome: str = "used") -> str:
         """
         Store an API response and return a provenance reference ID.
 
@@ -29,6 +36,7 @@ class ProvenanceStore:
             ref_id: The citation reference ID this response relates to
             source: The API source (e.g., "crossref", "semantic-scholar", "unpaywall")
             response: The raw API response
+            outcome: Outcome for the optional response evidence record
 
         Returns:
             A provenance reference string (e.g., "prov-3-crossref")
@@ -46,8 +54,34 @@ class ProvenanceStore:
             # Store a summary, not the full response (which may be large)
             "response_summary": _summarize(response),
         })
+        self.record(ref_id, source, response, outcome, prov_ref=prov_ref)
 
         return prov_ref
+
+    def record(self, ref_id: str, source: str, response, outcome: str,
+               prov_ref: str | None = None) -> None:
+        """Keep a detached copy of a response the resolver read, when enabled.
+
+        `outcome` is "used" (accepted metadata, enrichment or a live URL/snapshot),
+        "no-match" (a valid answer with no accepted candidate) or "not-checked"
+        (a skip, failure or malformed answer)."""
+        if not self.record_responses:
+            return
+        self.responses.append({
+            "ref_id": ref_id,
+            "source": source,
+            "outcome": outcome,
+            "prov_ref": prov_ref,
+            "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "response": copy.deepcopy(response),
+        })
+
+    def save_responses(self, path: str) -> None:
+        """Write the recorded responses to a caller-chosen JSON file."""
+        if not self.record_responses:
+            raise RuntimeError("response recording is off for this ProvenanceStore")
+        Path(path).write_text(json.dumps({"responses": self.responses}, indent=2,
+                                         default=str))
 
     def verify(self, ref_id: str) -> list[dict]:
         """Return all provenance entries for a given citation ref_id."""

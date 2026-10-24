@@ -48,5 +48,8 @@ never ask for keys in chat, print them or include them in reports.
 scripts provide caching, provenance, fuzzy matching and reliability accounting.
 When execution/network access is absent, use permitted host tools and disclose
 the coverage limits. `batch --strict` and `--sidecar-dir` keep their existing
-high-stakes halt/sidecar contracts. This helper is not a standalone destination
+high-stakes halt/sidecar contracts. Optional `batch --response-evidence PATH`
+writes every parsed API response the resolver read (used, no-match or
+not-checked) to that file; it does not capture HTTP wire bytes or source-page
+text, and `/research` does not enable it automatically. This helper is not a standalone destination
 sandbox; the host must enforce network restrictions.
