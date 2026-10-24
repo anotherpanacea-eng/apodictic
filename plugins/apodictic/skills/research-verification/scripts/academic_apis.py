@@ -689,6 +689,8 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
             projected = None
         if projected is None and "crossref" not in not_checked:
             not_checked.append("crossref")
+        if projected is None:
+            provenance.record(ref_id, "crossref", cr_result, "not-checked")
         if projected is not None:
             prov_ref = provenance.store(ref_id, "crossref", cr_result)
             result["provenance_refs"].append(prov_ref)
@@ -726,6 +728,9 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
                 best_oa = up_result.get("best_oa_location", {})
                 if best_oa and best_oa.get("url_for_pdf"):
                     result["oa_url"] = best_oa["url_for_pdf"]
+            else:
+                provenance.record(ref_id, "unpaywall", up_result,
+                                  "no-match" if _valid_unpaywall(up_result) else "not-checked")
 
             result["resolution_status"] = "resolved"
             result["degraded_providers"] = ledger.degraded_providers() if ledger else []
@@ -773,9 +778,15 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
                         best_oa = up_result.get("best_oa_location", {})
                         if best_oa and best_oa.get("url_for_pdf"):
                             result["oa_url"] = best_oa["url_for_pdf"]
+                    else:
+                        provenance.record(ref_id, "unpaywall", up_result,
+                                          "no-match" if _valid_unpaywall(up_result) else "not-checked")
                 result["resolution_status"] = "resolved"
                 result["degraded_providers"] = ledger.degraded_providers() if ledger else []
                 return result
+
+        provenance.record(ref_id, "crossref-search", cr_result,
+                          "not-checked" if incomplete else "no-match")
 
         # Semantic Scholar search
         cache_key = f"s2:search:{title}:{author}"
@@ -805,6 +816,9 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
                 result["degraded_providers"] = ledger.degraded_providers() if ledger else []
                 return result
 
+        provenance.record(ref_id, "semantic-scholar", s2_result,
+                          "not-checked" if incomplete else "no-match")
+
         # OpenAlex search
         cache_key = f"openalex:search:{title}:{author}"
         oa_result = cache.get(cache_key, ttl_seconds=_meta_ttl)
@@ -832,6 +846,9 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
                 result["resolution_status"] = "resolved"
                 result["degraded_providers"] = ledger.degraded_providers() if ledger else []
                 return result
+
+        provenance.record(ref_id, "openalex", oa_result,
+                          "not-checked" if incomplete else "no-match")
 
         # CORE search
         cache_key = f"core:search:{title}"
@@ -861,6 +878,8 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
             result["resolution_status"] = "resolved"
             result["degraded_providers"] = ledger.degraded_providers() if ledger else []
             return result
+        provenance.record(ref_id, "core", core_result,
+                          "not-checked" if incomplete else "no-match")
 
     # --- Tier 4: URL check + Wayback ---
     if url:
@@ -869,7 +888,10 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
         # tomorrow). It remains run-local exactly as before.
         url_status = _check_url(url)
         result["url_check"] = url_status
-        prov_ref = provenance.store(ref_id, "url-check", url_status)
+        prov_ref = provenance.store(
+            ref_id, "url-check", url_status,
+            outcome={"live": "used", "not-found": "no-match"}.get(
+                url_status["check_status"], "not-checked"))
         result["provenance_refs"].append(prov_ref)
         if url_status["check_status"] == "not-checked":
             not_checked.append("url-check")
@@ -886,6 +908,7 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
             cache_key = f"wayback:{url}"
             wb_result = cache.get(cache_key, ttl_seconds=_wb_ttl)
             if wb_result is not None and _wayback_snapshot(wb_result)[0] == "invalid":
+                provenance.record(ref_id, "wayback", wb_result, "not-checked")
                 wb_result = None  # A legacy malformed cache entry is no negative fact.
             if wb_result is None:
                 wb_result = check_wayback(url, ledger=ledger)
@@ -899,9 +922,12 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
                 time.sleep(RATE_LIMIT_DELAY)
             # A skip is not a network retrieval, but recording its sentinel
             # still explains why this resolution path was incomplete.
-            provenance_ref = provenance.store(ref_id, "wayback", wb_result)
-            result["provenance_refs"].append(provenance_ref)
             availability, snapshot_url = _wayback_snapshot(wb_result)
+            provenance_ref = provenance.store(
+                ref_id, "wayback", wb_result,
+                outcome={"available": "used", "absent": "no-match"}.get(
+                    availability, "not-checked"))
+            result["provenance_refs"].append(provenance_ref)
             if availability == "invalid" and "wayback" not in not_checked:
                 not_checked.append("wayback")
             if availability == "available":
@@ -925,7 +951,8 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
 
 
 def resolve_batch(citations: list[dict], output_path: str | None = None,
-                  *, strict: bool = False, sidecar_dir: str | None = None) -> dict:
+                  *, strict: bool = False, sidecar_dir: str | None = None,
+                  response_evidence_path: str | None = None) -> dict:
     """Resolve a batch of citations. Returns the batch `output` dict.
 
     A per-run ReliabilityLedger (per-provider budget + circuit breaker) is
@@ -948,9 +975,13 @@ def resolve_batch(citations: list[dict], output_path: str | None = None,
     OQ-3 (`sidecar_dir`): when set (and the ledger is on), also writes a
     deterministic `Citation_Reliability.json` sidecar into that directory. Opt-in
     and additive — it does not alter `output` or the in-`output` reliability
-    block."""
+    block.
+
+    `response_evidence_path`: when set, every parsed response the resolver read
+    (used, no-match or not-checked) is written to that file as JSON, separate
+    from `output`. Off by default."""
     cache = ResponseCache(_default_cache_dir())
-    provenance = ProvenanceStore()
+    provenance = ProvenanceStore(record_responses=response_evidence_path is not None)
     ledger = ReliabilityLedger() if reliability_enabled() else None
     results = []
 
@@ -979,6 +1010,8 @@ def resolve_batch(citations: list[dict], output_path: str | None = None,
         "provenance": provenance.entries,
         "cache_stats": cache.stats(),
     }
+    if response_evidence_path is not None:
+        provenance.save_responses(response_evidence_path)
     # OQ-1: strict-mode halt. With no ledger (reliability off) there is no
     # degradation signal, so the decision is a guaranteed no-halt and no block is
     # attached. With a ledger, evaluate against the snapshot; the `strict`
@@ -1302,6 +1335,9 @@ def main():
     batch.add_argument("--sidecar-dir", default=None,
                        help="Directory to write the Citation_Reliability.json reliability "
                             "sidecar into (OQ-3; opt-in, additive, off by default).")
+    batch.add_argument("--response-evidence", default=None, metavar="PATH",
+                       help="Also write every parsed API response the resolver read "
+                            "(used, no-match or not-checked) to PATH as JSON. Off by default.")
 
     # check-url
     curl = sub.add_parser("check-url", help="Check if a URL is live")
@@ -1331,7 +1367,8 @@ def main():
     elif args.command == "batch":
         citations = json.loads(Path(args.input).read_text())
         output = resolve_batch(citations, args.output,
-                               strict=args.strict, sidecar_dir=args.sidecar_dir)
+                               strict=args.strict, sidecar_dir=args.sidecar_dir,
+                               response_evidence_path=args.response_evidence)
         # OQ-1 exit contract: a strict high-stakes run that ended DEGRADED with a
         # NOT-CHECKED citation exits non-zero so the caller HALTS. A non-strict
         # run, a clean run, or a genuine all-healthy not-found exits 0 as before.
