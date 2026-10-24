@@ -20,7 +20,7 @@ The Citation Verifier reference asks that every API response used in resolution 
 ]}
 ```
 
-`outcome` is `used` (the response backs a provenance entry, `prov_ref` names it), `no-match` (a valid answer with no accepted candidate) or `not-checked` (a budget or circuit skip, a request failure, or a malformed answer). Tiers the resolver never reached have no entry.
+`outcome` is `used` (accepted metadata, enrichment or a live URL/snapshot), `no-match` (a valid answer with no accepted candidate) or `not-checked` (a budget or circuit skip, a request failure, or a malformed answer). `prov_ref` links to a legacy provenance entry when one exists, regardless of outcome. A malformed cached Wayback answer is recorded before its replacement request. Tiers the resolver never reached have no entry.
 
 ## Limits
 

@@ -27,7 +27,8 @@ class ProvenanceStore:
         self.record_responses = record_responses
         self.responses: list[dict] = []
 
-    def store(self, ref_id: str, source: str, response: dict) -> str:
+    def store(self, ref_id: str, source: str, response: dict, *,
+              outcome: str = "used") -> str:
         """
         Store an API response and return a provenance reference ID.
 
@@ -35,6 +36,7 @@ class ProvenanceStore:
             ref_id: The citation reference ID this response relates to
             source: The API source (e.g., "crossref", "semantic-scholar", "unpaywall")
             response: The raw API response
+            outcome: Outcome for the optional response evidence record
 
         Returns:
             A provenance reference string (e.g., "prov-3-crossref")
@@ -52,7 +54,7 @@ class ProvenanceStore:
             # Store a summary, not the full response (which may be large)
             "response_summary": _summarize(response),
         })
-        self.record(ref_id, source, response, "used", prov_ref=prov_ref)
+        self.record(ref_id, source, response, outcome, prov_ref=prov_ref)
 
         return prov_ref
 
@@ -60,9 +62,9 @@ class ProvenanceStore:
                prov_ref: str | None = None) -> None:
         """Keep a detached copy of a response the resolver read, when enabled.
 
-        `outcome` is "used" (it backs a provenance entry), "no-match" (a valid
-        answer with no accepted candidate) or "not-checked" (a skip, failure or
-        malformed answer)."""
+        `outcome` is "used" (accepted metadata, enrichment or a live URL/snapshot),
+        "no-match" (a valid answer with no accepted candidate) or "not-checked"
+        (a skip, failure or malformed answer)."""
         if not self.record_responses:
             return
         self.responses.append({

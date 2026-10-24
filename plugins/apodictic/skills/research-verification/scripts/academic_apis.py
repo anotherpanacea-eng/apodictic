@@ -729,7 +729,8 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
                 if best_oa and best_oa.get("url_for_pdf"):
                     result["oa_url"] = best_oa["url_for_pdf"]
             else:
-                provenance.record(ref_id, "unpaywall", up_result, "not-checked")
+                provenance.record(ref_id, "unpaywall", up_result,
+                                  "no-match" if _valid_unpaywall(up_result) else "not-checked")
 
             result["resolution_status"] = "resolved"
             result["degraded_providers"] = ledger.degraded_providers() if ledger else []
@@ -778,7 +779,8 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
                         if best_oa and best_oa.get("url_for_pdf"):
                             result["oa_url"] = best_oa["url_for_pdf"]
                     else:
-                        provenance.record(ref_id, "unpaywall", up_result, "not-checked")
+                        provenance.record(ref_id, "unpaywall", up_result,
+                                          "no-match" if _valid_unpaywall(up_result) else "not-checked")
                 result["resolution_status"] = "resolved"
                 result["degraded_providers"] = ledger.degraded_providers() if ledger else []
                 return result
@@ -886,7 +888,10 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
         # tomorrow). It remains run-local exactly as before.
         url_status = _check_url(url)
         result["url_check"] = url_status
-        prov_ref = provenance.store(ref_id, "url-check", url_status)
+        prov_ref = provenance.store(
+            ref_id, "url-check", url_status,
+            outcome={"live": "used", "not-found": "no-match"}.get(
+                url_status["check_status"], "not-checked"))
         result["provenance_refs"].append(prov_ref)
         if url_status["check_status"] == "not-checked":
             not_checked.append("url-check")
@@ -903,6 +908,7 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
             cache_key = f"wayback:{url}"
             wb_result = cache.get(cache_key, ttl_seconds=_wb_ttl)
             if wb_result is not None and _wayback_snapshot(wb_result)[0] == "invalid":
+                provenance.record(ref_id, "wayback", wb_result, "not-checked")
                 wb_result = None  # A legacy malformed cache entry is no negative fact.
             if wb_result is None:
                 wb_result = check_wayback(url, ledger=ledger)
@@ -916,9 +922,12 @@ def resolve_citation(citation: dict, cache: ResponseCache, provenance: Provenanc
                 time.sleep(RATE_LIMIT_DELAY)
             # A skip is not a network retrieval, but recording its sentinel
             # still explains why this resolution path was incomplete.
-            provenance_ref = provenance.store(ref_id, "wayback", wb_result)
-            result["provenance_refs"].append(provenance_ref)
             availability, snapshot_url = _wayback_snapshot(wb_result)
+            provenance_ref = provenance.store(
+                ref_id, "wayback", wb_result,
+                outcome={"available": "used", "absent": "no-match"}.get(
+                    availability, "not-checked"))
+            result["provenance_refs"].append(provenance_ref)
             if availability == "invalid" and "wayback" not in not_checked:
                 not_checked.append("wayback")
             if availability == "available":
