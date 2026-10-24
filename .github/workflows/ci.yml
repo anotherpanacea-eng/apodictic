@@ -98,7 +98,7 @@ jobs:
       - name: Research reliability self-tests
         run: |
           node --test tests/audit-catalog.test.mjs
-          python3 tests/test_academic_api_security.py
+          python3 -m unittest discover -s tests -p 'test_academic_*.py'
           python3 plugins/apodictic/skills/research-verification/scripts/api_reliability.py --self-test
           python3 plugins/apodictic/skills/research-verification/scripts/response_cache.py --self-test
           python3 plugins/apodictic/skills/research-verification/scripts/academic_apis.py --self-test
