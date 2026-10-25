@@ -3,7 +3,7 @@
 
 `validate.py results-guide <run_folder> [--strict]` (or explicit files) delegates here.
 
-The Results Guide (`[Project]_Results_Guide_[runlabel].md`, SKILL.md §Results Guide Artifact) is
+The Results Guide (`[Project]_Results_Guide_[runlabel].md`, output-structure.md §Results Guide) is
 the first file after the editorial letter — a plain-language MAP from each writer question the run
 produced to the run-folder artifacts behind it. It is a *navigation index*, not a second letter:
 it points, it never diagnoses. This validator owns its structural integrity in ONE arm — three

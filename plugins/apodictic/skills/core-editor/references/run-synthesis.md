@@ -480,7 +480,7 @@ The primary deliverable. Format specified in §Core DE Synthesis above.
 
 ### Results Guide (first file after the editorial letter)
 
-After the letter is written, generate `[Project]_Results_Guide_[runlabel].md` per `core-editor/SKILL.md §Results Guide Artifact` — a plain-language **navigation index** that maps each writer question the run produced (the §3 `User Question` for each macro block that actually ran) to the run-folder artifacts, specialized audits, and state files behind it. It helps the writer navigate their results without framework knowledge. **This is a standard deliverable, not an offer** (unlike the annotated manuscript): the letter is the diagnosis; the Guide is the map to it.
+After the letter is written, generate `[Project]_Results_Guide_[runlabel].md` per `output-structure.md` §Results Guide — a plain-language **navigation index** that maps each writer question the run produced (the §3 `User Question` for each macro block that actually ran) to the run-folder artifacts, specialized audits, and state files behind it. It helps the writer navigate their results without framework knowledge. **This is a standard deliverable, not an offer** (unlike the annotated manuscript): the letter is the diagnosis; the Guide is the map to it.
 
 - **Index, never diagnose.** The Guide points at artifacts; it carries no severity language (no `Must/Should/Could-Fix`) and no findings — those live in the editorial letter. Do **not** re-author the template; emit the SKILL.md format, substituting real filenames.
 - **Only the blocks that ran.** List one `### <writer question>` section per macro block the run produced — absence is legal (a targeted run maps fewer questions); inventing a question the run did not produce is the defect.
