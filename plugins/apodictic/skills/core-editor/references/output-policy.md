@@ -25,13 +25,12 @@ Which skill the framework loads is an implementation detail the writer never nee
 | Instead of (skill-name) | Use (workflow move) |
 |---|---|
 | "…via specialized-audits" | "…via the specialized audits" / "run a focused audit" |
-| "the commands sit on five skills: **core-editor** (…)" | "the commands sit on six capability areas: the diagnostic engine…" (name workflows, not slugs) |
 | "load specialized-audits" / "load the X skill" | "run an audit next" |
 | "the `specialized-audits` workflow" (noun form) | "the specialized audits workflow" / "the audit workflow" — de-slug the noun |
 | "load revision-coach" | "plan revision next" |
 | "load plot-architecture" | "diagnose the plot spine next" |
 
-**Boundary — this is not the `author-facing-lint` rule.** The skill-slug rule governs authored SKILL/reference source and generated author-facing prose; it is distinct from the framework-code glossing rule that `author-facing-lint` enforces on the generated letter body (`scripts/letter_checks.py`, WARN-only, appendix-exempt). One scans framework *codes* (pass numbers, quality codes) in the letter; this convention scans skill *slugs* in authored + generated author-facing prose. **Scope note:** agent-routing/delegation prose the model reads to dispatch — the Delegation Rules zone, Genre Module Routing activation notes, `commands/*.md` load-directives, inter-skill reference lists, run-flow load instructions — legitimately names skills and is *not* governed by this rule.
+Agent-routing and delegation prose the model reads to dispatch (Delegation Rules, Genre Module Routing, `commands/*.md` load directives, run-flow load instructions) may name skills.
 
 ---
 
@@ -77,36 +76,7 @@ All flags and diagnoses should carry confidence markers:
 
 ---
 
-## Epistemic Humility Reminders
-
-Before finalizing any major diagnosis:
-1. Have I checked this against stated author intent?
-2. Could this be an intentional craft choice I'm misreading as error?
-3. Is my genre/subgenre calibration correct for this work?
-4. Am I flagging something because it violates convention, or because it actually harms the work?
-
-When uncertain, surface the uncertainty rather than forcing false clarity.
-
----
-
-## When to Engage Deep Analysis
-
-Standard passes provide sufficient analysis for most issues. Engage extended, deliberate analysis when:
-
-**Complexity Triggers:**
-- Contradictory flags from different passes (e.g., Pass 1 says "too slow," Pass 4 says "emotional build working")
-- Root cause count approaching limit (4-5 causes suggest deeper synthesis needed)
-- Author disputes system diagnosis with textual evidence
-- Register uncertainty in literary mode (multiple genres pulling in different directions)
-- Revision loop signal (author reports rewriting same section multiple times)
-
-**When triggered:** Pause output. Synthesize across all pass findings. Look for underlying pattern that explains surface contradictions. Consider whether apparent problems are actually intentional craft choices.
-
----
-
 ## Canonical Severity Scale (v2.0.0)
-
-*Canonical home for the framework's single severity vocabulary. Every audit-internal severity signal — Must-Fix floors, hard gates, HIGH/Alert ratings, named flags, Pass-10 inconsistency counts — maps onto this one scale via the Canonical Audit-Signal Propagation Rule (`run-synthesis.md §Step 2`) and its per-audit table (`pass-dependencies.md §4e`). Do not introduce a parallel severity vocabulary; relabel local audit scales onto these three tokens.*
 
 APODICTIC has exactly three severity tiers:
 
@@ -128,8 +98,6 @@ Audit-internal scales (AIC Spot/Pattern/Systemic, Reception Note/Flag/Alert, Red
 
 ## Severity Honesty Protocol (v0.4.14.3)
 
-*Canonical home for anti-sycophancy / no-self-revise rule. Other surfaces (`adversarial-stress-test.md §Lock-then-test protocol` / §Anti-softening rule, `genre-reader-audits/references/craft/reception-risk.md §Lock-then-classify` / §Forbidden #6, `run-synthesis.md §Step 6 Adversarial Self-Check`) reference here and add only context-specific elaborations (stress-test ordering, audit lock-then-classify discipline, self-check up/down pressure). The general principle — LLMs reliably talk themselves out of hard findings; severity locks before steelmanning — lives here. Per-audit Deficit-First Diagnostic Rule blocks (each tailored to the audit's failure modes) are the operational expression of this principle and stay in their audit reference files.*
-
 LLMs have a documented tendency to soften negative findings in editorial analysis. This manifests as:
 
 - Rating axes "Mixed" to avoid saying "Weak"
@@ -149,8 +117,6 @@ Rules:
 
 ### Deficit Lock (generation-order rule, v2.0.0)
 
-*The highest-leverage anti-softening mechanism: lock severity before any charity reframing can soften it. This is the synthesis-layer sequencing of the lock-then-test discipline canonical in `adversarial-stress-test.md §Lock-then-test protocol` — it does not restate that protocol, it orders it against the synthesis steps. It closes the one honesty leak the existing coherence gates miss: a letter that quietly under-delivers a finding it already diagnosed, while still passing severity-floor and audit-signal-propagation.*
-
 At Triage (`run-synthesis.md §Step 5`), the moment a finding is assigned **Must-Fix** or **Should-Fix**, commit it as a structured Finding (`apodictic.finding.v1`, see `findings-ledger-format.md`) at that severity in the Findings Ledger — **before** any later step that could lower it runs: the Adversarial Self-Check's downward pressure, the Distinguish Protocol's cultural-charity downgrade, or any genre-specific exception. Once a severity is locked:
 
 - Later steps may **raise** severity freely (under-diagnosis is the failure mode being guarded against — there is no friction on getting harder).
@@ -165,7 +131,7 @@ The Deficit Lock does not forbid charity — it makes charity *legible*. A genui
 
 ## Severity Floor Rules (v0.4.14.3)
 
-*Canonical home for severity-floor rules. Mechanical check: `python scripts/validate.py severity-floor <editorial_letter_file>`. Other framework surfaces (e.g., `run-synthesis.md` Step 10, `genre-reader-audits/references/craft/reception-risk.md` §7) reference these rules rather than restating them; if a surface appears to encode a fourth rule, treat that as a duplication bug and consolidate here.*
+*Mechanical check: `python scripts/validate.py severity-floor <editorial_letter_file>`.*
 
 These rules prevent diagnostic softening from producing incoherent verdicts:
 
@@ -184,22 +150,6 @@ These rules prevent diagnostic softening from producing incoherent verdicts:
 ```
 
 Markers in appendix bodies are non-canonical (synthesis body is canonical for findings; appendices hold evidence) and the validator will not honor them. Absence of marker and rationale = blocked synthesis: re-tier or override-with-reason in the body, but do not silently violate the floor.
-
----
-
-## Editorial Letter Tone and Voice
-
-The editorial letter should sound like a knowledgeable editor who has read the book carefully and is being direct. Avoid:
-- Framework jargon in the main text (severity labels, pass numbers, protocol names)
-- Mechanistic transition language ("Moving to the next finding..." / "As identified in Pass 2...")
-- Strength-padding or diplomatic qualifiers ("While the pacing could perhaps be strengthened...")
-- Formulaic openings ("This manuscript demonstrates..." / "The analysis reveals...")
-
-Use:
-- Specific scene references embedded in prose (not in separate evidence blocks)
-- Direct, declarative assessment ("The problem is that the book only does this once, and late.")
-- The book's own language and imagery when it clarifies the point
-- Bolded thesis statements as section headings for scannability
 
 ---
 
@@ -238,14 +188,4 @@ Pass 0 (Reverse Outline) and Pass 10 (Entity Tracking) are data-building passes 
 
 ## Mandatory Appendices (v0.4.15)
 
-Every editorial letter must include the following appendices. These are not optional even when the letter is otherwise strong — they provide the author with diagnostic transparency and the framework owner with reproducibility data.
-
-*Appendix presence is mechanically validated by `python scripts/validate.py decision-layer-check <editorial_letter_file>`. The validator surfaces missing A/B/C as ERROR; an override marker placed in the synthesis body — `<!-- override: decision-layer-appendices — <rationale> -->` — downgrades to WARN per the body-vs-appendix override discipline established in §Severity Floor Rules. The validator does not check appendix content; that remains an editorial step.*
-
-1. **Appendix A: Diagnostic Detail.** Pointers to companion pass files and supplementary audit findings, with brief descriptions of what each contains. This tells the author where to find the evidence and revision tools behind the letter's arguments. If any auto-recommend or user-accepted audits completed **after** synthesis was written, list them separately as: "**Post-synthesis audits** (findings not integrated into triage — review independently):" followed by the audit name and findings file pointer. Auto-run audits should never appear in this post-synthesis section — they are synthesis dependencies and must complete before synthesis begins (see `pass-dependencies.md` §4c). If any high-risk audit was deferred or declined, Appendix A must also name that blind spot and state how it limits confidence, readiness, or interpretive certainty.
-
-2. **Appendix B: Severity Calibration.** Compressed summary of the adversarial self-check — which findings were tested for softening or over-escalation, in which direction, and whether any severities were adjusted. This is the author's assurance that severity assignments were stress-tested, not just assigned.
-
-3. **Appendix C: Framework Notes.** Analysis version, model, run date, passes completed, protocol flags, prior analyses on file, cross-version stability notes (if applicable). This is the run's metadata — it makes results reproducible and lets the framework owner track behavior across versions.
-
-If a letter omits any of these appendices, the omission is a framework compliance failure regardless of the letter's analytical quality.
+Every editorial letter carries Appendices A (Diagnostic Detail), B (Severity Calibration) and C (Framework Notes), defined in `run-synthesis.md` §Presentation Format item 11. An omitted appendix is a compliance failure; `decision-layer-check` reports it as ERROR, and a body marker `<!-- override: decision-layer-appendices — <rationale> -->` downgrades it to WARN.

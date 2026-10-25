@@ -29,6 +29,7 @@ The copyright holder (Joshua A. Miller, PhD) retains the right to use contributi
 - Distinguish intentional craft choices from failures
 - Include false positive warnings for anything that could misfire
 - Follow the firewall: diagnostics identify problems; they don't rewrite manuscripts
+- In SKILL/reference prose that reaches the writer, name the command (`/coach`, `/audit`) or the workflow move, never a skill slug ("run an audit next", not "load specialized-audits"). This is separate from `author-facing-lint`, which checks framework codes in the generated letter body.
 
 ## Changelog Policy
 
