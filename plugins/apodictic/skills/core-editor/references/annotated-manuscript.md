@@ -34,6 +34,13 @@ anchor, projects its comment, and writes the manifest + annotated copy. It is th
 path: the model never authors a margin comment. `render <manifest> <snapshot>` re-renders the copy from a
 manifest.
 
+Staged discipline: copy the inputs (snapshot, Findings Ledger, letter, `Timeline.md` if present) into a
+scratch directory and build/gate/render/gate there; move the manifest, annotated copy and crosslinked letter
+into the run folder **only** if A1–A6 and X1–X4 both pass, else name the failing gate and write nothing. No
+snapshot, or a manuscript revised mid-run: re-snapshot first (LF-normalized, trailing newline, no other
+change). A letter with no `<!-- finding: F-… -->` markers still yields the annotated copy plus a no-op
+crosslinked letter (zero back-links; the X gate passes).
+
 ## When it is produced (the run-flow wiring)
 
 The generators above are **wired into the run flow** so a real edit produces the deliverable — not just the

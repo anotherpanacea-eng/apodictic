@@ -78,3 +78,11 @@ Markers in appendix bodies are non-canonical (synthesis body is canonical; appen
 
 The `decision-layer-check` validator implementation: `scripts/letter_checks.py` — `_ARGUMENT_DE_RE`,
 `decision_layer_check()`, `_count_decision_entries()`.
+
+## Prerequisite blind spots
+
+*Moved from `run-synthesis.md` Step 3 and Appendix A.*
+
+When a run is argument-shaped (constraint=nonfiction + persuasive-argument form per `pass-dependencies.md §4a`) AND Field Reconnaissance was not run — whether because the user declined the Hard Prerequisite or Auto-recommend before synthesis invocation, the user opted out at intake, or the run pre-dates the prerequisite policy — the synthesis layer MUST record "literature-counterevidence not surveyed" as a confidence-limiting blind spot in this Absence Inventory and carry it forward to Appendix A (Diagnostic Detail). The disclosure must name what is unsurveyed (competing studies, counter-citations, replication failures, opposing scholarly positions) and what the absence implies for synthesis confidence (Dialectical Clarity, Argument Red Team, and Argument Evidence Deep-Dive operated against a manuscript-internal claim graph rather than a literature-aware one). This disclosure is not optional for argument-shaped runs without Field Recon coverage; the §4c Auto-recommend before synthesis decline policy treats it as the canonical confidence limiter for this audit-class. For Pre-DE Prerequisite Citation Verifier declines on high-stakes argument-shaped runs, additionally name "citation provenance not verified" as the parallel confidence limit. Fiction runs and non-argument nonfiction runs do not require this disclosure (Field Recon is not prerequisited for those forms; absence is not a blind spot).
+
+**Appendix A.** name "literature-counterevidence not surveyed" as a blind spot and state the implication (the argument engine operated against a manuscript-internal claim graph; competing studies / counter-citations / replication failures / opposing scholarly positions in the literature were not surfaced; synthesis confidence on counterevidence completeness is bounded). For high-stakes argument-shaped runs without Pre-DE Citation Verifier coverage, additionally name "citation provenance not verified" with the same disclosure pattern.
