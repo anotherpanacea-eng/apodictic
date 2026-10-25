@@ -1,7 +1,9 @@
 # Draft-first integration trains
 
-**Status:** Built — draft-first CI, train verification, and policy are implemented.
-<!-- built-when: tools/check_merge_train.py -->
+**Status:** Built, then trimmed. Draft-first CI and the train habit remain; the
+train checker, CI receipts, merge binding, sync-PR draft enforcer and their policy
+tests were removed on 2026-10-25 under the fleet CI budget rule. CI now runs on any
+non-draft PR. Sections below that describe those tools are historical.
 
 ## Decision
 
