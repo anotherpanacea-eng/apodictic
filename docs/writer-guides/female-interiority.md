@@ -27,7 +27,7 @@ Thinning can be the point: trauma, survival, masking to stay safe. The question 
 
 ## One question for your draft
 
-Take her most public scene and her quietest one. Underline every line of her own thinking. Does the count hold up in the hard scene, and when her mind goes quiet, does the story notice?
+Take her most public scene and her quietest one. In the hard scene, can you still find what only she would notice, how she reads the people around her, and what she makes of it? It may take fewer lines; it shouldn't get shallower. And when her mind goes quiet, does the story notice?
 
 ---
 
