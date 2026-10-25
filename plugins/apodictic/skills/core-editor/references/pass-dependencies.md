@@ -1,11 +1,5 @@
 # Pass Dependencies, Query Resolution & Audit Resolution
 
-**Status:** Implementation-ready
-**For:** APODICTIC Development Editor v0.6
-**Last updated:** 2026-02-23
-
-This file is loaded at runtime when the query-driven pass architecture is active. It replaces the fixed Core DE / Full DE tier model with concern-driven resolution.
-
 ---
 
 ## §1. Pass Dependency Map
@@ -20,7 +14,7 @@ This file is loaded at runtime when the query-driven pass architecture is active
 
 Tier 1 passes read the manuscript directly. They have no upstream dependencies and can execute in parallel.
 
-**Pass 10 — Pass-10-Class artifact.** Pass 10 produces both a run-folder-scoped artifact (existing Entity Tracking output) and a project-level rolling artifact (`Timeline.md`). The Timeline artifact is the first live instance of the Pass-10-Class Rolling Structured Artifacts pattern named in `core-editor/SKILL.md §Project Integration` (alongside `Diagnostic_State.md`, `SYNTHESIS.md`, `Argument_State.md`, `Series_State.md`). Schema lives in `references/pass-10.md`. Three mechanical validators pair with the Timeline artifact: `python validate.py timeline-diff`, `python validate.py timeline-arithmetic`, `python validate.py timeline-anchor-conflict`. Inconsistency Ledger counts feed synthesis-layer severity per the Canonical Audit-Signal Propagation Rule (`run-synthesis.md §Step 2`).
+**Pass 10 — Pass-10-Class artifact.** Pass 10 also produces the project-level `Timeline.md` (schema and validators: `references/pass-10.md`); its Inconsistency Ledger counts propagate per §4e (`run-synthesis.md §Step 2`).
 
 ### Tier 2 — Analyze (each depends on ≥1 Tier 1 pass)
 
@@ -138,7 +132,7 @@ User-facing groupings that organize output. Writers see 8 blocks, not 12 passes.
 
 Pass 7 (POV & Voice) belongs to Character Architecture because voice is a character concern. Pass 4 (Emotional Value Tracking) has its own block — it was previously subordinated to Character Architecture, but emotional dynamics is a distinct diagnostic dimension.
 
-**§3 is the single source of truth for the macro map.** The table above is canonical for the 8 macro blocks, the `Internal Passes` (pass→block map), and the per-block `User Question`. Downstream surfaces read from §3 and must not re-author these values: the §2 concern→pass resolver's `Macro block` column, the `core-editor/SKILL.md §Pass-Detail Artifact Headers` mapping (derived from §3), and the per-pass artifact header emitted per `run-core.md`. The `python scripts/validate.py pass-header` validator parses this table (block ∈ the 8, block↔pass map, block→User Question) as its authority; `python scripts/validate.py audit-signal-propagation` and `python scripts/validate.py audit-tier-criterion` read §4 of this file and are unaffected by §3.
+**§3 is the single source of truth for the macro map** (blocks, pass→block map, User Questions); `pass-header` parses this table.
 
 When a query-driven run selects a subset of passes, only the relevant macro blocks appear in the editorial letter. Blocks with no selected passes are omitted entirely — not shown as empty.
 
@@ -153,8 +147,6 @@ The pass resolver (§2) determines which passes run. The audit resolver determin
 ### §4a. Router-triggered audits
 
 Activated by intake answers before passes run. When a router-triggered audit is also surfaced via a finding-trigger in §4b, the highest-obligation tier wins per §4f.
-
-**Tier verification (Phase 6 Wave 2 / CR-3 closure).** All router-triggered audit tier assignments below were re-audited per the Phase 6 plan against Phase 2 archaeology, Phase 3 inventory classifications, and Codex critique CR-3 evidence. Result: existing tiers hold. The Auto-recommend before synthesis tier for Reception Risk and Consent Complexity (the two router-triggered audits at that obligation tier) was confirmed against Phase 2 finding that absent these audits, the run records an explicit blind spot — the obligation tier's defining condition. Auto-run audits (Constraint=ai → AI-Prose; Erotic Content; Memoir; Narrative NF) were confirmed against the §4c Auto-run definition: bundled at intake because the audit is definitional to the manuscript type. No router-tier promotions or demotions in this wave; future audit additions follow the §4c Audit Tier Promotion Criteria.
 
 | Router signal | Audit(s) | Policy | Reference file |
 |---------------|----------|--------|----------------|
@@ -179,17 +171,10 @@ Activated by intake answers before passes run. When a router-triggered audit is 
 | Queer romance / queer identity central | Queer Romance/Erotica | Auto-recommend | `tag/queer-romance-erotica.md` |
 | Submission readiness goal | Shelf Positioning | Auto-recommend with Pass 11 | `craft/shelf-positioning.md` |
 | Constraint = risk | Legal Risk Register | **Wired** — offer-then-attach on `constraint:risk` (synthesis constraint hook, `run-synthesis.md §Constraint mode`); direct entry `/legal-risk`. Overlay per `intake-router-runtime.md` §6 Table B. | `references/legal-risk-register.md` |
-| Content signal: memoir / autofiction / nonfiction portraying identifiable real people (**no** `constraint:risk`) | Legal Risk Register | **Wired (content-detection auto-recommend)** — model reads the manuscript for the memoir / real-people signals and **offers** the register even without the explicit flag; prompt/router-only (model-side detection, no validator arm), same offer-then-attach discipline and **flag-don't-practice-law** firewall. Signals + operative offer: `run-synthesis.md §Content-detection auto-recommend`; detection patterns: `references/legal-risk-register.md` §Detection guidance / §Auto-recommend. | `references/legal-risk-register.md` |
-<!-- REPLACED-WITH-INCLUDE: argument-cluster §4a rows (Field Recon, Citation Verifier, nonfiction idea-stage,
-     argument-shaped routing definition + high-stakes definition + prerequisite rationale) have been extracted to
-     `references/argument-audits-routing.md`. Load that fragment for argument-shaped runs (constraint=nonfiction).
-     Rows below were originally here; they now live in the fragment for ownership by nonfiction-argument-engine. -->
-
+| Content signal: memoir / autofiction / nonfiction portraying identifiable real people (**no** `constraint:risk`) | Legal Risk Register | Offer (content detection; `run-synthesis.md §Content-detection auto-recommend`) | `references/legal-risk-register.md` |
 ### §4b. Finding-triggered audits
 
 Activated by pass results during a diagnostic run. The system checks these after each pass completes. When a finding-triggered audit is also surfaced via §4a or via another §4b finding-trigger, the highest-obligation tier wins per §4f.
-
-**Tier verification (Phase 6 Wave 2 / CR-3 closure).** All finding-triggered audit tier assignments below were re-audited per the Phase 6 plan. Confirmed against Phase 2 archaeology (commit history showing five audits — Compression, Female Interiority, Scene Turn, Interiority Preservation, Decision Pressure — promoted from Recommend to Auto-recommend before synthesis to catch omission patterns that undermine the whole letter if skipped) and against Phase 4's audit-signal propagation work. The promotions hold. Demotion candidates considered and rejected: Compression / Female Interiority / Interiority Preservation / Scene Turn / Decision Pressure (catch undetectable-by-passes-alone omissions; blind-spot disclosure is non-equivalent to running them); AI-Prose / Reception Risk (hard gate semantics make synthesis-without-them confidence-limiting). Recommend tier on Character Architecture, Emotional Craft, Banister, and others remains: each catches a class of issue that *could* be inferred from passes, so opt-in is the right tier. The Banister-for-thematic-runs candidate flagged in Phase 3 is documented in §4e (its propagation entry) but the tier stays at Recommend pending stronger Phase 7 evidence.
 
 | Pass | Finding pattern | Audit(s) | Policy |
 |------|----------------|----------|--------|
@@ -226,11 +211,6 @@ Activated by pass results during a diagnostic run. The system checks these after
 | 10 (Entity Tracking) | Cross-volume entity/state inconsistency or unresolved carry-forward consequences | Series Continuity | Auto-recommend before synthesis (if not already loaded) |
 | Any pass | Fan fiction origin markers (IP scaffolding, assumed worldbuilding) | Fan Fiction Conversion | Recommend |
 
-<!-- FRAGMENT-NOTE: The Dialectical Clarity (Pass 9), Consent Complexity (Any pass), and Reception Risk (Any pass)
-     rows above also appear in `references/argument-audits-routing.md §4b` for completeness of the argument routing
-     picture. On argument-shaped runs, load that fragment alongside this table; the fragment lists only these
-     argument-relevant §4b rows. On fiction-only runs, use this table as-is. -->
-
 ### §4c. Policy definitions
 
 The tier definitions below establish the obligation ordering used by the §4f Audit Tier Precedence Rule: **Hard Prerequisite > Pre-DE Prerequisite > Auto-run > Auto-recommend before synthesis > Auto-recommend > Recommend**.
@@ -254,8 +234,6 @@ A new audit earns Auto-run status when **all three** above hold AND **either**: 
 
 A new audit earns Auto-recommend status when criterion 1 holds (named hard gates or Must-Fix floors exist) AND criterion 2 *partially* holds (passes detect the issue at lower severity than the audit; the audit refines), but criterion 3 fails (blind-spot disclosure is reasonably substitutable for the audit).
 
-**Decisions get logged.** Each promotion (or principled non-promotion) is recorded in the changelog entry that introduces it. Phase 2 archaeology surfaced cfaadef's batch promotion of five audits; future audit additions follow the criterion above with explicit rationale. The §4a/§4b verification subsections at the start of each table document the criterion's application to existing audits.
-
 ### §4d. Presentation format & Priority Queue
 
 When recommending an audit, use this format:
@@ -276,41 +254,11 @@ Do not list multiple recommendations simultaneously. Present them one at a time 
 
 **Tier resolution precedes queue ordering.** Per §4f cross-reference: when an audit is surfaced through multiple paths, resolve its tier first (highest obligation wins). Then apply the priority queue to order surface presentation.
 
-**Worked examples.**
-
-*Example 1 — Pass 5 finding triggers two audits at different tiers.*
-Pass 5 (Character Audit) surfaces female POV interiority thinning AND voice drift. From §4b: Female Interiority is Auto-recommend before synthesis; Scene Turn (voice drift trigger) is also Auto-recommend before synthesis. Both at the same tier. Apply rule 2: assume Female Interiority's audit-internal Must-Fix floor fires (≥3 thinning instances in interiority-load scenes); Scene Turn's audit-internal Should-Fix-default flag fires for the voice drift signal. Female Interiority's hard signal beats Scene Turn's softer one — Female Interiority presents first; Scene Turn presents second.
-
-*Example 2 — Pass 1 finding triggers Compression (Auto-recommend before synthesis) AND Reception Risk (Auto-recommend before synthesis from §4a router-trigger).*
-Both at Auto-recommend before synthesis tier. Apply rule 2: Reception Risk Alert (hard-gate-class signal from §7) beats Compression Must-Fix floor (Must-Fix-floor-class signal). Reception Risk presents first; Compression presents second.
-
-*Example 3 — Pass 9 finding triggers Dialectical Clarity (Recommend) AND Banister (Recommend).*
-Both at Recommend tier. Apply rule 2: assume both produce Flag-class signals at MEDIUM. Apply rule 3: if Dialectical Clarity's finding-trigger fired three times across passes (warrant-gap convergence in 1, 5, 9) and Banister fired once (only Pass 9), Dialectical Clarity presents first. Apply rule 4 only if rules 2-3 don't distinguish: alphabetical (Banister < Dialectical Clarity).
-
 ### §4e. Audit-Signal Propagation Table (per-audit operationalization of the Canonical Rule)
 
 This is the per-audit operationalization of the Canonical Audit-Signal Propagation Rule. Canonical home: `run-synthesis.md §Step 2 — Canonical Audit-Signal Propagation Rule`. The canonical rule defines the *propagation taxonomy* (Must-Fix floor → synthesis Must-Fix; hard gate → synthesis Must-Fix; HIGH → synthesis Must-Fix or Should-Fix per audit context; MEDIUM → synthesis Should-Fix; LOW → synthesis Could-Fix). This table specifies *per-audit applicability*: for each audit, which audit-internal signal classes propagate to which synthesis severity, and what context modifiers apply.
 
-**How to read each row.** Each row maps one audit-internal signal class to one synthesis severity. An audit may produce multiple signal classes; each gets its own row. Where audit-internal signals are context-modified (e.g., Compression's Must-Fix floor only applies in specific channels; Reception Risk Alerts vary by genre context), the Context column documents the modifier. The Source column points to the audit reference file specifying the signal class. The Override column flags any deviation from the canonical default mapping.
-
-**Column contract (formalized 2026-07-04).** Every per-audit table in §4e (Universal / High-priority / Specialized / Genre / Tag / Pass-10-Class) carries the **same six named columns**, in this fixed order. Naming them explicitly makes the contract machine-parseable and pins what each cell means:
-
-1. **Audit** — the signal-emitting audit's display name (matches its Signal-Emitting Audit Registry entry in `audit-routing-table.md`, so `audit-signal-propagation --check-registry` can bind rows to registry entries). This is the slug source: lowercase, `&`/parens dropped, spaces/`/` → `-` (e.g. `Reception Risk` → `reception-risk`, `Banister (Epistemic Humility)` → `banister-epistemic-humility`).
-2. **Audit-internal signal** — the signal *class* the audit emits (hard gate · Must-Fix floor · HIGH/Alert · MEDIUM/Flag · LOW/Note · or an explicit "no propagating signal" for descriptive audits), with the audit's own flag codes for reference.
-3. **Synthesis severity** — the **required-severity** column: the synthesis-layer tier (Must-Fix · Should-Fix · Could-Fix · "Must-Fix or Should-Fix" · None) that this audit-internal signal must reach in the editorial-letter body.
-4. **Context modifier** — the condition under which the row applies (channel, scene class, genre contract, convergence, threshold-confidence). Prose; read by the model, not mechanically gated. A row applies only when its context modifier holds.
-5. **Source** — the audit reference file + subsection that defines the signal class, so the model can load context on demand.
-6. **Override** — the **override-modifier** column: a brief rationale whenever the row diverges from the canonical default mapping (`—` when it does not). This column is also where an *optional machine directive* lives (see "Override-modifier directive" below); prose rationale and the directive can coexist in the cell.
-
-**Validator integration.** The `python scripts/validate.py audit-signal-propagation` validator reads this table as the **source of truth** for the signal-class → synthesis-severity mapping — it no longer hardcodes a default map in Python. The machine-parseable source is the **`#### Default mapping (fallback for un-enumerated audits)`** block below: the validator parses its `- Audit-internal <signal> → Synthesis <severity>` bullets into the required-severity for each of the three strong signal classes it can mechanically check (hard gate, Must-Fix floor, HIGH/Alert), and applies that tier to every detected audit unless the audit's own row supplies an override-modifier directive. A malformed Default-mapping row (unrecognized synthesis severity, or a missing strong-signal class) is a validator ERROR, not a silent fallback.
-
-**Override-modifier directive (per-audit required-severity reassignment).** An audit's Override cell MAY carry an explicit, machine-parseable directive that reassigns the required synthesis severity for one of that audit's strong signal classes:
-
-> `propagate-override: <signal-class> → <synthesis-severity>`
-
-where `<signal-class>` ∈ {`hard-gate`, `must-fix-floor`, `high`} and `<synthesis-severity>` ∈ {`Must-Fix`, `Should-Fix`, `Could-Fix`, `Must-Fix or Should-Fix`}. When present in a §4e table row, the directive overrides the Default mapping's required-severity for that audit's slug and signal class (a malformed directive is a validator ERROR). No current §4e row carries a directive — every enumerated strong signal maps to the Default mapping's tier — so the mechanical behavior is identical to the historical hardcode; the directive is the sanctioned path for a future audit whose strong signal must land at a non-default tier without editing Python. Context-modifier **downshifts** that depend on model judgment (e.g. the POV Voice Profile threshold-confidence / provenance rows) are documented in the Context and Override columns as prose and are **not** expressed as directives — the validator cannot evaluate their conditions and does not mechanically apply them (see the POV Voice Profile §4e validation note).
-
-**Override path.** Per-audit refinements that diverge from the canonical default mapping are documented in the Override column with a brief rationale. Synthesis-time overrides for individual findings still follow the canonical rule's body-only marker pattern (`<!-- override: audit-propagation-must-fix — <rationale> -->`, etc.).
+Keep each `#### Default mapping` bullet in the shape `- Audit-internal <signal> → Synthesis <severity>`: `audit-signal-propagation` parses those bullets as its source of truth. An audit's Override cell may carry `propagate-override: <hard-gate|must-fix-floor|high> → <Must-Fix|Should-Fix|Could-Fix|Must-Fix or Should-Fix>` to reassign that signal's required severity. Validator contract: `docs/pass-dependencies-maintainer-notes.md`.
 
 #### Universal audits
 
@@ -350,12 +298,6 @@ where `<signal-class>` ∈ {`hard-gate`, `must-fix-floor`, `high`} and `<synthes
 | Interiority Preservation | Hard gate (interiority loss in named peak-intensity scene) | Must-Fix | Combat / interrogation / intimate / crisis POV scene | `craft/interiority-preservation.md` §Hard Gates | — |
 | Interiority Preservation | Pattern flag | Should-Fix | Pattern across ≥2 peak-intensity scenes | `craft/interiority-preservation.md` §Named flags | — |
 | Interiority Preservation | Spot flag | Could-Fix | Isolated | `craft/interiority-preservation.md` §Named flags | — |
-
-<!-- REPLACED-WITH-INCLUDE: argument-cluster §4e rows (Dialectical Clarity, Argument Red Team, Argument Persuasion,
-     Argument Evidence, Adversarial Evidence Review, Field Reconnaissance, Citation Verifier) have been extracted to
-     `references/argument-audits-propagation.md`. The rows are byte-identical — only location changed (confirmed by
-     `evals/fixtures/argument-carve/4e-before-after.diff`). The `audit-signal-propagation` validator loads both
-     this table and the fragment for argument-shaped runs. -->
 
 <!-- INCLUDE: `references/argument-audits-propagation.md` — argument-cluster §4e rows live there. -->
 
@@ -399,13 +341,7 @@ where `<signal-class>` ∈ {`hard-gate`, `must-fix-floor`, `high`} and `<synthes
 | Content Advisory | No propagating signal — descriptive sensitivity-surface map only (the `content-advisory` A3 no-severity-leak gate forbids the advisory from carrying any severity) | None (default mapping) | Always; Content Advisory derives *what is depicted, where, how intensely* for content-warning / retailer-metadata / sensitivity-handoff use, never a craft/harm verdict. Craft and harm severity come from sibling audits (Reception Risk, the relevant tag/consent audits), not from this map | `content-advisory.md` §Purpose + `python scripts/validate.py content-advisory` (A3 no-severity-leak) | **Descriptive audit (no audit-internal severity class).** Carded so the propagation validator's registry check confirms it is accounted for; it emits nothing to propagate, so the canonical default mapping applies vacuously. See the Content Advisory / Reader-Persona Simulation §4e note below |
 | Reader-Persona Simulation | No new propagating signal — divergence map re-reads existing Pass-1 (Reader Dynamics) findings through declared reading dispositions; a divergence's optional `asserted_severity` must **equal** the anchored finding's locked Ledger severity AND may be asserted only against a Ledger finding — a Timeline-locus anchor (no locked verdict) must carry none (the `persona-divergence` D3 gate rejects ANY deviation — downgrade, inflation, or an unanchored severity), so the overlay emits no severity of its own | None new (severity stays anchored to the underlying Pass-1 finding) | Always; "works for the expert, fails for the newcomer" is recorded descriptively against the persona, and the target persona anchors severity. The map introduces no audit-internal severity of its own — the underlying Pass-1 finding propagates under its own §4e/default mapping | `craft/persona-divergence.md` §"Severity honesty — the target persona anchors severity" + `python scripts/validate.py persona-divergence` (D3) | **Descriptive overlay (no new audit-internal severity class).** Carded so the registry check accounts for it; the underlying reader-dynamics finding — not this overlay — is what propagates. See the Content Advisory / Reader-Persona Simulation §4e note below |
 
-**POV Voice Profile §4e validation note (added 2026-05-18; Must-Fix row validated 2026-06-19).** Only the **Must-Fix row** (voice-collapse on 2+ POV pairs + Blind-Swap fail) is fixture-validated. The `python scripts/validate.py audit-signal-propagation` self-test exercises it directly (in-code cases `pov_propagated_clean` / `pov_unpropagated_errors` / `pov_override_body_no_error` / `pov_override_body_warns` in `letter_checks.py` `run_self_test`) via a believable Mara/Jon + Mara/Elen editorial-letter snippet whose voice-collapse-on-2+-pairs + Blind-Swap-fail signal is expressed as a **Must-Fix floor**, parsed by the validator as audit `POV Voice Profile` (slug `pov-voice-profile`) and checked to propagate (or be overridden) to a synthesis-body Must-Fix. That is the **only** policy the propagation validator can mechanically check: it enforces *canonical propagation* of a **strong** audit-internal signal (hard gate / Must-Fix floor / HIGH) to the mandated synthesis tier — it does **not** derive or verify the per-audit tier *assignments*, and it has no path to assert a Should-Fix or Could-Fix tier or a downshift. The other four rows — the single-pair **Should-Fix** row, the Blind-Swap-pass **Could-Fix** row, and the two downshift modifiers (threshold-confidence and POV-mapping-provenance) — therefore remain **provisional documented editorial conventions**, not fixture-validated (the same provisional posture as the Narrative-/Argument-Decision rows), and stay tunable on a live multi-POV manuscript run. All four use the one Must-Fix scenario only insofar as it proves propagation mechanics; none is exercised by a fixture distinct to its own policy. If a real run reads wrong at an assigned tier, the response is the same as for any §4e row: downshift on over-flagging, or upshift / strengthen Context modifiers on under-flagging.
-
-**Narrative-Decision (StoryScope) §4e note (added 2026-05-29).** The three Narrative-Decision rows above are provisional and intentionally cap at Should-Fix-on-convergence: the surface (SETEC Surface 6 `narrative_decision_audit`) is `handoff: experimental`, ships uncalibrated (no thresholds; `uncalibrated` verdict band), and the audit's claim_license forbids provenance verdicts. Narrative-decision signals therefore never produce an audit-internal Must-Fix floor or hard gate. They propagate as Could-Fix (per-signal, informational) and at most Should-Fix when bundle-level AI-leaning concentration converges with texture-level AI-Prose Calibration evidence — never as a standalone gate. SETEC's `aggregate.score` is surfaced as provenance only and is not pinned. See `craft/narrative-decision-audit.md` §Anti-verdict discipline / §4e propagation. Because the audit produces no high-tier obligation, it sits at Recommend (opt-in) in §4b; the `python scripts/validate.py audit-tier-criterion` exemption for Recommend-tier audits applies.
-
-**Argument-Decision (ArgScope) §4e note (added 2026-06-13).** The argument-domain sibling (SETEC `argument_decision_audit`, `handoff: experimental`, ships uncalibrated, anti-verdict, register-bound to op-ed/public-debate) mirrors the Narrative-Decision posture exactly. The three rows above cap at Should-Fix only when both B1 (paragraph-role arc) and B2 (discourse-mode mix) are AI-leaning AND that converges with texture-level AI-Prose Calibration evidence on the same essay; isolated per-signal evidence is Could-Fix; B3/B4 `reused_signals` are heuristic/descriptive (no numeric anchor by design) and carry no tier; SETEC's `aggregate.score` is surfaced as provenance only and not pinned. In the `distant` tier (research/legal/policy) only structural signals surface — no anchored contributions — so no high-tier obligation is produced there either. No §4b auto-recommend trigger is added: it stays a deliberately opt-in, SETEC-backed surface (revisit if usage warrants). It therefore produces no Must-Fix floor or hard gate, and the `audit-tier-criterion` Recommend-tier exemption applies. See `craft/argument-decision-audit.md` §Anti-verdict discipline / §Aggregate posture.
-
-**Content Advisory / Reader-Persona Simulation §4e note (added 2026-06-22).** Both audits are **descriptive** and emit no audit-internal severity class of their own, so neither produces a propagating signal. **Content Advisory** is a sensitivity-surface map (what is depicted, where, at what intensity) whose `A3 no-severity-leak` gate explicitly forbids it from carrying severity — craft/harm verdicts come from sibling audits (Reception Risk, consent/tag audits), not from the advisory. **Reader-Persona Simulation** is an overlay on Pass 1 (Reader Dynamics): it re-reads existing findings through declared reading dispositions and *locks* severity to the target persona's existing Ledger finding — `D3` requires a divergence's optional `asserted_severity` to **equal** the locked severity AND permits it only against a Ledger finding (a Timeline-locus anchor has no locked verdict, so it must carry none) — rejecting downgrade, inflation, and unanchored severities alike, so the underlying Pass-1 finding — not the overlay — is what propagates. They are nonetheless carded in §4e (with explicit "no propagating signal" rows) so the `audit-signal-propagation --check-registry` completeness check accounts for every signal-emitting registry entry; for these two the canonical default mapping applies vacuously (there is nothing to elevate). They are opt-in/descriptive surfaces and add no §4b auto-recommend trigger.
+**§4e validation notes** (POV Voice Profile, Narrative-Decision, Argument-Decision, Content Advisory / Reader-Persona): `docs/pass-dependencies-maintainer-notes.md` §4e notes. The rows above carry their Provisional / Descriptive status.
 
 #### Genre audits
 
@@ -505,8 +441,6 @@ Hard Prerequisite and Pre-DE Prerequisite apply to argument-shaped runs only; th
 
 **Cross-references:** §4a (router-triggered audits use this rule when also finding-triggered); §4b (finding-triggered audits use this rule when also router-triggered or fired by multiple passes); §4c (tier definitions provide the ordering); §4d (priority queue applies to surface order *after* tier resolution).
 
-**Validator follow-up (Phase 7):** A `python validate.py audit-tier-precedence <audit_invocation_log>` script could verify that every audit appears at its highest-tier-applied. Deferred to Phase 7; the rule itself is enforceable via documented contract today.
-
 ---
 
 ## §5. Interaction with Genre Modules
@@ -528,6 +462,3 @@ The resolver handles *automatic* surfacing during diagnostic runs. The `/audit` 
 
 The resolver does not gate or limit `/audit`. If a user requests an audit that the resolver wouldn't have surfaced, run it without complaint.
 
----
-
-*This file is a runtime reference. For design rationale, see the v0.5 UX Overhaul spec.*

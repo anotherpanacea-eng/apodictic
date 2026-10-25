@@ -528,7 +528,7 @@ def audit_tier_criterion(pd_path, audit_root=None):
         lines.append("FAILED: %d audit-tier-criterion failure(s); %d warning(s). Capability ceiling: "
                      "criterion 1 (hard gates / Must-Fix floor) is mechanically verified; criteria 2 "
                      "(undetectable-by-passes) and 3 (disclosure-non-equivalence) require model "
-                     "judgment and remain in the §4a/§4b verification subsection prose. Canonical home: "
+                     "judgment and are recorded in docs/pass-dependencies-maintainer-notes.md. Canonical home: "
                      "core-editor/references/pass-dependencies.md §4c Audit Tier Promotion Criteria."
                      % (errors, warns))
         return 1, lines

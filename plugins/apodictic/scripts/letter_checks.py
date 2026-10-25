@@ -360,7 +360,7 @@ def decision_layer_check(text):
 # §4e-SOURCE-OF-TRUTH mapping (2026-07-04). The signal-class → synthesis-severity
 # mapping the validator enforces is no longer hardcoded here: it is READ from the
 # `#### Default mapping (fallback for un-enumerated audits)` block of
-# pass-dependencies.md §4e (the "Column contract" the §4e prose formalizes). A §4e
+# pass-dependencies.md §4e (the "Column contract", docs/pass-dependencies-maintainer-notes.md). A §4e
 # per-audit row may additionally reassign the required severity for its own signal
 # class via a machine-parseable directive in the Override column
 # (`propagate-override: <signal-class> → <synthesis-severity>`); such a directive is
