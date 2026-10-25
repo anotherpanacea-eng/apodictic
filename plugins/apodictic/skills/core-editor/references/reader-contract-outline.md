@@ -40,7 +40,8 @@ python scripts/validate.py reader-contract-outline <run_folder>    # gates R1–
 ```
 
 If the run folder already holds a `*_Contract_Map_*` bound to the same inputs, reuse it. Staged discipline: author/gate/render in a scratch copy; move the Map + outline into the run folder
-**only** if every gate passes, else name the gate and write nothing (the deterministic-rebuild rule).
+**only** if every gate passes, else name the gate and write nothing (the deterministic-rebuild rule). On hosts without shell execution,
+perform the author/gate/render/gate inline with the same verified-or-absent discipline.
 
 ## What the gates guarantee
 
