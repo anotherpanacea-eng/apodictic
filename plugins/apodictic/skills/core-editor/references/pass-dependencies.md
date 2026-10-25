@@ -194,12 +194,12 @@ Activated by pass results during a diagnostic run. The system checks these after
 | Pass | Finding pattern | Audit(s) | Policy |
 |------|----------------|----------|--------|
 | 1 (Reader Experience) | Pacing stalls, rushed sequence compression, narrative summary overuse | Compression | Auto-recommend before synthesis |
-| 1 (Reader Experience) | Emotional flatness, forced affect, unearned catharsis | Emotional Craft | Recommend |
+| 1 (Reader Experience) | Emotional flatness, forced affect, unearned catharsis, melodrama (3+ scenes) | Emotional Craft | Recommend |
 | 1 (Reader Experience) | Dread/tension calibration problems | Horror Craft Integration | Recommend (if not already loaded) |
 | 1 (Reader Experience) | Wrongness, supernatural pressure, belief threshold problems | Supernatural Horror | Recommend (if not already loaded) |
 | 1 (Reader Experience) | Inert bleakness, violence without consequence, moral flatness, cynicism as posture | Grimdark / Dark Fantasy | Recommend (if not already loaded) |
 | 1 (Reader Experience) | Comedy landing rate low, tonal inconsistency | Comedy & Satire | Recommend |
-| 5 (Character Audit) | Character agency issues, puppet moments | Character Architecture | Recommend |
+| 5 (Character Audit) | Character agency issues, puppet moments, under-specified wants/fears | Character Architecture | Recommend |
 | 5 (Character Audit) | Female POV interiority thinning patterns | Female Interiority | Auto-recommend before synthesis |
 | 5 (Character Audit) | Voice drift, dialogue undifferentiated | Scene Turn | Auto-recommend before synthesis |
 | 7 (POV & Voice) | Interiority loss during peak-intensity scenes | Interiority Preservation | Auto-recommend before synthesis |
@@ -217,6 +217,9 @@ Activated by pass results during a diagnostic run. The system checks these after
 | 5 (Character Audit) | Puppet dialogue, cognitive sameness, generic fluency seams (AI indicators) | AI-Prose Calibration | Auto-recommend before synthesis (if not already loaded) |
 | 1 (Reader Experience) | Off-the-shelf narrative construction suspected (over-determined themes, streamlined structure, performative sensory register), or AI-Prose Calibration fired and structure-level corroboration wanted | Narrative-Decision (StoryScope) | Recommend (opt-in; long-form fiction 2000–25000 words; requires SETEC ≥ 1.107.0) |
 | Any pass | Unsupported choice architecture, false dilemmas, or abstract risk persistence | Decision Pressure | Auto-recommend before synthesis |
+| 1 (Reader Experience) | 3+ belief failures ("I don't buy this decision/reaction") | Decision Pressure | Auto-recommend before synthesis |
+| 5 (Character Audit) | Motivation discontinuity or puppet moments at 2+ major decisions | Decision Pressure | Auto-recommend before synthesis |
+| 8 (Reveal Economy) | A character acts on information they shouldn't have, or information timing undercuts decision credibility | Decision Pressure (IS channel; coordinate its flags with Reveal Economy findings) | Auto-recommend before synthesis |
 | Any pass | Consent ambiguity, governance legibility failure, coercion aestheticization risk, or aftercare / repair incoherence in intimate or power-dynamic material | Consent Complexity | Auto-recommend before synthesis |
 | Any pass | Representation contestation, screenshot risk, extractability, hostile-reader portability, or culturally volatile framing | Reception Risk | Auto-recommend before synthesis |
 | 8 (Reveal Economy) | Cross-volume state drift, thread amnesia, or consequence reset in series context | Series Continuity | Auto-recommend before synthesis (if not already loaded) |
