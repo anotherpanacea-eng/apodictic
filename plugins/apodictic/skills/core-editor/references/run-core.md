@@ -399,11 +399,11 @@ Block C preserves the salience benefit of re-grounding without the redundant tok
 2. **Anchor confirmation:** before beginning the pass's analysis, the agent re-states the contract's controlling idea + anti-idea + non-negotiables in its own words from active context (a one-line restatement is sufficient). This refreshes salience without re-loading the contract text.
 3. **Ledger awareness:** the agent reviews the most recent ledger entry it wrote (already in active context) for cross-pass connections; no fresh re-load.
 
-If single-agent salience drift is later detected on very long manuscripts (>200K words), Block C may be strengthened (e.g., add "scan the most recent ledger entry for cross-pass connections") without becoming Block B. If a quality-risk trigger (per §Quality-Risk Mode Selection) escalates a single-agent run to hybrid or swarm mid-selection, Block B applies for the run instead of Block C.
+If single-agent salience drift is later detected on very long manuscripts (>200K words), Block C may be strengthened (e.g., add "scan the most recent ledger entry for cross-pass connections") without becoming Block B.
 
 #### Block selection
 
-Block selection is locked at run start based on the selected execution mode:
+Block selection follows the run's execution mode:
 
 | Mode | Block A | Block B | Block C |
 |------|---------|---------|---------|
@@ -412,7 +412,7 @@ Block selection is locked at run start based on the selected execution mode:
 | Hybrid | Yes | Yes | — |
 | Swarm | Yes | Yes | — |
 
-If mid-run mode escalation lands as a future capability (per ROADMAP), the escalation handler is responsible for re-running this selection table.
+After a confirmed mid-run switch (§Mid-Run Escalation Check), use the new mode's row.
 
 ### Mechanical Validation Protocol
 
@@ -447,7 +447,7 @@ To reduce cross-pass anchoring while preserving cross-pass learning, each evalua
 2. **Then read** the relevant Findings Ledger entries and reconcile: confirm, contradict, refine, or integrate.
 3. **Record reconciliation** in the pass's Cross-Pass Connections section of its ledger entry.
 
-Because all modes now use subagent dispatch, isolation is architecturally enforced in every run — no subagent has prior pass artifacts in its context, only the ledger entries provided at reconciliation time. A/B testing confirmed that architecturally enforced isolation produces more independent findings and genuine cross-pass complication. The pass still re-grounds on the contract and ledger's existence before starting (see §Pre-Pass Re-Grounding), but defers reading the ledger's substantive findings until after drafting its own.
+The pass still re-grounds on the contract and ledger's existence before starting (see §Pre-Pass Re-Grounding), but defers reading the ledger's substantive findings until after drafting its own.
 
 ## Core DE Pass Specifications
 
@@ -501,12 +501,7 @@ Read as a naive reader. Track emotional and cognitive response only.
 
 **Output:** Reader experience log with tagged failures and promise drift warnings.
 
-**Finding-driven audit triggers:**
-- 3+ belief failures ("I don't buy this decision/reaction") → recommend **Decision Pressure** audit if not already activated
-- Emotional flatness or melodrama logged at 3+ scenes → recommend **Emotional Craft** audit
-- "Stakes feel low" or "I don't care what happens" at 2+ points → recommend **Stakes System** audit
-- Action/fight scenes that break immersion → recommend **Force Architecture** audit
-- Cultural register mismatch or tone-deaf moments on identity/power content at 2+ scenes → recommend **Reception Risk** audit if not already activated
+**Finding-driven audit triggers:** `pass-dependencies.md` §4b (Pass 1 and Any-pass rows).
 
 ### Pass 2: Structural Mapping
 
@@ -541,10 +536,7 @@ Before calculating any proportions, measure word counts programmatically:
 
 **Output:** Beat map, causal chain, structural flags, **proportional distribution table**.
 
-**Finding-driven audit triggers:**
-- Scene-level causal gaps or arbitrary breaks at 3+ scenes → recommend **Scene Turn** audit (Bickham) if not already activated
-- Nonfiction manuscript with situation overwhelming story → recommend **Franklin Pathway** (`references/franklin-pathway.md`) if not already activated
-- Orphan scenes ≥3, or proportional imbalance >40% in any part → recommend **Compression** audit if not already activated
+**Finding-driven audit triggers:** `pass-dependencies.md` §4b (Pass 2 and Any-pass rows).
 
 ### Pass 5: Character Audit
 
@@ -577,10 +569,7 @@ Model character psychology and track through manuscript.
 
 **`evidence_quote` (Annotated-Manuscript quote rung — Pass 5 pilot).** When a Pass-5 finding is about a **specific sentence or line** (a flat-affect beat, a puppet-moment decision line, a voice-drift sentence), attach that span verbatim as `evidence_quote` in the finding's structured block — a **single line copied** from the manuscript, never composed. It lets the marked-up copy anchor the margin note at that exact sentence. **Omit it** for a chapter/arc-level finding (motivation arc, agency-across-acts) — the note then anchors at the chapter, as today. A two-line exchange contains a newline and won't light the rung: pick the single most diagnostic line, or omit. The copy is firewall-safe by construction — the build-time locator emits a quote anchor only when the span occurs in the manuscript verbatim and exactly once, so a non-verbatim or non-unique quote is dropped and the note falls back to the chapter rung (the **A6** gate is the validate-time backstop against a forged quote anchor). See `findings-ledger-format.md` §"When to populate `evidence_quote`".
 
-**Finding-driven audit triggers:**
-- Motivation discontinuity or puppet moments at 2+ major decisions → recommend **Decision Pressure** audit if not already activated
-- Agency collapse in Act III → recommend **Stakes System** audit (pressure field may not be converting)
-- Character wants/fears under-specified → recommend full **Character Architecture** specialized audit (Truby Part 9: moral argument coupling)
+**Finding-driven audit triggers:** `pass-dependencies.md` §4b (Pass 5 and Any-pass rows).
 
 ### Pass 8: Reveal Economy
 
@@ -608,9 +597,7 @@ Track information flow.
 
 **`evidence_quote` (conditional).** When a finding is about one precise reveal, signpost, or withholding sentence, copy that complete single-line sentence verbatim as `evidence_quote` and keep the intended `evidence_refs`. Omit it for structural timing, missing clues, dropped threads, and multi-line evidence. The quote outranks the refs for placement, so copy the sentence you mean the note to sit on. See `findings-ledger-format.md` §"When to populate `evidence_quote`".
 
-**Finding-driven audit triggers:**
-- Knowledge errors (character acts on information they shouldn't have) → recommend **Decision Pressure** audit (IS channel)
-- Information timing issues affecting character decision credibility → coordinate Decision Pressure IS flags with Reveal Economy findings
+**Finding-driven audit triggers:** `pass-dependencies.md` §4b (Pass 8 and Any-pass rows).
 
 ---
 
