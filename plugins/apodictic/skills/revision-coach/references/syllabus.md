@@ -18,7 +18,7 @@ Load this file only in Learning Mode. Normal runs and the other coach modes neve
 
 1. **Pick the lesson.** Default to the first lesson in the sequence that `Syllabus_Progress.md` does not show as cleared or skipped. The writer may pick any lesson instead. If `Diagnostic_State.md` exists and its highest-leverage open finding matches a lesson, offer that lesson first, since practice on a live problem sticks.
 2. **Teach (about 400 words).** Read only the concept file's opening section (its Purpose or core-problem section, through the named failure modes and the non-duplication boundaries). Do not load the scoring procedure, logic gates, or output templates. Explain the concept in plain language, name its main failure, and say how it differs from the nearest neighbouring concept. If the writer has named a passage, point to where the concept is visible in it, as an observation and never as a finding.
-3. **Exercise.** Give one prompt from the lesson's prompt family in `structural-prompt-library.md`. It must pass the 5-part firewall, with one adaptation: in Learning Mode "state-grounded" means grounded in the lesson's concept applied to a passage the writer named. Include the clinamen clause and end with the structural self-check. Respect the No-Prompt Zones: if the writer is depleted or saturated, teach and stop.
+3. **Exercise.** Give one prompt from the lesson's prompt family in `structural-prompt-library.md`. It must pass the 5-part firewall, with one adaptation: in Learning Mode "state-grounded" means grounded in the lesson's concept applied to a passage the writer named. Include the clinamen clause and end with the structural self-check. Of the No-Prompt Zones, only depletion and feedback saturation apply here: if the writer is depleted or saturated with feedback, teach and stop. The missing-state-file zone does not apply in Learning Mode.
 4. **Assignment.** Name the command that tests the skill on the writer's own pages (the Assignment column). The writer runs it; the coach does not run audits or produce findings (Delegation principle). Lessons with no audit use the process named instead.
 5. **Record.** Update `Syllabus_Progress.md` (below).
 
@@ -45,7 +45,7 @@ A lesson is **cleared** when its assignment shows the skill on the page:
 - the assignment audit's finding for this concept reaches `revised` in `execution.finding_states` (or carries a resolved marker in the latest revision report), or
 - the assignment audit, run on the chosen pages, raises no finding for this concept. The writer tested out.
 
-Process lessons (L14, L15) clear when the named process is completed once.
+Process lessons (L5, L14, L15) clear when the named process is completed once.
 
 Keep the game light. Show the cleared count and the next lesson as the writer's place in the course, never as a judgment of the writer (the same transference-health rule as Coaching History in `../SKILL.md`). Do not add scores, streaks, or deadlines: pressure is itself a block type (`writers-block-taxonomy.md`), and the syllabus should never become one.
 

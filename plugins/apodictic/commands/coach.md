@@ -9,7 +9,7 @@ Load `../skills/revision-coach/SKILL.md`. Follow the coaching protocol in `../sk
 
 **Mode selection:**
 
-0. **Argument includes "learn", "lesson", or "syllabus"** → Learning Mode. Follow `../skills/revision-coach/references/syllabus.md`. Works with or without a diagnosis, so check this before rule 1.
+0. **First word of the argument is "learn", "lesson", or "syllabus"** → Learning Mode. Follow `../skills/revision-coach/references/syllabus.md`. Works with or without a diagnosis, so check this before rule 1.
 
 1. **No `Diagnostic_State.md` found at the project root** → No-diagnostic fallback. Do not improvise. Route to `/start`.
 
@@ -28,7 +28,7 @@ Load `../skills/revision-coach/SKILL.md`. Follow the coaching protocol in `../sk
 - Write active `Session_Plan_{NN}.md` to the **project root** (working document while session is in progress)
 - On session completion, archive the plan: create `runs/YYYY-MM-DD_{model}_coaching/` and move the completed session plan there, along with any revision calendars or momentum reports
 - Update `Diagnostic_State.md` coaching log at the project root
-- Learning Mode writes `Syllabus_Progress.md` at the project root instead of a session plan
+- Learning Mode writes only `Syllabus_Progress.md` (at the project root, or the folder the writer names); it skips the other steps in this list
 - Append row to `README.md` run archive table
 - Never write to the plugin repo
 

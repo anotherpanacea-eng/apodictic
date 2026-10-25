@@ -14,7 +14,7 @@ description: >
   "stalled revision," "paralyzed,"
   "choice paralysis," "execution gap," "too much feedback,"
   "overmediated," "I don't know what I think anymore,"
-  "structural experiment," "I need an exercise," "teach me," "lesson,"
+  "structural experiment," "I need an exercise," "craft lesson,"
   or "syllabus."
 version: 2.15.0
 ---
