@@ -77,10 +77,10 @@ spec  →  review  →  write  →  review  →  fix  →  merge
 The spec/code reviews (steps 2, 4) earn their keep when the reviewer does more than read for plausibility. These passes have caught real bugs that reasoning-about-the-code missed, plus one doc-hygiene discipline:
 
 - **Hostile fixtures.** Construct inputs the spec and self-tests *don't* cover — wrong-shaped sidecars, colliding/lookalike filenames (a `*_Revision_Calendar_*` satisfying a `*_Revision_*` glob meant for the Report), empty/partial state, malformed-but-valid JSON, a field in a shape the spec merely documents (a bare-string `next_action`). Self-tests only test what the author already thought of; the worst bugs live in the inputs they didn't.
-- **Run the combined validation gate first.** Step one of a code review is `python plugins/apodictic/scripts/validate.py --check-all` — the local equivalent of CI's ordered validator self-test + canonical-framework phases — not a proxy. A change applied to only one script copy (see "Platform parity") is green locally and CI-blind. (The full CI gate set is broader — also `release-generate.mjs --check`, `build-codex`/`build-antigravity --self-check`, `assemble-changelog --check`, `check-status-drift.mjs`; run them when you touch generated/paired docs.)
+- **Run the combined validation gate first.** Step one of a code review is `python plugins/apodictic/scripts/validate.py --check-all` — the local equivalent of CI's ordered validator self-test + canonical-framework phases — not a proxy. A change applied to only one script copy (see "Platform parity") is green locally and CI-blind. (The full CI gate set is broader — also `release-generate.mjs --check`, `build-codex`/`build-antigravity --self-check`, `assemble-changelog --check`; run them when you touch generated/paired docs.)
 - **Distrust count-shaped claims.** "2× findings," "nine rows removed," "total/exhaustive," "all N covered" — re-enumerate from scratch; never accept the number.
-- **Flip the status when you build.** A build PR flips its spec doc's `**Status:**` line (and its ROADMAP entry) in the same PR — status drift recurred across #66/#70/#74. New specs declare their deliverable with a `built-when` marker (syntax in `docs/qol-status-drift-lint.md` §Marker syntax) so `scripts/check-status-drift.mjs` catches the miss mechanically. (Keep any literal `built-when` comment *example* inside `docs/**` fenced, or it parses as a real marker.)
-- **Re-sync the inventory surfaces when the registry moves.** When you change the signal-emitting audit registry (`audit-routing-table.md`) or the research modes (`commands/research.md`), re-sync the dashboards/matrix inventory and bump their `inventory-synced` marker to the new signature (`check-inventory-parity` reports it). The check enforces the *signal* (registry changed since last sync), not the surface content — bumping the marker without actually re-syncing the inventory defeats it, so do both.
+- **Flip the status when you build.** A build PR flips its spec doc's `**Status:**` line (and its ROADMAP entry) in the same PR. Status drift recurred across #66/#70/#74; check it by hand in review.
+- **Re-sync the inventory surfaces when the registry moves.** When you change the signal-emitting audit registry (`audit-routing-table.md`) or the research modes (`commands/research.md`), re-sync the dashboards/matrix inventory in the same PR.
 
 ## Test value convention
 
@@ -170,37 +170,17 @@ the fragments into a dated `## vX.Y.Z` section at release time (and deletes them
 
 ## PRs and merges
 
-- **Default every change to a draft PR.** Do not promote or separately merge an
-  ordinary constituent merely because its local checks pass.
-- **Periodically build a disposable `train/` branch** from exact reviewed PR heads
-  with `--no-ff` merges. Promote it once, verify its exact CI receipt, and merge
-  that train with a merge commit. Never squash or reconstruct constituents.
-- **Delete the disposable train branch after merge.** Constituent branches may be
-  deleted once GitHub has recognized their unchanged heads as indirectly merged.
-- **Do not add bytes during landing.** If a batch needs a version or assembled-
-  changelog adjustment, make it an inventoried, separately reviewed train-only
-  commit before the train head is frozen and tested. Otherwise ship it in a later
-  trained release change. Patch/minor/major selection still follows
-  `CONTRIBUTING.md`.
-- **Codex 5.5 is the standing PR reviewer; don't merge out from under it.** It
-  routinely catches P1/P2s a self-review misses — make the obvious fixes, then let
-  its pass run. **Auto-merge on dual agreement applies only to a frozen, cleared
-  train or an explicitly `ci-ready` standalone exception.** If only one agent has
-  reviewed, a comment is unresolved, or a constituent has not entered the frozen
-  train, hold rather than self-merging.
+- **Default every change to a draft PR.** Drafts start no CI.
+- **Batch reviewed drafts into a `train/` branch** with `--no-ff` merges of their
+  exact reviewed heads, mark the train PR ready, and merge it with a merge
+  commit once CI is green. Never squash. Delete the train branch after merge.
+- **Codex 5.5 is the standing PR reviewer; don't merge out from under it.** Make
+  the obvious fixes, then let its pass run. If only one agent has reviewed or a
+  comment is unresolved, hold.
 - **`gh` OAuth workflow-scope merge block (public repo).** A PR that touches
   `.github/workflows/` can't be merged with the `gh` OAuth token (403 "refusing to
-  allow an OAuth App to create or update workflow") — this has bitten this repo.
-  Prefer GitHub's merge path when it reliably enforces the unchanged frozen base
-  and expected train head; the single-maintainer connector exception below also
-  permits a freshly verified merge when an atomic base guard is unavailable.
-  For the guarded terminal path, fetch the train PR's tested synthetic merge
-  ref, require exact parents `BASE` then `HEAD`, construct a local two-parent merge
-  with that exact tree and no CI-skip instruction, repeat every live-state and
-  receipt check, then update `main` only with
-  `--force-with-lease=refs/heads/main:<BASE>`. Never substitute an ordinary merge
-  from the current `main`, an unguarded push, or an unverified web merge: each can
-  land a tree that the train's receipt never tested.
+  allow an OAuth App to create or update workflow"). Use GitHub's merge button or
+  the connector's merge-commit API instead.
 
 ### Branch naming
 
@@ -211,61 +191,25 @@ the fragments into a dated `## vX.Y.Z` section at release time (and deletes them
 
 ### Standalone exception
 
-There is no docs-only, typo, or one-line direct-main bypass. If a change genuinely
-cannot wait for the next train, keep its PR non-train, add the exact `ci-ready`
-label only after both reviews and local validation, and follow the same exact-head
-receipt and landing discipline below, preferring compare-and-swap.
-
-### Single-maintainer connector landing
-
-Prefer the existing atomic base guard (the sanitized CAS landing path or an
-explicit expected-base lease). The maintainer's standing authorization,
-2026-10-01, permits a GitHub merge-commit fallback when that path is unavailable
-and this remains a trusted single-maintainer repository. Do not ask again solely
-because the connector lacks an expected-base parameter.
-
-This exception applies only to a frozen, reviewed train or an already authorized
-`ci-ready` standalone PR. Immediately before merging, recheck the live `main`
-commit, PR base/head, closed inventory, reviews and unresolved threads, and the newest
-live CI run/attempt (which must be successful) and its exact
-base/head/synthetic-merge receipt. Every
-value must still match the frozen clearance. Use the merge-commit API with the
-full expected PR-head SHA; never substitute squash, rebase, an unconditional ref
-update, or enabling auto-merge. If anything moved or evidence is unavailable,
-stop and rebuild/review/revalidate as needed.
-
-This fallback accepts the short gap between checking `main` and merging; it is
-not an atomic base comparison. After merging, verify the actual merge parents
-are the checked base then PR head and its tree equals the CI-tested tree before
-landing a dependent repository. All review, CI, train, scope and release rules
-still apply. This authorization does not include deployments or release tags.
-
-**CI support:** the existing PR-merge binding step proves which base/head/tree
-were tested; it does not lock `main` until landing. Enforced strict up-to-date
-required checks or a supported GitHub merge queue can manage base changes, but
-verify repository settings first; queue adoption also needs `merge_group` CI
-support, which the current PR-only workflow does not have. A dedicated landing
-workflow could perform the existing guarded CAS write on the runner, with narrow
-write permissions and all live checks. Concurrency alone does not exclude web/API
-writers. These are options, not configured guarantees; do not enable new write
-permissions or a queue merely to satisfy this fallback.
+A change that cannot wait for the next train may be marked ready on its own after
+both reviews and local validation; CI then runs on it like a train.
 
 ## CI
 
-`.github/workflows/ci.yml` gives unarmed drafts a skipped record. A same-repository
-`train/` PR, or an explicitly `ci-ready` standalone exception, runs one ordered
-`validate` job on `ubuntu-latest`. That job byte-compiles `plugins/` + `scripts/` (syntax gate),
-validates that the plugin / marketplace / release-registry manifests parse, runs
-the validator self-tests (`validate.sh --self-test-all`) and canonical-framework
-checks (`validate.sh --check-canonical`), and runs the generator/parity gates (`assemble-changelog.mjs --check`,
-`release-generate.mjs --check`, both build `--self-check`s). Beside it, a
-`validate-windows` job on `windows-latest` runs `python plugins/apodictic/scripts/validate.py --check-all`
-with only Python on `PATH`, so the gate cannot use Bash. There is no pytest
-application suite; the small pytest policy suite protects this CI boundary and
-the native aggregate contracts. The
-`evals/` fixtures are the behavioral
-ground-truth track. `.github/workflows/release.yml` builds + publishes the per-host
-bundles on `v*` tags.
+`.github/workflows/ci.yml` runs on non-draft PRs only. The `validate` job on
+`ubuntu-latest` byte-compiles `plugins/` + `scripts/` (syntax gate), validates that
+the plugin / marketplace / release-registry manifests parse, runs the validator
+self-tests (`validate.sh --self-test-all`) and canonical-framework checks
+(`validate.sh --check-canonical`), and runs the generator/parity gates
+(`assemble-changelog.mjs --check`, `release-generate.mjs --check`, both build
+`--self-check`s) and the SETEC contract drift gate. Beside it, a
+`validate-windows` job on `windows-latest` runs
+`python plugins/apodictic/scripts/validate.py --check-all` with only Python on
+`PATH`, so the gate cannot use Bash. A small pytest suite guards the `@claude`
+workflow's safety boundaries and the native aggregate contracts. The `evals/`
+fixtures are the behavioral ground-truth track. `.github/workflows/release.yml`
+builds + publishes the per-host bundles on `v*` tags. Follow the fleet CI budget
+rule (fleet-coordination `PATTERNS.md` §14) before adding a job, step or gate.
 
 ## Co-authorship
 
