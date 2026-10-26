@@ -119,7 +119,7 @@ After saving the contract, compute its SHA-256 hash (via `python scripts/validat
 
 ### Audit Activation at Contract
 
-After generating the contract, recommend specialized audits based on genre, mode, and content signals. Most audits run after core passes (or after expanded pass sets when advanced passes are selected) and produce companion findings that feed the synthesis. Two tiers added in Phase 6 Wave 3 are exceptions: **Hard Prerequisite** audits (currently Field Reconnaissance for high-stakes argument-shaped runs) MUST complete before any Tier 2 evaluative pass can begin, and **Pre-DE Prerequisite** audits (currently Citation Verifier for high-stakes argument-shaped runs) run before the Development Edit begins. The Pre-Pass Prerequisite Resolution step in §Execution Protocol resolves both tiers before pass dispatch. See `references/pass-dependencies.md §4a/§4c/§4f` for tier definitions and decline-path semantics.
+After generating the contract, recommend specialized audits based on genre, mode, and content signals. Most run after core passes and feed synthesis; Hard and Pre-DE Prerequisite audits resolve before pass dispatch (§Execution Protocol step 6; `references/pass-dependencies.md §4c`).
 
 The contract-driven activation rules (genre/mode/content signal → recommended audits), the recommendation-not-mandate rule, and the minimum-recommendation floor live in `references/audit-routing-table.md`. Load it at the contract step.
 
@@ -127,16 +127,7 @@ The contract-driven activation rules (genre/mode/content signal → recommended 
 
 ## Pass Resolution (Query-Driven)
 
-Resolve pass scope before running diagnostics:
-
-1. Load `references/pass-dependencies.md`.
-2. Resolve user concern to minimum pass set via the concern table.
-3. Add upstream dependencies automatically.
-4. Order execution by dependency tier.
-5. Run synthesis after selected passes complete.
-6. If selected set includes Pass 3, 4, 6, 7, 9, or 10, load `references/run-full.md` for those pass specifications.
-
-If concern is absent or ambiguous, default to **General diagnostic** baseline (Passes 0, 1, 2, 5, 8).
+Resolve the pass set per `references/pass-dependencies.md` (default General diagnostic: Passes 0, 1, 2, 5, 8). If it includes Pass 3, 4, 6, 7, 9, or 10, load `references/run-full.md` for those specifications.
 
 Pass specifications below define how each pass runs once selected.
 
@@ -144,7 +135,7 @@ Pass specifications below define how each pass runs once selected.
 
 ## Execution Mode
 
-APODICTIC supports multiple execution modes. The mode choice affects how passes run, not what they diagnose — the same pass specifications, Findings Ledger protocol, and synthesis format apply in all modes.
+APODICTIC supports multiple execution modes. The mode choice affects how passes run, not what they diagnose — the same pass specifications, Findings Ledger protocol, and synthesis format apply in all modes. Mode selection is mechanical (§Execution Protocol step 3); the user can request a mode at intake, and the system confirms the mode and its cost before proceeding.
 
 ### Pre-flight & Context-Window Detection
 
@@ -158,7 +149,7 @@ Token-fit (above) selects the technically viable mode. Quality-risk overlays it:
 
 - **Q1 — Consent/governance risk.** Detectable predicate: contract genre includes Horror, Erotic, or content where power-dynamics are central; OR contract has `Consent Complexity` audit on the recommended/auto-recommend list; OR contract has `Reception Risk` audit on the recommended/auto-recommend list; OR contract notes `darkness level: HIGH` or equivalent. **Default escalation:** single-agent → hybrid (or hybrid → swarm if final-round). **Rationale:** Consent-architecture and reception-risk diagnoses benefit from architectural isolation between the structural lens (does the consent system function on the page) and the reception lens (what audiences perceive); a single-agent context risks the lenses anchoring on each other.
 
-- **Q2 — Argument-shaped nonfiction with high stakes.** Detectable predicate: intake `constraint:nonfiction` is set AND the form is policy brief, testimony, white paper, op-ed for publication, academic argument, or open letter (router §2 / §4a Form table); OR contract has `Dialectical Clarity` audit on the recommended list with submission readiness signaled. **Default escalation:** single-agent → hybrid; if a Field Reconnaissance prerequisite is also required (per Phase 6 CR-4 work, when wired), hybrid → swarm. **Rationale:** Argument-shaped work with external stakes warrants independent stress-testing of claim ladder, evidence weight, and audience fit; anchoring across these lenses produces softer red-team than the work demands.
+- **Q2 — Argument-shaped nonfiction with high stakes.** Detectable predicate: intake `constraint:nonfiction` is set AND the form is policy brief, testimony, white paper, op-ed for publication, academic argument, or open letter (router §2 / §4a Form table); OR contract has `Dialectical Clarity` audit on the recommended list with submission readiness signaled. **Default escalation:** single-agent → hybrid; if a Field Reconnaissance prerequisite is also required, hybrid → swarm. **Rationale:** Argument-shaped work with external stakes warrants independent stress-testing of claim ladder, evidence weight, and audience fit; anchoring across these lenses produces softer red-team than the work demands.
 
 - **Q3 — Many POVs or non-linear structure.** Detectable predicate: contract POV count ≥3 (per intake schema POV field); OR intake explicitly flags non-linear chronology, fragmented structure, or nested narratives in the structural notes. **Default escalation:** single-agent → hybrid; ≥6 POVs → hybrid → swarm. **Rationale:** Cross-POV character coherence and information-flow tracking degrades when one context tries to hold all voices simultaneously; per-pass isolation lets each lens hold its own subset cleanly.
 
@@ -176,26 +167,7 @@ Token-fit (above) selects the technically viable mode. Quality-risk overlays it:
 
 ### Cost-Floor Override (Budget Cap)
 
-Quality-risk only escalates *upward* — it never downgrades the token-fit floor (above). A cost-constrained user needs the opposite lever: a first-class way to cap the run **below** the token-fit floor at the cheapest load-viable mode, with the tradeoff disclosed. This is that lever. It is a **user-declared** cap, never inferred from a plan/tier/usage-window sniff (none happens).
-
-**Marker family + token (both required, and they must agree on the mode).** A cost-floor cap is recorded as BOTH:
-- an override marker — `<!-- override: cost-floor-<mode> — <rationale> -->`, with `<mode> ∈ {single-agent, sequential, hybrid}` (three exact slugs). There is **no `cost-floor-swarm`** — swarm is the ceiling, so "cap at swarm" caps nothing; a bare `<!-- override: cost-floor -->` with no mode suffix is an error (the cap target must be machine-readable).
-- a run-metadata token — `cost_floor_override: <mode>[; context_tier: standard|large] — <rationale>`, on the same surfaces as `quality_risk_override` (run metadata / intake notes / contract body).
-
-The optional `context_tier` sub-field is **required only when `<mode>` = single-agent** (the only cap whose viability depends on the host window). Like `dispatch_log` provenance, `context_tier` is **declared, not platform-verified** — bash cannot observe the true host window, so the validator gates the declaration's presence + consistency, not the reality.
-
-**Single-agent viability rule.** A `single-agent` cap is offered only on a ≥1M-context host with an estimated single-agent load under 600K tokens. Mechanically: the token must declare `context_tier: large` (`standard` or absent → error) AND the preflight packet is **mandatory**, with its `Estimated single-agent load` under 600K (packet absent, or load ≥ 600K → error). `sequential` and `hybrid` are always load-viable ("Any" context requirement) and hence always offerable — but offering them below the standard-context token-fit floor is exactly the pre-1M failure mode (see §Single-Agent "Why it works now"), so it is **disclosure-mandatory**, not silently granted.
-
-**CF4 pairing rule — a cost cap may not silently demote a fired quality-risk decision.** If a fired Q-trigger's escalation target is *above* the cap (under the total order single-agent < sequential < hybrid < swarm), the cap is honored only when the user has ALSO walked the existing named-acknowledgment path for that trigger — i.e. the run carries the paired `<!-- override: quality-risk-Q[n] — … -->` marker. That paired marker **IS** the acknowledgment for demoting past the fired trigger; cost-floor alone can only cap the token-fit floor.
-
-**Mandatory disclosure (present before dispatch under a cap), three parts:**
-1. **The numbers.** The per-mode estimates from the preflight packet (`## Per-Mode Token Cost Estimate`) for at least the capped mode and the displaced mode — e.g. "sequential ≈ 472K vs swarm ≈ 1.10M estimated; the measured end-to-end single→swarm gap ran ~8.5× on the 2026-06 pilot."
-2. **The named trade, typed correctly.** If the cap is below the *token-fit floor* on this host, the trade is **safety** — compaction risk + late-pass salience decay on a manuscript this size (cite the §Single-Agent "Why it works now" failure description). If the cap demotes a fired *quality-risk* target, the trade is **quality** — the named Q-trigger's architectural isolation forgone (per-trigger rationale from §Quality-Risk Mode Selection) — and it requires the paired Q[n] override.
-3. **Honest framing of what swarm buys.** Verification isolation and tighter severity banding, **NOT** "2× deeper analysis" — the 2026-06 pilot found single-agent tied-or-edged swarm on real-issue recall. Where the disclosure cites that recall-parity result it must carry the eval doc's hedges: **directional, single-fixture N=1, not a verdict** (see `docs/swarm-vs-single-eval.md` and §Swarm). Do not tell the user a firmer thing than the evidence supports.
-
-Only after the user confirms with a specific rationale are the token + marker recorded.
-
-**Validator.** `python scripts/validate.py cost-floor <contract_or_run_metadata_file> [<preflight_packet>] [<meta_json>] [--strict]` gates the record's integrity — CF1 marker integrity (incl. the bidirectional orphan-token check: a live token with no matching marker WARNs by default, ERRORs under `--strict`), CF2 marker↔token sync, CF3 single-agent context-tier + mandatory-packet load bound (plus a below-floor WARN for a sequential/hybrid cap under the packet's token-fit floor), CF4 the pairing rule above. Like `quality-risk-triggers`, **it does not select the mode — the orchestrator owns selection.** It cannot observe whether the disclosure was actually shown (that half is a run-core instruction, not a mechanical gate); see `docs/cost-floor-dispatch.md`.
+When the user declares a budget cap (or picks a mode below the token-fit floor), load `references/cost-floor-override.md` before dispatch: marker + token, single-agent viability rule, CF4 pairing, the mandatory three-part disclosure, and the `cost-floor` validator.
 
 ### Single-Agent Mode (Default — Large Context)
 
@@ -207,11 +179,7 @@ The parent orchestrator dispatches **one subagent** that runs all passes sequent
 
 **What stays:** The Findings Ledger is still written to disk after each pass (compaction insurance, even if compaction is unlikely). Staged visibility is procedurally enforced: the subagent completes each pass's analysis before reading the accumulated ledger for reconciliation. Pre-pass re-grounding still applies.
 
-**What changes vs. per-pass subagents:** The manuscript loads once instead of per-pass (~2–5x token savings). Cross-pass context is richer because the subagent retains residual memory of earlier pass analysis beyond what the ledger captures. The tradeoff: passes are not architecturally isolated, so anchoring bias is procedurally managed rather than structurally eliminated.
-
-**Token cost estimate (118K-word manuscript):** ~240,000–300,000 tokens (manuscript loaded once + analytical overhead). Approximately 0.5–0.6x the cost of sequential mode.
-
-**How to invoke:** This is the automatic default when context and manuscript size qualify. No user action needed. The user can override to sequential, hybrid, or swarm at intake.
+**What changes vs. per-pass subagents:** The manuscript loads once instead of per-pass. Cross-pass context is richer because the subagent retains residual memory of earlier pass analysis beyond what the ledger captures. The tradeoff: passes are not architecturally isolated, so anchoring bias is procedurally managed rather than structurally eliminated.
 
 ### Sequential Mode
 
@@ -225,7 +193,7 @@ Each pass runs as an independent subagent that receives the full manuscript, con
 
 Pass 0+1 reads the full manuscript as a triage subagent and produces a **focus map** — a targeting document that tells each subsequent pass which scenes to deep-read. Later passes receive the reverse outline (the compressed manuscript) plus only the focus map's targeted excerpts, not the full text.
 
-**What the user should know:** Hybrid mode provides most of swarm's quality gains — architectural isolation, independent analysis, reduced anchoring — at roughly **2–3x the token cost** instead of swarm's 5x. The tradeoff: later passes see targeted excerpts rather than the full manuscript, so they depend on the focus map's accuracy. The focus map errs on inclusion (targeting 30–50% of scenes), and every pass still receives the complete reverse outline for structural context.
+**What the user should know:** Hybrid mode provides most of swarm's quality gains — architectural isolation, independent analysis, reduced anchoring — at lower cost than swarm (see the token cost table under §Execution Protocol). The tradeoff: later passes see targeted excerpts rather than the full manuscript, so they depend on the focus map's accuracy. The focus map errs on inclusion (targeting 30–50% of scenes), and every pass still receives the complete reverse outline for structural context.
 
 **When to use:** In standard-context mode, pre-flight recommends hybrid for manuscripts in the 60–100K word range. In large-context mode, hybrid is dormant by default (single-agent handles this range), but the user can invoke it if they want the focus map's targeted-reading approach for its own sake. Also valuable for:
 - Runs where the user wants better-than-default quality without full swarm cost
@@ -233,15 +201,13 @@ Pass 0+1 reads the full manuscript as a triage subagent and produces a **focus m
 
 **When NOT to use:** Manuscripts under ~40,000 words (sequential or single-agent handles these comfortably), or final-round diagnostics where independent-lens verification justifies swarm's cost. Pre-flight's mode recommendation can be overridden by the user at intake. *See §Quality-Risk Mode Selection for triggers that may escalate hybrid to swarm.*
 
-**How to invoke:** The user requests hybrid mode at intake or before pass execution begins. Example: "Run this in hybrid mode" or "Use selective reading." The system confirms mode selection and token cost implications before proceeding.
-
 **Full specification:** See `references/hybrid-mode.md` for the focus map format, targeting grammar, confidence tiers, excerpt extraction protocol, and risk analysis.
 
 ### Swarm Mode
 
 Each evaluative pass runs as an independent subagent that receives the full manuscript. Unlike sequential mode, passes 2, 5, and 8 can run **in parallel** since they don't depend on each other's ledger entries — they each receive the same accumulated ledger (from the triage pass only) and produce independent findings.
 
-**What the user should know:** Swarm runs each pass in **architectural isolation** — no pass sees prior analysis until the reconciliation step — which eliminates anchoring bias and gives an independent-lens read, at roughly **5x the token cost** of single-agent mode (a long-fiction re-test measured the gap at ~8.5× or more — the swarm figure excludes orchestration overhead). Its defensible everyday value is that isolation — a writer/verifier separation on a final pass — **as verification insurance, not a higher raw yield.** An earlier validation reported ~2× findings; a 2026-06 N=1 pilot on a 130K-word manuscript did **not** reproduce a recall advantage (single-agent tied-or-edged swarm on real-issue recall at a fraction of the cost; swarm's edge was tighter severity-banding, a directional N=1 read), so do not advertise "deeper analysis" as the everyday rationale. Reserve swarm for **final submission prep** and the verifier-isolation spot-check. *Last re-validated: 2026-06 (N=1, directional — not a verdict; see `docs/swarm-vs-single-eval-pilot/`).*
+**What the user should know:** Swarm runs each pass in **architectural isolation** — no pass sees prior analysis until the reconciliation step — which eliminates anchoring bias and gives an independent-lens read, at the highest token cost of any mode (see the token cost table under §Execution Protocol). Its defensible everyday value is that isolation — a writer/verifier separation on a final pass — **as verification insurance, not a higher raw yield.** An earlier validation reported ~2× findings; a 2026-06 N=1 pilot on a 130K-word manuscript did **not** reproduce a recall advantage (single-agent tied-or-edged swarm on real-issue recall at a fraction of the cost; swarm's edge was tighter severity-banding, a directional N=1 read), so do not advertise "deeper analysis" as the everyday rationale. Reserve swarm for **final submission prep** and the verifier-isolation spot-check. *Last re-validated: 2026-06 (N=1, directional — not a verdict; see `docs/swarm-vs-single-eval-pilot/`).*
 
 **When to use:** When independent-lens verification matters more than token economy — final-round insurance, not the everyday default. Valuable regardless of context window size because the benefit comes from architectural isolation, not compaction resilience. Particularly valuable for:
 - Final-round diagnostics before submission
@@ -249,8 +215,6 @@ Each evaluative pass runs as an independent subagent that receives the full manu
 - Manuscripts where the single-agent approach produced findings that echo rather than complicate each other
 
 **When NOT to use:** Quick diagnostics, partial manuscripts, budget-constrained runs, or manuscripts short enough that single-agent handles them comfortably. *See §Quality-Risk Mode Selection — Q4 (prior thin synthesis) and Q5 (submission readiness) typically default to swarm.*
-
-**How to invoke:** The user requests swarm mode at intake or before pass execution begins. Example: "Run this in swarm mode" or "Use subagent passes." The system confirms mode selection and token cost implications before proceeding.
 
 #### Execution Protocol
 
@@ -262,13 +226,12 @@ Each evaluative pass runs as an independent subagent that receives the full manu
    - **(b) Quality-risk overlay.** Run `python scripts/validate.py quality-risk-triggers <contract_file> [diagnostic_state_meta_file]` (or perform the equivalent inline check per §Quality-Risk Mode Selection). For each fired Q1-Q5 trigger, raise the recommendation toward its escalation target. Stacking triggers cap at swarm. Quality-risk only escalates upward; it never demotes the floor.
    - **(c) Final mode = max(token-fit-mode, quality-risk-recommendation).** Surface the rationale to the user before dispatch. A `quality_risk_override` *declines an escalation back to the floor* — but this precedence is **suspended while a lower cost-floor cap is active** (see (d)): when a cost-floor cap sits below a fired quality-risk target, the cap governs as the operative ceiling, and the paired `quality-risk-Q[n]` marker (CF4) IS the named acknowledgment for demoting past that fired trigger — it is not an independent decline-to-floor computation. Absent an active lower cap, `quality_risk_override` behaves exactly as before.
    - **(d) Cost-floor cap (user-initiated, optional).** A user may cap the run *below* the token-fit floor via a `cost_floor_override` marker + token (see §Cost-Floor Override (Budget Cap)). The cap composes over the **RAW fired-trigger target**: `final = min( max(token-fit-floor, RAW-quality-risk-target), cost_cap )`, where `RAW-quality-risk-target` is the fired-trigger escalation target that `quality-risk-triggers` surfaces **even when a QRO marker is present** — NOT the post-QRO decline-to-floor value (composing over the post-QRO value would make a cap strictly between floor and Q-target unreachable, defeating the feature). `cost_floor_override` is the only path below the floor; going below a fired Q-target requires BOTH the cost-floor records AND the paired `quality-risk-Q[n]` marker (CF4) AND the three-part disclosure.
-     - **Worked example (`floor < cap < Q-target`).** floor = `sequential` (standard-context, ~70K words); Q5 fires (goal=submit) → RAW target = `swarm`; the user caps at `single-agent`. `final = min( max(sequential, swarm), single-agent ) = min(swarm, single-agent) = single-agent`. To be honored, this run must carry a `cost-floor-single-agent` marker + a `cost_floor_override: single-agent; context_tier: large — …` token (CF1/CF2/CF3: large tier + load < 600K), a **paired `quality-risk-Q5` marker** (CF4 — else the validator errors naming Q5), and the three-part disclosure (safety trade: below the sequential floor → compaction/salience; quality trade: Q5 swarm-isolation forgone). Every channel then agrees: the cap = `single-agent`, the disclosure states both trades, the `dispatch_log` entries carry `execution_mode: "single-agent"`, and `dispatch_record --report` counts one `cost_floor_override` record.
 4. Run intake in the parent context (load SKILL.md, run-core.md, generate contract, resolve pass set)
 5. Initialize the Findings Ledger
 6. **Pre-Pass Prerequisite Resolution (Phase 6 Wave 3 / wired in v1.7.9).** Before pass dispatch, walk `references/pass-dependencies.md §4a` for any audit at **Hard Prerequisite** or **Pre-DE Prerequisite** tier, given the resolved contract:
    - **Pre-DE Prerequisite audits** (currently Citation Verifier for high-stakes argument-shaped runs) run BEFORE the Development Edit begins. Their output (e.g., `Citation_Ledger.md`) is consumed by argument-cluster passes but is not part of the pass dependency graph. Dispatch the audit per its reference file's pre-DE handoff protocol; persist its output artifact to the project root.
    - **Hard Prerequisite audits** (currently Field Reconnaissance for high-stakes argument-shaped runs) run BEFORE any Tier 2 evaluative pass. Their output (e.g., `Field_Reconnaissance_Report.md`) materially changes what the passes evaluate against — they must complete and append to the Findings Ledger before dispatch step 7 begins.
-   - **Decline path** (per `pass-dependencies.md §4c` + §4f edge cases 8-9). If the user declines either tier, present the explicit fork: (a) terminate the run with the tier's "cannot proceed" advisory, OR (b) downgrade to Auto-recommend before synthesis with a body-of-letter blind-spot disclosure recorded at synthesis (per `run-synthesis.md §Step 3 Blind Spot / Absence Inventory`). Silent omission is forbidden at these tiers. Record the resolution in the Audit Invocation Log with rationale (`prerequisite-declined; downgrade-with-disclosure` or `prerequisite-declined; run-terminated`).
+   - **Decline path** (per `pass-dependencies.md §4c` + `argument-audits-routing.md` §Prerequisite tiers). If the user declines either tier, present the explicit fork: (a) terminate the run with the tier's "cannot proceed" advisory, OR (b) downgrade to Auto-recommend before synthesis with a body-of-letter blind-spot disclosure recorded at synthesis (per `run-synthesis.md §Step 3 Blind Spot / Absence Inventory`). Silent omission is forbidden at these tiers. Record the resolution in the Audit Invocation Log with rationale (`prerequisite-declined; downgrade-with-disclosure` or `prerequisite-declined; run-terminated`).
    - **Tier resolution invariant.** The Pre-Pass Prerequisite Resolution step honors the §4f Audit Tier Precedence Rule: when an audit is surfaced through multiple paths, the highest tier wins. A finding-trigger at Auto-recommend before synthesis cannot promote an audit to Hard Prerequisite — Hard Prerequisite is reserved for router-triggered prerequisite policy on argument-shaped runs with high-stakes signal (per `pass-dependencies.md §4a` argument-shaped routing definition + high-stakes signal definition).
 
 **If single-agent mode:**
@@ -281,9 +244,7 @@ Each evaluative pass runs as an independent subagent that receives the full manu
 9. Pass the growing Findings Ledger to each subsequent subagent
 10. Dispatch the synthesis subagent with the complete ledger and the Pre-Pass Prerequisite outputs. **As part of this dispatch, write the Synthesis Coverage Manifest** (`[Project]_Synthesis_Read_Manifest_[runlabel].md` — row grammar and denominator in `run-synthesis.md` §Processing Protocol step 9b): one `artifact` row per enumerated run-folder item (`verbatim` for files handed to the synthesis subagent, `summary` for artifacts represented only via the ledger / reverse outline, `absent` for on-disk artifacts in no synthesis input), plus `span` rows from the preflight section boundaries — in hybrid mode the focus map's Synthesis Verification Excerpts are the `in-context` spans. Written by the parent **before** the subagent runs, the manifest is `dispatch-derived` — the strongest coverage evidence available without platform introspection — and `python validate.py synthesis-coverage` later reconciles the letter's coverage note, marker, and sidecar object against it. **Also append a `dispatch_log` entry** (`seq`, `step: "synthesis"`, `model_tag`, `execution_mode`, `max_turns`, `provenance`) to `Diagnostic_State.meta.json` for this synthesis dispatch, per the step-7 recording rule (`provenance: "dispatch-derived"` = parent-requested, not platform-verified; `declared` inline on a no-shell host).
 
-   **Pre-Letter Re-Grounding bounded pulls (`docs/synthesis-regrounding.md` M2).** In sequential / hybrid / swarm, the synthesis step's Pre-Letter Re-Grounding (`run-synthesis.md` §Processing Protocol step 9c) may request, and the parent orchestrator services, per-finding retrievals to restore specificity before the letter is written. **Input:** the `finding_id` + that finding's locked `evidence_refs` anchors (plus the what/why pull-request format already specified in `docs/subagent-architecture-design.md:110`). **Output:** the excerpt text + its token count (so the ≤ 5k-tokens/span, ≤ 2-spans/finding bound is mechanically checkable and the manifest span row can flip to `in-context` / `regrounded: true`). **Increment-1 scope-down:** the orchestrator-governed pull *API* is unbuilt — Runner-Governed Execution Increment 4 (external host orchestrator) remains future (§Runner-Governed Execution, `ROADMAP.md`) — so this ships **prompt-level**: the pulls are step-text instructions the orchestrating model executes, backstopped by the mechanical floors (`specificity-floor` + `synthesis-coverage` verify the *results* on disk, not the pull transcript). Single-agent needs no pull (the manuscript is a file; step 9c re-reads it directly).
-
-   <!-- deferred: orchestrator-pull-interface (Runner-Governed Execution Increment 4) -->
+   **Pre-Letter Re-Grounding pulls.** In sequential / hybrid / swarm, service the bounded per-finding pulls that `run-synthesis.md` §Processing Protocol step 9c requests, returning each excerpt with its token count so the span bound is checkable. Single-agent needs no pull.
 
 **Turn budgets (from pre-flight):**
 - **Triage subagent (Pass 0+1):** `max_turns` = `ceil(total_lines / 500) + 20` (pre-flight computes this). For an 84K-word / 5,759-line manuscript, this yields `max_turns: 32`.
@@ -327,9 +288,7 @@ The three values are **read from `references/pass-dependencies.md §3` (Macro Bl
 | Hybrid (selective reading) | ~500,000–690,000 | Strong; architectural isolation + targeted excerpts | Any |
 | Swarm (full manuscript, parallel) | ~1,000,000–1,200,000 | Best; no cross-pass influence, parallel execution | Any |
 
-Note: Single-agent mode restores the token efficiency of the pre-v1.0.4 single-context approach while retaining the Findings Ledger protocol and staged visibility. It is viable only when the context window is large enough that compaction and salience decay are non-issues. Sequential and higher modes remain available for standard-context models or user preference.
-
-`scripts/preflight.sh` now prints these per-mode estimates **for the manuscript at hand** in a `## Per-Mode Token Cost Estimate` section (single-agent · sequential ×3 · hybrid ×4 · swarm ×7). They are order-of-magnitude budget signals, **not ratio-comparable** — the single-agent figure is overhead-loaded (+75K baked in) while the ×3/×4/×7 figures are overhead-stripped multiples of the bare manuscript-token estimate. The §Cost-Floor Override (Budget Cap) path lets a budget-constrained user cap below the token-fit floor from exactly those numbers, with the tradeoff disclosed.
+`scripts/preflight.sh` prints these per-mode estimates for the manuscript at hand (`## Per-Mode Token Cost Estimate`); they are order-of-magnitude budget signals, not ratio-comparable across modes.
 
 For full architecture details, cost analysis, and risk discussion: see `docs/subagent-architecture-design.md`.
 
@@ -399,11 +358,11 @@ Block C preserves the salience benefit of re-grounding without the redundant tok
 2. **Anchor confirmation:** before beginning the pass's analysis, the agent re-states the contract's controlling idea + anti-idea + non-negotiables in its own words from active context (a one-line restatement is sufficient). This refreshes salience without re-loading the contract text.
 3. **Ledger awareness:** the agent reviews the most recent ledger entry it wrote (already in active context) for cross-pass connections; no fresh re-load.
 
-If single-agent salience drift is later detected on very long manuscripts (>200K words), Block C may be strengthened (e.g., add "scan the most recent ledger entry for cross-pass connections") without becoming Block B. If a quality-risk trigger (per §Quality-Risk Mode Selection) escalates a single-agent run to hybrid or swarm mid-selection, Block B applies for the run instead of Block C.
+If single-agent salience drift is later detected on very long manuscripts (>200K words), Block C may be strengthened (e.g., add "scan the most recent ledger entry for cross-pass connections") without becoming Block B.
 
 #### Block selection
 
-Block selection is locked at run start based on the selected execution mode:
+Block selection follows the run's execution mode:
 
 | Mode | Block A | Block B | Block C |
 |------|---------|---------|---------|
@@ -412,7 +371,7 @@ Block selection is locked at run start based on the selected execution mode:
 | Hybrid | Yes | Yes | — |
 | Swarm | Yes | Yes | — |
 
-If mid-run mode escalation lands as a future capability (per ROADMAP), the escalation handler is responsible for re-running this selection table.
+After a confirmed mid-run switch (§Mid-Run Escalation Check), use the new mode's row.
 
 ### Mechanical Validation Protocol
 
@@ -428,11 +387,10 @@ APODICTIC uses `scripts/validate.py` for lightweight, zero-token invariant check
 | Contract drift | `python validate.py contract-check <file> <hash>` | Compare `shasum -a 256` output to stored hash | Before each pre-pass re-grounding |
 | Ledger structure | `python validate.py ledger-check <file>` | Verify each pass entry contains 5 required subsection headings (see `references/findings-ledger-format.md` §Ledger Entry Format) | After each pass appends to the ledger |
 | Artifact naming | `python validate.py artifact-names <dir> <project> <runlabel>` | Check each pass artifact filename matches `[Project]_Pass[N]_[Name]_[runlabel].md` | Before synthesis |
-| Synthesis sections | `python validate.py synthesis-sections <file>` | Check for all 14 required section headings as markdown headings (see below) | After writing editorial letter |
+| Synthesis sections | `python validate.py synthesis-sections <file>` | Check for all 14 required section headings as markdown headings (`run-synthesis.md` step 12) | After writing editorial letter |
 | State size | `python validate.py state-lines <file>` | `wc -l` | At resume gate |
 
 **On failure:**
-- **Contract drift:** Warn the user. If intentional (author-requested revision), update the hash. If unintentional, investigate before proceeding.
 - **Ledger structure:** Fix the missing section before dispatching the next pass. A ledger entry missing "Cross-Pass Connections" means synthesis loses its highest-value input.
 - **Artifact naming:** Rename before synthesis so the Results Guide points to correct files.
 - **Synthesis sections:** Fix before delivering to the author. A letter missing "Protected Elements" or "Control Questions" is incomplete.
@@ -447,7 +405,7 @@ To reduce cross-pass anchoring while preserving cross-pass learning, each evalua
 2. **Then read** the relevant Findings Ledger entries and reconcile: confirm, contradict, refine, or integrate.
 3. **Record reconciliation** in the pass's Cross-Pass Connections section of its ledger entry.
 
-Because all modes now use subagent dispatch, isolation is architecturally enforced in every run — no subagent has prior pass artifacts in its context, only the ledger entries provided at reconciliation time. A/B testing confirmed that architecturally enforced isolation produces more independent findings and genuine cross-pass complication. The pass still re-grounds on the contract and ledger's existence before starting (see §Pre-Pass Re-Grounding), but defers reading the ledger's substantive findings until after drafting its own.
+The pass still re-grounds on the contract and ledger's existence before starting (see §Pre-Pass Re-Grounding), but defers reading the ledger's substantive findings until after drafting its own.
 
 ## Core DE Pass Specifications
 
@@ -501,12 +459,7 @@ Read as a naive reader. Track emotional and cognitive response only.
 
 **Output:** Reader experience log with tagged failures and promise drift warnings.
 
-**Finding-driven audit triggers:**
-- 3+ belief failures ("I don't buy this decision/reaction") → recommend **Decision Pressure** audit if not already activated
-- Emotional flatness or melodrama logged at 3+ scenes → recommend **Emotional Craft** audit
-- "Stakes feel low" or "I don't care what happens" at 2+ points → recommend **Stakes System** audit
-- Action/fight scenes that break immersion → recommend **Force Architecture** audit
-- Cultural register mismatch or tone-deaf moments on identity/power content at 2+ scenes → recommend **Reception Risk** audit if not already activated
+**Finding-driven audit triggers:** `pass-dependencies.md` §4b (Pass 1 and Any-pass rows).
 
 ### Pass 2: Structural Mapping
 
@@ -541,10 +494,7 @@ Before calculating any proportions, measure word counts programmatically:
 
 **Output:** Beat map, causal chain, structural flags, **proportional distribution table**.
 
-**Finding-driven audit triggers:**
-- Scene-level causal gaps or arbitrary breaks at 3+ scenes → recommend **Scene Turn** audit (Bickham) if not already activated
-- Nonfiction manuscript with situation overwhelming story → recommend **Franklin Pathway** (`references/franklin-pathway.md`) if not already activated
-- Orphan scenes ≥3, or proportional imbalance >40% in any part → recommend **Compression** audit if not already activated
+**Finding-driven audit triggers:** `pass-dependencies.md` §4b (Pass 2 and Any-pass rows).
 
 ### Pass 5: Character Audit
 
@@ -575,12 +525,9 @@ Model character psychology and track through manuscript.
 
 **Output:** Character cards, agency timeline.
 
-**`evidence_quote` (Annotated-Manuscript quote rung — Pass 5 pilot).** When a Pass-5 finding is about a **specific sentence or line** (a flat-affect beat, a puppet-moment decision line, a voice-drift sentence), attach that span verbatim as `evidence_quote` in the finding's structured block — a **single line copied** from the manuscript, never composed. It lets the marked-up copy anchor the margin note at that exact sentence. **Omit it** for a chapter/arc-level finding (motivation arc, agency-across-acts) — the note then anchors at the chapter, as today. A two-line exchange contains a newline and won't light the rung: pick the single most diagnostic line, or omit. The copy is firewall-safe by construction — the build-time locator emits a quote anchor only when the span occurs in the manuscript verbatim and exactly once, so a non-verbatim or non-unique quote is dropped and the note falls back to the chapter rung (the **A6** gate is the validate-time backstop against a forged quote anchor). See `findings-ledger-format.md` §"When to populate `evidence_quote`".
+**`evidence_quote` (conditional).** When a finding is about one precise line (a flat-affect beat, a puppet-moment decision line, a voice-drift sentence), copy that single line verbatim as `evidence_quote`. Omit it for chapter/arc-level findings and multi-line evidence. See `findings-ledger-format.md` §"When to populate `evidence_quote`".
 
-**Finding-driven audit triggers:**
-- Motivation discontinuity or puppet moments at 2+ major decisions → recommend **Decision Pressure** audit if not already activated
-- Agency collapse in Act III → recommend **Stakes System** audit (pressure field may not be converting)
-- Character wants/fears under-specified → recommend full **Character Architecture** specialized audit (Truby Part 9: moral argument coupling)
+**Finding-driven audit triggers:** `pass-dependencies.md` §4b (Pass 5 and Any-pass rows).
 
 ### Pass 8: Reveal Economy
 
@@ -608,9 +555,7 @@ Track information flow.
 
 **`evidence_quote` (conditional).** When a finding is about one precise reveal, signpost, or withholding sentence, copy that complete single-line sentence verbatim as `evidence_quote` and keep the intended `evidence_refs`. Omit it for structural timing, missing clues, dropped threads, and multi-line evidence. The quote outranks the refs for placement, so copy the sentence you mean the note to sit on. See `findings-ledger-format.md` §"When to populate `evidence_quote`".
 
-**Finding-driven audit triggers:**
-- Knowledge errors (character acts on information they shouldn't have) → recommend **Decision Pressure** audit (IS channel)
-- Information timing issues affecting character decision credibility → coordinate Decision Pressure IS flags with Reveal Economy findings
+**Finding-driven audit triggers:** `pass-dependencies.md` §4b (Pass 8 and Any-pass rows).
 
 ---
 
@@ -655,14 +600,7 @@ When all selected passes and their dependencies are complete, load `references/r
 
 ## Scene-Level Handoff (Optional)
 
-When a diagnosis is complete for a clearly scoped scene and the writer wants help executing the fix, run `references/handoff-protocol.md`.
-
-- Require explicit confirmation before mode switch.
-- Append a new entry to `Handoff History` (never overwrite prior entries).
-- Set `Mode.Current` to `execution` and set `Active scene scope`.
-- In execution mode, diagnostic constraints are suspended; prose-level collaboration is allowed.
-- Return to diagnostic mode via phrase trigger ("back to editor", "resume editor", "check this fix") or the `/start` resume gate.
-- On re-entry, run a targeted delta check for the active scope, close the handoff entry, and reset mode to `diagnostic`.
+When a diagnosis is complete for a clearly scoped scene and the writer wants help executing the fix, follow `references/handoff-protocol.md` (confirmation, mode switch, re-entry).
 
 ---
 

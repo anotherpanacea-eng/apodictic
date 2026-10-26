@@ -25,7 +25,7 @@ Checks (spec §M1.2):
   R2 coverage         bidirectional-with-asymmetry, reconciled per step kind, against the
                       pass-artifact glob family (`_Pass[N]_`) + synthesis-letter globs
                       (`*_Core_DE_Synthesis_*` / `*_Full_DE_Synthesis_*` — the detection the
-                      annotated-manuscript offer uses, run-synthesis.md:534). Satisfaction map:
+                      annotated-manuscript offer uses, run-synthesis.md §Annotated Manuscript). Satisfaction map:
                       `pass<N>` -> Pass N; `pass0+1` -> BOTH Pass0 and Pass1; `all-passes` ->
                       every pass artifact (and is EXCLUSIVE — may not coexist with pass<N>/
                       pass0+1); `synthesis` -> the letter. Deferred-extension ids
@@ -52,7 +52,7 @@ Checks (spec §M1.2):
                       host legitimately records all-`declared` entries under
                       `execution_mode: sequential`.
   R5 escalation       cross-check using only the log + `last_session.execution_mode` (updated on
-                      a confirmed switch, run-core.md:315/321): (a) the execution_mode values in
+                      a confirmed switch, run-core.md §Mid-Run Escalation Check): (a) the execution_mode values in
                       seq order may change AT MOST ONCE (the Mid-Run Escalation Check runs once,
                       at the Tier-1/2 seam — a thrashing log is flagged); (b) when
                       last_session.execution_mode is present, the FINAL entry's execution_mode
@@ -63,7 +63,7 @@ Checks (spec §M1.2):
   --report <project_dir>   read-only cross-run scan (fold S-3). Prints, gating nothing: runs
                       scanned; per-model-tag dispatch tallies from every dispatch_log; and the M2
                       DEMAND-SIGNAL line — the count of `quality_risk_override` records
-                      (run-core.md:171 run-metadata token + the :175 override-marker syntax,
+                      (run-core.md §Quality-Risk Mode Selection run-metadata token + override-marker syntax,
                       matched via the shared override_marker helper, meta-lint M5) and how many
                       carry a budget-flavored rationale. Nothing else reads quality_risk_override
                       across runs; without this the M2 trigger would be recorded-but-invisible

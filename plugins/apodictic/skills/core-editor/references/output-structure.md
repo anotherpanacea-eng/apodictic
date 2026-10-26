@@ -226,7 +226,42 @@ The model tag is **required**, not optional. It identifies which model generated
 
 ### Results Guide
 
-Per-run artifact, not a rolling file. Lives inside its run folder alongside the pass artifacts it references. See §Results Guide Artifact in SKILL.md for format.
+Per-run artifact, not a rolling file. Lives inside its run folder alongside the pass artifacts it references. After synthesis, produce `[Project]_Results_Guide_[runlabel].md` — a map from writer questions to the relevant artifacts from the run. This is the first file after the editorial letter and helps the writer navigate their results without framework knowledge.
+
+Include only blocks and artifacts from passes that actually ran. Format:
+
+```markdown
+# Results Guide — [Project Name]
+_Run: [runlabel]_
+
+## How to use this guide
+Start with the **Editorial Letter** for the diagnosis and priority repairs.
+Use this guide to find the detailed analysis behind each finding.
+
+---
+
+## Your results by question
+
+### [Writer question — e.g., "Is the structure working?"]
+- Editorial Letter § [Macro block name]
+- Detail: `[pass artifact filename]`
+- Detail: `[pass artifact filename]`
+
+[... repeat for each macro block that ran ...]
+
+## Specialized audits run
+- [Audit Name]: `[artifact filename]`
+
+## State files
+- Diagnostic State: `Diagnostic_State.md`
+- Findings Ledger: `[Project]_Findings_Ledger_[runlabel].md`
+
+## What to do next
+- `/coach` — plan revision sessions from this diagnosis
+- `/audit [name]` — run a focused deep-dive on a specific concern
+```
+
+Omit the "Specialized audits run" section if no audits ran. Omit "Argument State" from state files unless the nonfiction engine was active.
 
 ### Lifecycle Summary
 

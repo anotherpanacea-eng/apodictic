@@ -84,7 +84,7 @@ ESTIMATED_MANUSCRIPT_TOKENS=$(( (TOTAL_WORDS * 4 + 2) / 3 ))
 # Single-agent overhead: pass specs (~20k) + contract (~5k) + ledger growth (~30k) + synthesis (~20k)
 ESTIMATED_SINGLE_AGENT_LOAD=$(( ESTIMATED_MANUSCRIPT_TOKENS + 75000 ))
 
-# Per-mode token cost estimate. Calibration source: run-core.md §Token Cost — its published bands
+# Per-mode token cost estimate. Calibration source: run-core.md §Execution Protocol token cost table — its published bands
 # anchor on the 118K-word / ESTIMATED_MANUSCRIPT_TOKENS≈157,333 point (×3/×4/×7 land in the
 # 400-500K / 500-690K / 1.0-1.2M bands). Integer bash arithmetic, no new deps. NOT ratio-comparable:
 # the single-agent figure is OVERHEAD-LOADED (manuscript + the +75K analytical overhead already in

@@ -52,3 +52,14 @@ relevant pass produces the listed finding pattern. Tier precedence follows §4f 
 *Note: Consent Complexity and Reception Risk also fire on fiction runs; they are listed here because
 they also fire on argument-shaped runs. Their canonical tier entries remain in `pass-dependencies.md §4b`.
 This fragment lists them here for completeness of the argument routing picture.*
+
+## Prerequisite tiers
+
+*Moved from `pass-dependencies.md §4f`.*
+
+**Hard Prerequisite ordering note (Phase 6 Wave 3 / CR-4).** Hard Prerequisite and Pre-DE Prerequisite tiers added in Phase 6 Wave 3 to support Field Reconnaissance and Citation Verifier prerequisite policy on argument-shaped runs. They sit above Auto-run in the ordering because they are *pass* dependencies (must complete before Tier 2 evaluative passes can begin) rather than *synthesis* dependencies. A finding-trigger at Auto-recommend before synthesis cannot promote an audit to Hard Prerequisite — that tier is reserved for router-triggered prerequisite policy on argument-shaped runs with high-stakes signal. The priority queue (§4d) does not reorder Hard Prerequisite / Pre-DE Prerequisite audits within a pass surface — those audits run before passes, so they have no in-pass surface position to order.
+
+**Decline fork (§4f edge cases):**
+
+8. **Hard Prerequisite declined by user (Phase 6 Wave 3).** When a Hard Prerequisite audit (router-triggered for an argument-shaped run with high-stakes signal) is declined, the resolver MUST present a fork: (a) terminate the run with a "cannot proceed without literature-counterevidence surfacing for high-stakes argument-shaped runs" advisory, or (b) downgrade to Auto-recommend before synthesis with a body-of-letter blind-spot disclosure that names "literature-counterevidence not surveyed" as a confidence limit at synthesis. The user chooses (a) or (b); the resolver does not silently downgrade. If the user re-affirms (b), the §4c Auto-recommend before synthesis decline path applies thereafter.
+9. **Pre-DE Prerequisite declined by user (Phase 6 Wave 3).** When the Pre-DE Prerequisite Citation Verifier is declined for a high-stakes argument-shaped run, the same fork applies: terminate or downgrade-with-disclosure. Citation Verifier declines must additionally name "citation provenance not verified — Ghost Citation / Quote Drift / Paraphrase Inflation risks not surveyed" as the confidence limit at synthesis.

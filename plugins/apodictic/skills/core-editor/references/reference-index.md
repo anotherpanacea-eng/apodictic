@@ -10,6 +10,7 @@
 | `references/run-core.md` | Every Core DE and Full DE run (intake, pass execution, ledger protocol) |
 | `references/audit-routing-table.md` | At the contract step — contract-driven audit-activation rules + signal-emitting-audit registry |
 | `references/execution-modes-reference.md` | At dispatch (run start) — pre-flight and context-window detection detail |
+| `references/cost-floor-override.md` | Only when the user declares a budget cap or picks a mode below the token-fit floor |
 | `references/findings-ledger-format.md` | When writing or validating per-pass ledger entries (entry template + Structured Findings Block) |
 | `references/run-synthesis.md` | After passes complete (audit integration, synthesis, deliverables, evidence spot-check) |
 | `references/state-lifecycle.md` | State gardening and revision rounds (loaded by `/start`, `/coach`, revision workflows) |

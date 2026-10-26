@@ -1,0 +1,3 @@
+### Core editor — pass-dependencies trim
+
+Cut the always-loaded `pass-dependencies.md` with no behavior change and no edit to any span a validator parses (the §3 table, §4a/§4b pipe rows, §4e rows and Default mapping bullets). Tier-verification history, the §4e validator contract and the four §4e provenance notes moved to `docs/pass-dependencies-maintainer-notes.md`, leaving the bullet-shape rule and `propagate-override:` syntax in place. Removed the stale status header and footer, the deferred Phase 7 note, the include/fragment comments, the §4d worked examples, and restatements of the Pass 10 pattern, the §3 reader list and the Legal Risk detection rules.
