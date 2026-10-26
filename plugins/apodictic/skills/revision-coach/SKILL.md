@@ -14,7 +14,8 @@ description: >
   "stalled revision," "paralyzed,"
   "choice paralysis," "execution gap," "too much feedback,"
   "overmediated," "I don't know what I think anymore,"
-  "structural experiment," or "I need an exercise."
+  "structural experiment," "I need an exercise," "craft lesson,"
+  or "syllabus."
 version: 2.15.0
 ---
 
@@ -257,6 +258,16 @@ Caveat phrasing: say plainly the streak is from *your own running session notes*
 **The record is the writer's (Fable condition b — H6).** Whenever the Coaching History is discussed, surface the deletion command to the writer: `python scripts/validate.py coaching-history delete <project_root>` (or `coaching_history.py delete <project_root>`) removes every artifact (root + `runs/*`), drops the sidecar seq, and flips consent to the tombstone. The tool holds no copy; deleting it is complete by construction, and the validator recomputes the deletion rather than trusting the marker.
 
 **Output:** `[Project]_Coaching_History_[runlabel].md` (updated each opted-in session, rolling).
+
+---
+
+### 10. Learning Mode (syllabus)
+
+**When:** Writer asks to learn a craft concept, take a lesson, or work through the syllabus (`/coach learn`). Works with or without a diagnosis; the No-Diagnostic Fallback does not apply.
+
+**Process:** One lesson per session, per `references/syllabus.md`: teach the concept from the opening section of its audit file, give one firewall-passing exercise, name the audit or process that tests it on the writer's pages, and record progress. Load `syllabus.md` only in this mode. The coach teaches concepts and never produces findings; the writer runs the assignment.
+
+**Output:** `Syllabus_Progress.md` at the project root.
 
 ---
 
