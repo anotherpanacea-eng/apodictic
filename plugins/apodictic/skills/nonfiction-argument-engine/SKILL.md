@@ -185,7 +185,7 @@ Offer these only when the writer asks, or when the letter's next steps call for 
 
 ## QA Guardrails
 
-All core-editor QA guardrails apply (see `core-editor/SKILL.md §QA Guardrails`). Argument-specific additions:
+All core-editor gates apply (`core-editor/references/run-synthesis.md` Step 10 and `run-core.md` §Mechanical Validation Protocol). Argument-specific additions:
 
 1. **Warrant verification before severity assignment.** Every WR-class flag must name the specific
    inferential gap — "the audience must supply X" — not a generic "needs more evidence."

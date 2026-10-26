@@ -38,7 +38,7 @@ It covers two kinds of manuscript. **Fiction** gets structural passes, genre cal
 - `/world-bible` — check a worldbuilding bible for self-contradiction (rules, magic costs, geography, timeline).
 
 **Revise after a diagnosis**
-- `/coach` — session planning, stuck-point coaching, momentum tracking, deadline calendars.
+- `/coach` — session planning, stuck-point coaching, momentum tracking, deadline calendars. `/coach learn` works through a craft syllabus one lesson at a time, no diagnosis needed.
 - `/triage-feedback` — sort, validate, and prioritize external (beta-reader / critique / editor) feedback.
 - `/reader-questions` — turn the diagnosis's open uncertainties into a targeted, non-leading beta-reader questionnaire.
 - `/adjudicate` — review the argument reconstruction (claim graph) and record your approve / reject / revise decisions on each claim and link; resumable.
