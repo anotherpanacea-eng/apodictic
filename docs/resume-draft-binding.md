@@ -24,6 +24,7 @@ When `/start` resumes a bound project, it checks the stored contract hash agains
 
 All of it lands in `commands/start.md` Step 0.5, item 1 (`:37`): about 10 lines replacing one paragraph.
 
+0. **Pre-contract projects are unchanged.** When the sidecar has no `contract_hash` (a `pre_writing` minimal sidecar, `skills/pre-writing-pathway/SKILL.md:476`, or a fresh `diagnosing` sidecar), skip items 1–3 and dispatch with no run folder, exactly as `start.md:37` does today.
 1. **Select the run by name, not by date.** Resolve the run folder from the sidecar's `last_session.runlabel`: the folder holding `[Project]_Contract_[runlabel].md`. Use that one folder for the contract check, for `lifecycle-node … [run_folder]`, and for the `diagnosed`/round-trip offers. If the runlabel is missing or matches zero or several folders, list the candidate runs and ask which one. Never pick the newest silently.
 2. **Say what the hash checks.** On a mismatch, say "the contract changed since intake", not "manuscript/contract".
 3. **Compare the draft with the run's snapshot, when both exist.** If the selected run folder holds `[Project]_Manuscript_Snapshot_[runlabel].md` and the writer has supplied a draft in this session, compare the draft (LF-normalized, single trailing newline, the `run-core.md:20` rule) byte-for-byte with the snapshot. Use a shell or Python compare where available. The snapshot is the fingerprint, so nothing new is stored.
@@ -53,6 +54,7 @@ A manual walk-through, recorded in the build PR, on a scratch project:
 2. The manuscript is edited and the contract is not → the draft-changed prompt appears, and the contract check passes.
 3. An unchanged draft → no prompt.
 4. A partial-de run with no snapshot → the one-line "not checked" note.
+5. A pre-writing project with only the minimal sidecar → `pre_writing` dispatch with no run question.
 
 No automated test: the change is routing prose, and no validator owns it (`AGENTS.md` § Test value convention).
 

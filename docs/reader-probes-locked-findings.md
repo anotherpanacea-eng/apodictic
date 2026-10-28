@@ -37,13 +37,14 @@ Horizon item 16 is about severity softened by **author objection**. A reader rep
    - For a locked finding, ask what the reader experienced at that point. Never ask whether the problem exists, and never name the finding's mechanism in the question. Example, for a motivation finding: "What did you understand to be the reason she left?", not "Did her unexplained departure bother you?"
    - **Unprompted first.** The instrument opens with one or two open questions (for example "Where, if anywhere, did you lose interest? What confused you?"), answered before the targeted ones.
    - `expected_signal` reads the reported experience, not the reader's explanation or fix.
-   - Step 5 becomes: returned answers can reopen a locked finding. The `assessment` comes from APODICTIC's re-analysis of the text in light of the report, never from how many readers said what. If the re-analysis finds the mechanism does not operate, the item is `refuted`, and the existing decline offer (`feedback-triage.md:37`) lets the author record it.
-4. **Command (3 sentences),** `commands/reader-questions.md:12`, `:20`, `:22` — the same rule.
-5. **Design doc (about 10 lines),** `docs/beta-reader-instrument.md` — delete the B5 row and rewrite `:20`, `:64-65`, `:113` to point here.
-6. **Example (1 line),** `skills/core-editor/references/example-beta-reader-instrument.md:7` — drop the "does not trip B5" clause.
-7. One `changelog.d/` fragment.
+   - Step 5 becomes: returned answers can reopen a locked finding. Feedback Triage assesses the reader's claim as it does today: re-analysis of the text, never a count of readers. A reader who names the reason she left makes a claim about what the text conveys, and re-analysis can `validate` it. The answer bears on the finding when that validated claim contradicts the finding's mechanism.
+4. **Feedback Triage (2 lines),** `skills/revision-coach/references/feedback-triage.md` step 3 (`:34`). When a `validated`/`partly-validated` item cites an `F-…` id in `evidence_refs` and contradicts that finding's mechanism, say so and offer the author the existing finding-disposition record (`{disposition: declined, source: triage, reason: …}`, the same dual-writer path as step 6, `:37`). The author decides; nothing changes on its own. The item itself is not declined, so W3 (`scripts/feedback_triage.py:20`) is unaffected. No validator change.
+5. **Command (3 sentences),** `commands/reader-questions.md:12`, `:20`, `:22` — the same rule.
+6. **Design doc (about 10 lines),** `docs/beta-reader-instrument.md` — delete the B5 row and rewrite `:20`, `:64-65`, `:113` to point here.
+7. **Example (1 line),** `skills/core-editor/references/example-beta-reader-instrument.md:7` — drop the "does not trip B5" clause.
+8. One `changelog.d/` fragment.
 
-In total about 60 lines touched across seven files. It adds no validator, schema id, finding field, override marker or gate.
+In total about 60 lines touched across eight files. It adds no validator, schema id, finding field, override marker or gate.
 
 ## Behavior it protects
 
@@ -53,21 +54,22 @@ In total about 60 lines touched across seven files. It adds no validator, schema
 ## Deletion test
 
 - **B5 and the `how-to-fix` override — delete.** B5 guards against softening a verdict by survey. That is already prevented where it would happen: re-analysis sets the assessment, not reader count. The review's own safeguard, neutral wording, is B4. With B5 gone, a probe of a locked finding is the intended behavior, so no silent failure remains.
-- **Nothing added.** There is no reopen state, no new status on findings and no reader-evidence ledger. Reopening runs through the existing triage `assessment` and decline offer.
+- **Nothing added.** There is no reopen state, no new status on findings and no reader-evidence ledger. Reopening runs through the existing triage `assessment` and the existing finding-disposition record, offered from one more triage step.
 
 ## Not in this spec (owner's call)
 
-- **The `/ready` tally.** A finding refuted at Step 6b leaves the repair list, but its locked severity still counts in the triage tally and verdict caps (`docs/finding-disconfirmation.md:277`). This spec leaves that alone. The card leaves the tally contract to the owner.
-- **Reader reports as Step 6b counter-evidence.** `refutation-evidence` checks counter-evidence quotes against the manuscript snapshot (`scripts/refutation_check.py:31-53`). Letting reader reports count there would change `apodictic.refutation.v1` and the tally. Not proposed here.
+- **The `/ready` tally.** A finding refuted at Step 6b leaves the repair list, but its locked severity still counts in the triage tally and verdict caps (`docs/finding-disconfirmation.md:277`). A declined disposition keeps its existing `/ready` treatment too. This spec changes no count or cap. The card leaves the tally contract to the owner, as a decision separate from anything here.
+- **Reader reports as Step 6b counter-evidence.** `refutation-evidence` checks counter-evidence quotes against the manuscript snapshot (`scripts/refutation_check.py:31-53`). Admitting reader reports there would change that evidence rule in `apodictic.refutation.v1`. It would not by itself change the tally: Step 6b keeps locked severity, counts and caps (`run-synthesis.md:199-209`). Not proposed here.
 
 ## Acceptance check
 
 1. Self-test arm (step 2): a ledger with one Must-Fix/HIGH motivation finding and an instrument with an unprompted opener plus a `locked-finding` experiential probe. The probe passes `reader-instrument --strict`. A blocklisted leading version ("Don't you think her departure is unexplained?") still trips B4. That is existing behavior, and the arm confirms it survives.
-2. Manual walk-through, recorded in the build PR: (a) a reader names the reason for the departure → re-analysis → `refuted` → the decline offer appears; (b) a reader only dislikes the scene → not refuted, and the finding stands.
+2. Manual walk-through, recorded in the build PR: (a) a reader names the reason for the departure → re-analysis validates that claim → the item cites the finding and contradicts its mechanism → the disposition offer appears; (b) a reader only dislikes the scene → the claim does not bear on the mechanism, so no offer appears and the finding stands.
 
 ## Owner questions
 
 1. **Reverse the Horizon-16 boundary?** Delete B5 and `how-to-fix` (this spec), or keep B5 as a non-strict note? B5 implements a ratified roadmap boundary (`ROADMAP.md:562`), so reversing it is your decision.
-2. **How a finding reopens.** (a) Through the triage `refuted` assessment and the existing decline offer (this spec; no tally change), or (b) Step 6b accepts reader reports as counter-evidence (schema change, and it touches the `/ready` tally).
+2. **How reader evidence reaches a finding.** (a) A validated triage item contradicts the finding, and the author is offered the existing disposition record (this spec), or (b) Step 6b also admits reader reports as counter-evidence (an evidence-rule change to `apodictic.refutation.v1`). Either route keeps today's counts and caps.
+5. **The `/ready` tally** for refuted or declined findings is a separate decision. Neither route above needs it changed.
 3. **Name** of the new `source_kind`: `locked-finding`, or something else?
 4. **Mechanize "don't name the mechanism" and "unprompted first"?** This spec keeps both as prose. B4's blocklist does not catch "did X bother you?", and adding that phrase is a one-line option.
