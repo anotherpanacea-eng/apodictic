@@ -94,7 +94,7 @@ Teach ranges, where the opening section is thin or the concept sits later in the
 
 L13: skip it when the book's shelf has no genre or tag audit in the `/audit` list (for example, general romance or literary fiction).
 
-L15's assignment needs a `Diagnostic_State.md` (`/coach` routes to `/start` without one); without it the lesson stops at `practiced`.
+L15's assignment needs a `Diagnostic_State.md` or `Argument_State.md`. Without one, the writer can opt into a state-less `/coach stuck` run (`../SKILL.md` §2). That run moves L15 to `practiced`; clearing still needs a run against a state file.
 
 ### Argument track
 

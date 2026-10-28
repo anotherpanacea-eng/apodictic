@@ -20,6 +20,9 @@ Load `../skills/plot-architecture/SKILL.md`. This works upstream of plot diagnos
 3. Compare current vs. needed (engine, reader experience, resolution type)
 4. Prescribe: strengthen current spine, swap primary, or add secondary engine
 
+**For spine diagnosis of a draft** (the writer asks what spine the draft runs on, or whether it holds):
+Follow `../skills/plot-architecture/SKILL.md` §Diagnostic Process: identify the primary spine from manuscript evidence, apply its logic gates (`../skills/plot-architecture/references/plot-architecture-audit.md`), classify each gate PASS / FLAG FOR REVIEW / STRUCTURAL BREAK, check for secondary spines at other scales, and report with scene or page evidence.
+
 **For fantasy or series projects:**
 Route to the Fantasy & Series Architecture section for fantasy-specific spines (F1-F5), series architectures (S1-S6), and series rhythm patterns.
 
