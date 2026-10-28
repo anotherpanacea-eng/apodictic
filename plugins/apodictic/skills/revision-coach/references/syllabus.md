@@ -43,7 +43,7 @@ The argument track counts 6 lessons (A1 to A4, L14, L15) instead of 15.
 
 Statuses: `open`, `practiced` (taught, and exercised where the lesson has an exercise), `cleared`, `skipped`.
 
-A lesson is **cleared** when its assignment, run on the chosen or revised pages, raises no Should-Fix-or-higher finding for this concept on the channels those pages can show. Name any untested channels in the Note. A flag the audit classes as intentional does not count.
+A lesson is **cleared** when its assignment, run on the chosen or revised pages, raises no Should-Fix-or-higher finding for this concept on the channels those pages can show. Name any untested channels in the Note. Use the audit's final calibrated severity: a flag the audit itself classes as intentional and working does not count, but intentionality alone does not exempt a finding.
 
 Where the assignment covers more than the lesson's concept, only these count: L6, a STRUCTURAL BREAK on the primary spine's gates; L8, the Part 3 agency flags; L11, the PA flags; A1, the CL, WR and OB codes. A2 clears when a re-run leaves no Fatal or Major vulnerability. In A3, a PS signal counts as a finding when the memo classifies its recommendation as a Healthy Recalibration.
 
