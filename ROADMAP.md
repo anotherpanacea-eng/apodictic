@@ -6,6 +6,8 @@
 
 ## Board
 
+Each live goal below has a stable goal ID (`AP-G1` to `AP-G12`, under its heading). Fleet backlog cards name it in their `goal` field, so keep an ID when a heading is renamed and never reuse one. The Not Planned, Deferred, Future Work and Done sections carry no IDs.
+
 *Reset 2026-09-29, after APODICTIC was accepted into the Claude plugin directory. Order confirmed by the maintainer. Shipped history lives in [`CHANGELOG.md`](CHANGELOG.md) and [GitHub Releases](https://github.com/anotherpanacea-eng/apodictic/releases), not here.*
 
 | # | Now | Waiting on |
@@ -22,6 +24,8 @@
 ---
 
 ## Validation & External Evidence
+
+Goal ID: `AP-G1`
 
 *Surfaced sharply by an external blind review (GPT, 2026-06-26): the framework's strongest objection is that its **validators verify process, not editorial truth** — they prove a letter is well-formed, severities are locked, and the ledger is consistent, but not that "this protagonist lacks an arc" is **correct**. The honest interim posture is the one the tool already takes — a structured second opinion; findings are hypotheses, not verdicts — and the contamination disclosures, the Distinguish Protocol, and the positive/specificity controls are real mitigations. The three evidence gaps below are named as standing work, not papered over. (Same review credited the project's unusual methodological self-criticism; this section is meant to keep earning that.)*
 
@@ -68,6 +72,8 @@ The tool is correctly positioned as a disciplined **structured second opinion**,
 
 ## Genre & Audit Expansion
 
+Goal ID: `AP-G2`
+
 New specialized audits built from real editorial engagements, not hypothetical coverage. Each manuscript-in-genre that runs through the plugin surfaces what a genre's audit actually needs.
 
 **Expansion protocol** (codified in `docs/audit-expansion/Specialized_Audit_Expansion_Stub_TEMPLATE.md`):
@@ -101,6 +107,8 @@ New specialized audits built from real editorial engagements, not hypothetical c
 ---
 
 ## Nonfiction Argument Engine
+
+Goal ID: `AP-G3`
 
 APODICTIC now has the kernel of a full nonfiction and persuasive-argument workflow:
 
@@ -232,6 +240,8 @@ kernel, and AT6 and the span rules extend its burden table instead of adding a l
 
 ## Coaching Deepening
 
+Goal ID: `AP-G4`
+
 The core Revision Coach shipped in v1.1.2 with four modes (Session Planning, Stuck-Point Coaching, Momentum Tracking, Deadline Coaching) and was deepened in v1.1.3 (Guidance Without Specification stance, block diagnosis, exercise library) and v1.2.0 (partial manuscript coaching). Further deepening based on real usage:
 
 ### Retcon Planning — **Built (Increment 1 + F1 + F2 + F3)**
@@ -268,6 +278,8 @@ Over multiple revision cycles, surface patterns: "You tend to defer character-ag
 
 ## Operators
 
+Goal ID: `AP-G5`
+
 ### Editor Scaffolding — **Built (Increment 1 + Dual-output)**
 
 For human developmental editors using the framework as analytical assist. Output framing shifts to "here's what I found that you might have missed." Suppress prescriptive language, add blind-spot emphasis.
@@ -287,6 +299,8 @@ For co-authoring teams. Priority conflict resolution, sign-off workflow, change 
 ---
 
 ## Workflows
+
+Goal ID: `AP-G6`
 
 ### Feedback Triage — **Built (Increment 1, v2.2.0)**
 
@@ -324,6 +338,8 @@ For co-authoring teams or author-editor pairs working through a diagnostic toget
 
 ## Project Addressability & State-Driven Routing
 
+Goal ID: `AP-G7`
+
 APODICTIC already persists durable per-project state — `Diagnostic_State.md` + the `Diagnostic_State.meta.json` sidecar, `SYNTHESIS.md`, and the README run-archive manifest, all at a project root initialized by `/new-project` (`references/output-structure.md` §Folder Architecture). What it lacks is **addressability**: the "active project output context" is *ambient* (whatever folder the host happens to be in), so a writer carrying several books cannot point the tool at one by name and resume where they left off. This capability makes a project a named, selectable entity and promotes the sidecar from a resume-time fallback to the *primary* routing input — `/start` reads *where you are* instead of re-interviewing you, and the intake router's route map becomes a lifecycle transition graph rather than an Artifact×Goal lookup grid.
 
 The increments form a dependency graph (not a single line): **{1, 2} → 3 → 4**. Increments 1 and 2 are independent and can be built in either order or in parallel; both feed Increment 3; Increment 4 follows 3 and *also* requires a gated `revision_round` phase (see spec, B1). Detail and rationale in [`docs/project-addressability.md`](docs/project-addressability.md) §Dependency chain.
@@ -349,6 +365,8 @@ Small, independent items surfaced during the Increment 1–4 build + reviews. Ne
 ---
 
 ## Harness Engineering
+
+Goal ID: `AP-G8`
 
 The trajectory from "a brilliant prompt stack" toward an editorial operating system. These build directly on the v2.0.0 structural-integrity work (#10–#14) and extend the forward design patterns surfaced by the model-capability review (see §Future Work → Forward design patterns). The first three are the priority set; together they move enforcement out of the prompt and into the harness.
 
@@ -389,6 +407,8 @@ Give every material finding a durable ID that follows it across the whole pipeli
 ---
 
 ## Infrastructure
+
+Goal ID: `AP-G9`
 
 ### Adaptive Mid-Run Mode Escalation — **Built (v2.2.0)**
 
@@ -436,6 +456,8 @@ Static, single-file HTML overview of the plugin's capabilities. System-at-a-glan
 
 ## Writer-Question Surface Hardening
 
+Goal ID: `AP-G10`
+
 Continuing the v0.5 vision: the plugin should be organized around writer questions, not framework internals. The query-driven pass architecture and intake router shipped in v1.0, but the command surface, output naming, and skill boundaries still reflect build history. Evaluated in v1.3.0 — no user-facing pain found, but the surface can be cleaner.
 
 ### What to build
@@ -464,6 +486,8 @@ Continuing the v0.5 vision: the plugin should be organized around writer questio
 ---
 
 ## Annotated-Manuscript Deliverable
+
+Goal ID: `AP-G11`
 
 **Status: Built (Increments 1–3)** — Increment 1 shipped 2026-06-16 (margin comments at line-range / section / chapter / document granularity, promoted the same day from [Horizon Capacities](#horizon-capacities) Tier 1, item 2 — number retained there for stable cross-reference). **Increment 2 (2026-06-17):** character-precise *quote-locator* anchoring — the finest `quote` rung, the **A6** quote-integrity gate, a unified character-offset renderer (byte-identical to Increment 1 for non-quote anchors), and the optional `evidence_quote` finding field. **Increment 3 (2026-06-17):** **letter ↔ margin cross-links** — the `crosslink` render + validator (`scripts/crosslink.py`), back-link spans injected into the letter (a "second snapshot"), gated X1–X4 + W1. Spec: [`docs/annotated-manuscript.md`](docs/annotated-manuscript.md). The **[Producer](#producer--generation-wiring-increment-1)** wires the deliverable into the run flow. **Producer Increment 1 (generation wiring, 2026-06-17):** a real run persists the snapshot at intake, then — when it wrote a full editorial letter — offers and (on accept) generates the marked-up copy + crosslinked letter, with the `<!-- finding: F-… -->` marker pinned so Increment 3's letter→margin back-links resolve live. This **clears Increment 3's inertness** (the synthesis now emits matching letter markers). **Increment 2's `quote` rung has producer guidance for Pass 5 and conditional Pass 8 adoption** ([§Producer — `evidence_quote` population](#producer--evidence_quote-population-increment-2)). Downstream stack (maintainer 2026-06-17): **draft-over-draft structural regression** (`regression-diff`, [`docs/draft-regression-testing.md`](docs/draft-regression-testing.md)) and **round-trip re-anchoring** (`reanchor` — carry the margin notes onto a revised draft, classifying held / moved / vanished / ambiguous / not-re-anchorable, [`docs/annotated-manuscript-reanchoring.md`](docs/annotated-manuscript-reanchoring.md)) are both **Built (2026-06-17)**. **Render-target export** ([`docs/annotated-manuscript-export.md`](docs/annotated-manuscript-export.md)): **Obsidian Increments 1–2 Built (2026-06-17)** — the gated manifest projected to **native Obsidian** (no plugin) via `scripts/annotation_export.py` + the `obsidian-export` validator. **Inc 1:** each finding renders as a `[^finding-id]` footnote whose definition is the verbatim comment (O1 round-trip + O2 footnote resolution + O3 comment fidelity). **Inc 2:** bidirectional clickable cross-links — the footnote definition gains a `[[letter#^id]]` forward wikilink, the Obsidian letter gets `^id` block ids + reverse `[[copy#heading]]` wikilinks (resolved heading text, not the manifest token — Obsidian strips the heading's footnote ref from the slug), gated O4 (link resolution) + O5 (letter prose fidelity). **Inc 3 (HTML) Built (2026-06-17):** a self-contained, read-only `.html` openable in any browser (no tool) — the manuscript in a faithful escaped `<pre>` with `<sup>` footnote markers + a findings section + native bidirectional anchor links + embedded CSS, gated by `html-export` (H1 round-trip + H2 anchor resolution + H3 comment fidelity). **Inc 4 (DOCX → Google Docs) Built (2026-06-17):** a `.docx` (hand-written OOXML, stdlib-only, byte-deterministic ZIP) where each finding's manuscript span is wrapped as an anchored Word comment — so **Google Docs imports it as a native anchored comment** (the professional standard), and it doubles as the DOCX target. Gated by `docx-export` (D1 artifact integrity = on-disk == fresh build byte-for-byte, D2 text round-trip, D3 comment resolution + fidelity). **PDF internal navigation** is built as an explicit opt-in in [`docs/annotated-manuscript-pdf-navigation.md`](docs/annotated-manuscript-pdf-navigation.md): optional marker-to-comment links and returns, exact layout geometry, containment refusals, and separate reader qualification. **Inc 5 (PDF proofing) Built (2026-07-04):** a self-contained, byte-deterministic `.pdf` with inline finding markers and a trailing Findings section of verbatim comments, gated by `pdf-export` (P1 artifact integrity, P2 manuscript text round-trip, P3 marker resolution/comment fidelity); rendered text must be CP1252/WinAnsi-encodable and comments single-line. Optional clickable navigation is built as an explicit opt-in (above); linked PDF generation and structural validation are implemented, while named-reader qualification remains unperformed and normal draft/train admission is pending. CriticMarkup stays the canonical render — it's not the industry standard (Word Track Changes is) but it's the plain-text base whose no-mutation proof is cheap and which bridges to Word/GDocs comment mode.
 
@@ -502,6 +526,8 @@ The "big lift" is real but it is breadth, not depth: the lift is the *number* of
 ---
 
 ## Horizon Capacities
+
+Goal ID: `AP-G12`
 
 *Surfaced by a 2026-06 design scan; unplanned.*
 
