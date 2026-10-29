@@ -1,3 +1,0 @@
-### Core editor — run-core trim
-
-Cut `run-core.md` from 71.1 KB to 60.7 KB with no behavior change. The budget-cap section and its worked example moved to an on-demand `references/cost-floor-override.md`, loaded only when a user declares a cap; the step 3(d) formula stays. Removed the inconsistent prose cost multipliers (the token cost table stays), the three "How to invoke" paragraphs, the restated pass-resolution steps, prerequisite-tier summary, Pass 5 `evidence_quote` detail, handoff steps and re-grounding pull text (step 9c in `run-synthesis.md` is canonical). Fixed three stale pointers (Q2 "when wired", the synthesis-sections "see below", and the "§Token Cost" citation in `preflight.sh` and `execution-modes-reference.md`).
