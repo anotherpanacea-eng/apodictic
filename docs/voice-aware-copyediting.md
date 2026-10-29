@@ -59,7 +59,7 @@ APODICTIC's Firewall says diagnostics identify problems and never rewrite manusc
 
 - **The snapshot is never changed.** All work is against the frozen snapshot, and the validator proves it (E8).
 - **Two sizes of replacement.** Mechanical kinds get typo-scale fixes inside a size cap (E5). The two rewrite kinds, `clarity` and `stepped_on_move`, may offer a rewrite of up to one sentence, always paired with the question that explains it. Everything else (usage, agreement in voiced speech, fact consistency, possible voice) is a **query** with no replacement text.
-- **Rewrites keep the voice.** A rewrite may not alter any ledger entry inside its span and may not touch a zone (E3), and the flattening check covers accepted rewrites (W2).
+- **Rewrites keep the voice.** A rewrite may not alter any author-declared ledger form, a rewrite touching inferred voice evidence or a zone is labelled as possible voice (E3), and the flattening check covers accepted rewrites (W2).
 - **Nothing is applied without the author's pick.** Review is one suggestion at a time by default. Bulk acceptance ("accept every spelling suggestion", or everything in a chapter, rewrites included) is an option the author turns on, and an author who accepts wholesale does so on their own responsibility. Silence never applies anything.
 - **Picks export to a copy** (CriticMarkup first, DOCX tracked changes later), the way Spec 113's export applies picks.
 
@@ -67,15 +67,15 @@ So the tool's own prose is bounded: typo-scale fixes, and at most one sentence w
 
 ## The voice ledger
 
-The heart of the design. The ledger is the "leave alone" half of the style sheet: a list of forms, patterns and zones the copyedit must not regularize. Each entry carries its evidence and its source:
+The heart of the design. The ledger is the "leave alone" half of the style sheet: a list of forms, patterns and zones the copyedit should treat as possible voice. Each entry carries its evidence, its source and an `origin` of `author` or `inferred`. Only `author` entries are binding; inferred entries and zones are editorial context that shapes how a note is framed (E3, D6):
 
 | Source | Example entry | Strength |
 |---|---|---|
-| **Author-declared** (the intake questions and the style-sheet review) | "No quotation marks anywhere; dialogue is unmarked." "Lowercase *god* throughout." "Jim's speech uses dialect spelling." | Binding |
-| **Consistency harvest** (Phase 1) | `alright` occurs 37 times, `all right` never | Presumed deliberate; author confirms on the review sheet |
-| **Idiolect preservation list** (SETEC, when a baseline exists) | the bigram `which is to say` | Presumed deliberate |
-| **Baseline roughness** (SETEC, when a writer baseline exists) | fragment rate and sentence-initial And/But rate are inside the writer's normal band | Pattern rule: fragments and initial conjunctions are not flagged |
-| **Zones** | dialogue; quoted and cited material (epigraphs, block quotes, sources); close-POV narration in multi-POV fiction; verse and lyrics | Query-only areas (E3) |
+| **Author-declared** (the intake questions, the style-sheet review, and every stet) | "No quotation marks anywhere; dialogue is unmarked." "Lowercase *god* throughout." "Jim's speech uses dialect spelling." | Binding within its stated scope (book, chapter, speaker or zone) |
+| **Consistency harvest** (Phase 1) | `alright` occurs 37 times, `all right` never | Inferred; becomes binding when the author confirms it |
+| **Idiolect preservation list** (SETEC, when a baseline exists) | the bigram `which is to say` | Inferred |
+| **Baseline roughness** (SETEC, when a writer baseline exists) | fragment rate and sentence-initial And/But rate are inside the writer's normal band | Inferred pattern: fragments and initial conjunctions are framed as likely voice |
+| **Zones** | dialogue; quoted and cited material (epigraphs, block quotes, sources); close-POV narration in multi-POV fiction; verse and lyrics | Inferred context: notes here carry a possible-voice label (E3) |
 
 Entries are stored as `apodictic.voice_ledger.v1` blocks in `[Project]_Style_Sheet.md`, next to the ordinary style decisions. The ledger persists across runs and revisions, so an author's stet holds for the next draft.
 
@@ -98,15 +98,15 @@ Reuse the annotated-manuscript snapshot (`[Project]_Manuscript_Snapshot_[runlabe
 
 The tool inventories the manuscript mechanically: spelling variants, hyphenation and compound forms, capitalization, number style, italics, abbreviations, names (from the Continuity Bible when present). For every item with competing forms it records each form's count and loci. It proposes ledger entries from consistent nonstandard forms and from the SETEC surfaces when a baseline is available.
 
-The author gets a **style-sheet review**: each competing-forms item with its counts and a proposed choice, and each proposed ledger entry with two or three examples in context. The author picks forms and confirms or rejects ledger entries. Unconfirmed ledger entries still protect (a false stet costs nothing; a false correction costs voice), and they are shown again at the next run.
+The author gets a **style-sheet review**: each competing-forms item with its counts and a proposed choice, and each proposed ledger entry with two or three examples in context. The author picks forms and confirms or rejects ledger entries. A confirmed entry becomes `author` and binding. An unconfirmed entry stays `inferred`: it labels the notes it touches as possible voice and is shown again at the next run, but it does not stop the author from seeing a fix they asked for.
 
 ### Phase 2: the pass
 
-One call per paragraph, with the neighbouring paragraphs as read-only context, as in Spec 113 §1. The call receives the style sheet, the ledger, the register profile and the paragraph's zones, and returns candidate items in the record below. Every candidate then goes through the deterministic checks (§Validator) before the author sees it. A candidate that touches a ledger entry or a zone is converted to a query or withheld; it never reaches the author as a replacement.
+One call per paragraph, with the neighbouring paragraphs as read-only context, as in Spec 113 §1. The call receives the style sheet, the ledger, the register profile and the paragraph's zones, and returns candidate items in the record below. Every candidate then goes through the deterministic checks (§Validator) before the author sees it. Precedence is fixed. First, a candidate covered by an author stet or author-declared entry within its scope is suppressed: the question was answered and is not asked again. Second, a candidate that touches an inferred entry or a zone keeps the author's chosen level but carries a possible-voice label naming the entry or zone, and it is left out of bulk acceptance unless the author opts in for labelled items too.
 
 ### Phase 3: author review and export
 
-The author sees a numbered list (`P<paragraph>.<n>`, numbering fixed once as in Spec 113 §3), grouped by kind, with queries rendered as margin comments on the annotated-manuscript path. The author accepts, rejects, or answers each query. A query answer of "stet" adds a ledger entry, so the same question is not asked again. Accepted picks export to a copy of the snapshot.
+The author sees a numbered list (`P<paragraph>.<n>`, numbering fixed once as in Spec 113 §3), grouped by kind, with queries rendered as margin comments on the annotated-manuscript path. The author accepts, rejects, or answers each query. A query answer of "stet" adds an `author` ledger entry with the scope the author gives (this instance, this chapter, this speaker, the whole book), and Phase 2's first precedence rule keeps the question from coming back. Accepted picks export to a copy of the snapshot.
 
 ### The record: `apodictic.copyedit_item.v1`
 
@@ -135,17 +135,17 @@ Mechanical checks, ERROR unless marked W. E1, E2, E4 and E7 follow Spec 113 §3 
 
 - **E1 schema.** The closed record; unique ids; closed enums.
 - **E2 provenance.** `original` equals the snapshot bytes at `span`; the span falls on code-point boundaries and inside one paragraph.
-- **E3 ledger and zone guard.** No `suggest` or `rewrite` item whose span touches a zone, and no `suggest` item whose span touches a ledger entry; those must be a `query`. A `rewrite` may contain ledger entries in its span only if each one appears unchanged in the replacement. This is the check that enforces the owner's caution mechanically for everything the ledger knows about.
+- **E3 ledger and zone guard.** No item of any disposition may change a form covered by an `author` ledger entry within its scope, and no item may re-raise a question an author stet already answered in that scope. Any item touching an `inferred` entry or a zone must carry the possible-voice label naming it. A `rewrite` must keep every ledger form in its span unchanged unless the item is labelled. This is the check that enforces the author's own decisions mechanically; inferred voice evidence informs the author and never overrides the level they chose.
 - **E4 shape.** A replacement differs from its original, contains no line break, and does not leave its paragraph empty.
 - **E5 size cap.** A `suggest` item changes at most a few words (default: three word tokens, one sentence touched); a larger change must be a `rewrite` of a rewrite kind or a query. A `rewrite` touches at most one sentence, or two when it merges or splits them, and only the `clarity` and `stepped_on_move` kinds may use it (D2).
-- **E6 style-sheet agreement.** A `consistency` or `style_sheet` suggestion's replacement equals the chosen form in its `style_ref`; a choice the author has not made yet yields a query.
+- **E6 style-sheet agreement.** A `consistency` or `style_sheet` suggestion's replacement equals the form in its `style_ref`. When the choice is confirmed, every suggestion must match it. When it is still proposed, only the single level-3 worked suggestion may use the proposed form; accepting it confirms the choice, and level-4 suggestions for the other instances appear only after that.
 - **E7 combined selection.** The author's picks for a paragraph apply as a set only when no two overlap and the paragraph stays non-empty (Spec 113 §4). Bulk acceptance goes through the same check.
 - **E8 no mutation.** The snapshot's sha256 still matches its binding, and the export is the snapshot plus exactly the picked replacements.
 - **W1 never-flag list.** An item whose reason or kind matches a never-flag rule is withheld and counted.
 - **W2 flattening check** (when SETEC and a baseline are available). After picks are applied to the copy, punctuation cadence and productive roughness are rerun against the snapshot; a feature that moved beyond the writer's band is reported with the picks that moved it.
 - **W3 query load.** Query density per chapter, so the author sees where the pass leaned hardest.
 
-**Honest limit.** E3 protects only what the ledger and zones cover. A voice choice the ledger has never seen, used once, can still draw a suggestion. That gap is why unknown departures default to a `voice_check` query (D3) and why the evaluation measures it directly.
+**Honest limit.** E3 binds only what the author has declared. Inferred entries and zones label notes without blocking them, and a voice choice nothing has seen, used once, can still draw a plain suggestion. That gap is why unknown departures default to a `voice_check` query (D3), why labelled items stay out of default bulk acceptance, and why the evaluation measures voice false corrections directly.
 
 ## Evaluation before release
 
@@ -172,3 +172,4 @@ D2 is answered. The rest are recommendations that stand unless the owner objects
 - **D3 Unknown departures.** A nonstandard form the ledger does not cover and that is used once. *Recommend:* a `voice_check` query. *Alternatives:* leave silently (misses real typos), or suggest a fix (the flattening the owner warned about).
 - **D4 Scope.** *Recommend:* fiction and nonfiction both; unlike an index, every book is copyedited.
 - **D5 Style authority.** *Recommend:* Chicago-style conventions for books and AP-style for short-form journalism by default, author-changeable, with the module stating every rule in its own words.
+- **D6 Inferred voice evidence.** *Recommend:* only author-declared entries and stets are hard limits; inferred entries and zones (dialogue, quotations, close POV, verse) label notes as possible voice and keep them out of default bulk acceptance, but the author's chosen level still applies there. *Alternative:* treat zones as query-only regardless of level (safer for voice, but a plain typo in dialogue could then never get a suggested fix).
