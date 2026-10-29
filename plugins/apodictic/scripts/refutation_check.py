@@ -294,21 +294,24 @@ def refutation_coverage(letter_text, ledger_text, record_text):
     # The §6.9 transcription lowers a weakened or refuted Should-Fix's ledger confidence
     # after lock, so the budget reconciles against a count that includes those records.
     # A record alone cannot prove the finding was HIGH at lock, so the cap-bound exemption
-    # is honored only on the strict count (Must-Fix plus HIGH now): fabricated demotions
-    # can make the arithmetic add up but can never exempt an untested HIGH.
+    # rests on the strict set (Must-Fix plus HIGH now) and only when every processed record
+    # names a strict-set finding: fabricated demotions can make the arithmetic add up, but
+    # they can never stand in for required attempts or exempt an untested HIGH.
     demoted = {fid for fid, r in by_id.items() if r.get("outcome") in ("weakened", "refuted")}
-    def _eligible(count_demoted):
-        return sum(
-            1 for f in locked
+    def _eligible_ids(count_demoted):
+        return {
+            art.fid_key(f.get("id")) for f in locked
             if art.fid_key(f.get("id")) not in dispo
             and (f.get("severity") == "Must-Fix"
                  or (f.get("severity") == "Should-Fix"
                      and (f.get("confidence") == "HIGH"
-                          or (count_demoted and art.fid_key(f.get("id")) in demoted)))))
-    recomputed_eligible = _eligible(True)
+                          or (count_demoted and art.fid_key(f.get("id")) in demoted))))}
+    recomputed_eligible = len(_eligible_ids(True))
     recomputed_bound = recomputed_eligible > SPEC_CAP
-    strict_eligible = _eligible(False)
-    strict_bound = strict_eligible > SPEC_CAP
+    strict_ids = _eligible_ids(False)
+    strict_eligible = len(strict_ids)
+    off_strict = sorted(i for i in by_id if i not in strict_ids)
+    exemption_ok = strict_eligible > SPEC_CAP and not off_strict
     if budget is not None:
         if budget.get("cap") != SPEC_CAP:
             errs.append("budget block records cap: %r but the refutation cap is the spec "
@@ -341,12 +344,17 @@ def refutation_coverage(letter_text, ledger_text, record_text):
             errs.append("cap-bound disclosure marker for %s under an unbound budget "
                         "(bound: %r) — the marker is honored only when the budget block "
                         "records bound: true" % (fid, bound))
-        elif not strict_bound:
+        elif strict_eligible <= SPEC_CAP:
             errs.append("cap-bound disclosure marker for %s but the recomputed budget does "
                         "NOT bind (eligible recomputes to %d from the ledger, cap %d) — "
                         "bound: true in the budget block is a claim to verify, never an "
                         "input; run the Step 6b pass for %s or demote its confidence per "
                         "the §7 caps table" % (fid, strict_eligible, SPEC_CAP, fid))
+        elif off_strict:
+            errs.append("cap-bound disclosure marker for %s but %d processed record(s) name "
+                        "findings outside the Must-Fix ∪ HIGH Should-Fix set (%s) — the "
+                        "exemption needs the budget spent on that set; run the Step 6b pass "
+                        "for %s" % (fid, len(off_strict), ", ".join(off_strict[:5]), fid))
         elif fid not in ledger_ids:
             errs.append("cap-bound disclosure marker names %s, which resolves to no locked "
                         "ledger finding — a disclosure for a phantom finding" % fid)
@@ -379,7 +387,7 @@ def refutation_coverage(letter_text, ledger_text, record_text):
                             "is always processed (the cap cannot bind on Must-Fix); run the "
                             "Step 6b pass for it or record the author's disposition" % label)
             elif conf == "HIGH":
-                if fid in markers and bound is True and strict_bound:
+                if fid in markers and bound is True and exemption_ok:
                     notes.append("HIGH finding %s not attempted — cap-bound and disclosed "
                                  "(marker honored: bound: true corroborated by the ledger "
                                  "recompute); its letter language must say convergence-only, "
@@ -965,6 +973,23 @@ def run_self_test():
         e, _, _ = refutation_coverage(let_fab, led_fab, rec_fab)
         check("v1_fabricated_demotions_cannot_exempt_high",
               any("F-P5-02" in x and "does NOT bind" in x for x in e), str(e))
+        # Codex re-review repro: 16 real HIGH Should-Fix (strict count binds) but the 15
+        # processed records are fabricated demotions on MEDIUM findings; every HIGH carries a
+        # marker. The exemption must be refused because the budget went outside the strict set.
+        high_ids = ["F-P7-%02d" % i for i in range(1, 17)]
+        led_fab2 = ("## Ledger\n" + "".join(finding(fid, sev="Should-Fix", mech="arc %s" % fid) + "\n"
+                                           for fid in high_ids)
+                    + "".join(finding(fid, sev="Should-Fix", conf="MEDIUM", mech="minor %s" % fid) + "\n"
+                              for fid in med_ids))
+        rec_fab2 = ("# R\n" + "".join(ref_block(fid=fid, outcome="weakened", conf_after="MEDIUM") + "\n"
+                                     for fid in med_ids)
+                    + budget_block(eligible=31, processed=15, bound=True) + "\n")
+        let_fab2 = LETTER.replace("<!-- finding: F-P5-01 -->", "<!-- finding: F-P7-01 -->").replace(
+            "## Appendix B", "".join("<!-- refutation: not-attempted-budget %s -->\n" % fid
+                                     for fid in high_ids) + "## Appendix B")
+        e, _, _ = refutation_coverage(let_fab2, led_fab2, rec_fab2)
+        check("v1_fabricated_demotions_cannot_spend_the_budget",
+              len([x for x in e if "outside the Must-Fix" in x]) == 16, str(e[:3]))
 
         # 8. dangling record id -> V1 ERROR; non-dict payload -> clean named error, no crash
         rec8 = RECORD + ref_block(fid="F-ZZ-09") + "\n"
