@@ -47,7 +47,7 @@ APODICTIC's Firewall says diagnostics identify problems and never rewrite manusc
 - **The snapshot is never changed.** All work is against the frozen snapshot, and the validator proves it (E8).
 - **Two sizes of replacement.** Mechanical kinds get typo-scale fixes inside a size cap (E5). The two rewrite kinds, `clarity` and `stepped_on_move`, may offer a rewrite of up to one sentence, always paired with the question that explains it. Everything else (usage, agreement in voiced speech, fact consistency, possible voice) is a **query** with no replacement text.
 - **Rewrites keep the voice.** A rewrite may not alter any ledger entry inside its span and may not touch a zone (E3), and the flattening check covers accepted rewrites (W2).
-- **Nothing is applied without the author's pick.** Mechanical fixes can be accepted in bulk by kind ("accept every spelling suggestion"). Rewrites are picked one at a time and never in bulk. Silence never applies anything.
+- **Nothing is applied without the author's pick.** Review is one suggestion at a time by default. Bulk acceptance ("accept every spelling suggestion", or everything in a chapter, rewrites included) is an option the author turns on, and an author who accepts wholesale does so on their own responsibility. Silence never applies anything.
 - **Picks export to a copy** (CriticMarkup first, DOCX tracked changes later), the way Spec 113's export applies picks.
 
 So the tool's own prose is bounded: typo-scale fixes, and at most one sentence where clarity or a stepped-on move calls for it, each chosen by the author.
@@ -126,7 +126,7 @@ Mechanical checks, ERROR unless marked W. E1, E2, E4 and E7 follow Spec 113 §3 
 - **E4 shape.** A replacement differs from its original, contains no line break, and does not leave its paragraph empty.
 - **E5 size cap.** A `suggest` item changes at most a few words (default: three word tokens, one sentence touched); a larger change must be a `rewrite` of a rewrite kind or a query. A `rewrite` touches at most one sentence, or two when it merges or splits them, and only the `clarity` and `stepped_on_move` kinds may use it (D2).
 - **E6 style-sheet agreement.** A `consistency` or `style_sheet` suggestion's replacement equals the chosen form in its `style_ref`; a choice the author has not made yet yields a query.
-- **E7 combined selection.** The author's picks for a paragraph apply as a set only when no two overlap and the paragraph stays non-empty (Spec 113 §4). Bulk acceptance never includes a `rewrite`.
+- **E7 combined selection.** The author's picks for a paragraph apply as a set only when no two overlap and the paragraph stays non-empty (Spec 113 §4). Bulk acceptance goes through the same check.
 - **E8 no mutation.** The snapshot's sha256 still matches its binding, and the export is the snapshot plus exactly the picked replacements.
 - **W1 never-flag list.** An item whose reason or kind matches a never-flag rule is withheld and counted.
 - **W2 flattening check** (when SETEC and a baseline are available). After picks are applied to the copy, punctuation cadence and productive roughness are rerun against the snapshot; a feature that moved beyond the writer's band is reported with the picks that moved it.
@@ -147,7 +147,7 @@ A core-editor workflow module (`core-editor/references/voice-aware-copyediting.m
 ## Increment plan
 
 1. **Style sheet, ledger and queries only.** `voice_ledger.v1`, the Phase 1 harvest and review, the never-flag list, and a pass that emits only queries. No replacement text ships in this increment, so it stands inside today's Firewall on its own and is already useful: the consistency queries are most of a copyeditor's mechanical value.
-2. **Suggestions and rewrites.** `copyedit_item.v1` with `suggest` and `rewrite`, E1–E8, W1, W3, bulk accept by mechanical kind, CriticMarkup export of picks, a canonical worked example in `--check-all`.
+2. **Suggestions and rewrites.** `copyedit_item.v1` with `suggest` and `rewrite`, E1–E8, W1, W3, opt-in bulk acceptance, CriticMarkup export of picks, a canonical worked example in `--check-all`.
 3. **Voice post-check and exports.** The productive-roughness shim, W2, DOCX tracked-changes export, and the fixture evaluation above.
 
 ## Design calls
@@ -155,7 +155,7 @@ A core-editor workflow module (`core-editor/references/voice-aware-copyediting.m
 D2 is answered. The rest are recommendations that stand unless the owner objects.
 
 - **D1 Consume or extend.** *Recommend:* port Spec 113's suggestion contract and checks into APODICTIC (spec dependency, no code import or new pin); consume the SETEC idiolect, roughness, cadence and POV surfaces through the existing SETEC contract. *Alternatives:* pin voicewright and call the 113 runner (heavy private harness, period brief); or generalize 113 inside voicewright and have APODICTIC call it.
-- **D2 Replacement text and the Firewall. Answered 2026-10-29.** The owner: all three levels are acceptable, and "a copy editor may suggest rewrites for clarity or when the author is stepping on a move." Follow-up the same day: "the fixes should be suggested, not made." So: queries; typo-scale mechanical fixes; and one-sentence rewrites for the `clarity` and `stepped_on_move` kinds, picked one at a time. Every fix of any size is a suggestion the author accepts (§Terms); the tool applies nothing itself.
+- **D2 Replacement text and the Firewall. Answered 2026-10-29.** The owner: all three levels are acceptable, and "a copy editor may suggest rewrites for clarity or when the author is stepping on a move." Follow-up the same day: "the fixes should be suggested, not made." So: queries; typo-scale mechanical fixes; and one-sentence rewrites for the `clarity` and `stepped_on_move` kinds. A third note: review is one at a time by default, and bulk acceptance is optional, at the author's own responsibility. Every fix of any size is a suggestion the author accepts (§Terms); the tool applies nothing itself.
 - **D3 Unknown departures.** A nonstandard form the ledger does not cover and that is used once. *Recommend:* a `voice_check` query. *Alternatives:* leave silently (misses real typos), or suggest a fix (the flattening the owner warned about).
 - **D4 Scope.** *Recommend:* fiction and nonfiction both; unlike an index, every book is copyedited.
 - **D5 Style authority.** *Recommend:* Chicago-style conventions for books and AP-style for short-form journalism by default, author-changeable, with the module stating every rule in its own words.
