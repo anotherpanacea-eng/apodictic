@@ -1,3 +1,0 @@
-### Core editor — SKILL.md trim
-
-Cut the always-loaded `core-editor/SKILL.md` from 23.1 KB to 13.5 KB with no behavior change. Removed restatements of `output-policy.md`, `run-core.md`, `pass-dependencies.md` and `handoff-protocol.md` (output summary, the hand-copied §3 header table, pass architecture, execution-mode detail, quantitative verification, QA guardrails), the plugin-structure list and maintainer notes. The Results Guide template moved to `output-structure.md` §Results Guide; the Pass-10-Class authoring pattern moved to `docs/pass-10-class-artifacts.md`, with a short definition kept in place.

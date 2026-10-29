@@ -4,7 +4,7 @@ description: >
   Requested internet research for citation verification, factual checking, field reconnaissance, comps, genre currency, and representation context.
   Use when the user requests one of these focused audits. For the complete
   audit catalog or an unclear request, use specialized-audits.
-version: 2.15.0
+version: 2.16.0
 ---
 
 # Research and Verification

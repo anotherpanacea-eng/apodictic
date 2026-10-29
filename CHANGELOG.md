@@ -5,6 +5,105 @@ All notable changes to the APODICTIC Development Editor (APDE) framework will be
 This changelog started at `v0.4.4.1` on **2026-02-13**.  
 Historical backfill entries for `v0.4.4` and `v0.4.3` were added the same day from local file history and release notes.
 
+## v2.16.0 - 2026-10-29
+
+### CI
+
+Cut CI that tested CI. Removed the train checker, CI receipts, pull-request merge
+binding, sync-PR draft enforcer, status-drift lint and inventory-parity marker check,
+with their policy tests. CI now runs on any non-draft PR (drafts start nothing). The
+`@claude` workflow safety tests, Windows native gate, SETEC drift gate and validator
+inventory check stay.
+
+### Revision Coach — Learning Mode
+
+`/coach learn` adds a craft syllabus built from the existing audit files: 15 fiction lessons in seven units plus a four-lesson argument track. Each session teaches one concept from its audit's opening section, gives one firewall-passing exercise, and names the audit that tests the skill on the writer's own pages. Progress lives in `Syllabus_Progress.md`; a lesson clears when its assignment, run on the chosen or revised pages, raises no Should-Fix-or-higher finding for that concept. Works without a diagnosis. The syllabus file loads only in this mode, so normal runs are unchanged.
+
+### Core editor — instruction contradictions
+
+Fixed eight places where always-loaded core-editor prose contradicted another rule or the shipped validator, plus two stale pointers:
+
+- `output-policy.md` evidence density now names the paragraph-block window `decision-layer-check` uses, not a 6-line window.
+- `run-synthesis.md` no longer says `synthesis-sections` substring-matches, or that nothing writes `regrounded: true` (step 9c does).
+- A severity-floor failure is resolved by a body override marker plus an Appendix B entry; appendix markers are not honored.
+- The Revision Checklist cap reads 10 (Core DE) / 15 (Full DE).
+- `run-core.md` no longer calls single-agent isolation architectural, or mid-run escalation a future capability.
+- Run-core's per-pass audit-trigger lists moved into `pass-dependencies.md` §4b (new Stakes System, Franklin Pathway, and Pass 1/2 source rows); each pass now points there.
+- Two run-synthesis step cross-references are renumbered, and line-number citations in §4e and `dispatch_record.py` now name sections.
+
+### Core editor — output-policy trim
+
+Cut `output-policy.md` from 24.7 KB to 17.9 KB with no rule change. Removed the four "canonical home" maintainer preambles; moved the skill-slug authoring boundary to `CONTRIBUTING.md`; folded the epistemic-humility questions into synthesis Step 1 and the letter-tone guidance into the Presentation Format; and made `run-synthesis.md` item 11 the one definition of Appendices A–C (it gains the post-synthesis-audits rule), with a pointer left here.
+
+### Core editor — pass-dependencies trim
+
+Cut the always-loaded `pass-dependencies.md` with no behavior change and no edit to any span a validator parses (the §3 table, §4a/§4b pipe rows, §4e rows and Default mapping bullets). Tier-verification history, the §4e validator contract and the four §4e provenance notes moved to `docs/pass-dependencies-maintainer-notes.md`, leaving the bullet-shape rule and `propagate-override:` syntax in place. Removed the stale status header and footer, the deferred Phase 7 note, the include/fragment comments, the §4d worked examples, and restatements of the Pass 10 pattern, the §3 reader list and the Legal Risk detection rules.
+
+### Core editor — run-core trim
+
+Cut `run-core.md` from 71.1 KB to 60.7 KB with no behavior change. The budget-cap section and its worked example moved to an on-demand `references/cost-floor-override.md`, loaded only when a user declares a cap; the step 3(d) formula stays. Removed the inconsistent prose cost multipliers (the token cost table stays), the three "How to invoke" paragraphs, the restated pass-resolution steps, prerequisite-tier summary, Pass 5 `evidence_quote` detail, handoff steps and re-grounding pull text (step 9c in `run-synthesis.md` is canonical). Fixed three stale pointers (Q2 "when wired", the synthesis-sections "see below", and the "§Token Cost" citation in `preflight.sh` and `execution-modes-reference.md`).
+
+### Core editor — run-synthesis trim
+
+Cut the always-loaded `run-synthesis.md` with no behavior change. The audit-signal and Timeline propagation tables now point to `pass-dependencies.md` §4e (the validator's source of truth); the Step 10 per-check bullets became a named list, with refutation invocations moved to Step 6b; the Deficit Lock, operator-mode, Legal Risk detection and annotated-manuscript / reader-contract-outline generation chains point to their canonical references (which gain the staging, re-snapshot and map-reuse rules they lacked). The argument-only prerequisite blind-spot disclosures moved to `synthesis-argument.md`, and the matching §4f ordering note and decline edge cases to `argument-audits-routing.md`. Removed validator-calibration history, duplicate include comments, the intake-only minimum-audit list, and spot-check rationale.
+
+### Core editor — SKILL.md trim
+
+Cut the always-loaded `core-editor/SKILL.md` from 23.1 KB to 13.5 KB with no behavior change. Removed restatements of `output-policy.md`, `run-core.md`, `pass-dependencies.md` and `handoff-protocol.md` (output summary, the hand-copied §3 header table, pass architecture, execution-mode detail, quantitative verification, QA guardrails), the plugin-structure list and maintainer notes. The Results Guide template moved to `output-structure.md` §Results Guide; the Pass-10-Class authoring pattern moved to `docs/pass-10-class-artifacts.md`, with a short definition kept in place.
+
+### Audits — Level-setting briefs distilled
+
+The 18 level-setting research briefs moved out of the plugin to `docs/`. The web and desktop app no longer sends their opening 4,000 characters with each audit. The operational rules the audits were missing now live in the audits themselves:
+- form and genre false-positive guards for Argument Persuasion, Dialectical Clarity, Reception Risk, Grimdark, SFF Worldbuilding, Mystery/Thriller, Supernatural Horror and Force Architecture;
+- the earned-maxim exception for Pseudo-Aphorism;
+- Red Team inflation and too-soft self-checks;
+- the CS-CHRONO cross-volume timeline flag and gap-reader calibration for Series Continuity;
+- the HP-5 Spectator Protagonist flag.
+
+### Docs — Writer guides
+
+Added `docs/writer-guides/`: one-page, writer-voiced companions to the 11 level-setting briefs the `/coach` Learning Mode lessons draw on (stakes, decision pressure, force, female interiority, literary craft, compression, mystery/thriller, getting unstuck, dialectical clarity, red team, persuasion), plus an index. Each keeps its brief's one-line rule verbatim. The briefs are unchanged.
+
+### Research tooling
+
+Added a pure, stdlib-only offline citation-surface extractor for supplied Markdown or plain text. It returns exact character spans for a finite footnote, author-year, Markdown-link, bare DOI/URL, and adjacent-quote grammar, with ambiguity preserved. No provider calls, source verification, general citation-format coverage, or complete-document recall is claimed.
+
+### Research verification
+
+Citation resolution now labels OA links, live URLs, and available Wayback snapshots as metadata-only evidence. The verifier reference distinguishes those access hints from a recorded read of source content, so Phase 1 results no longer inflate the full-text count.
+
+### Fixed
+
+- Treat malformed scholarly API answers as incomplete rather than absent, while retaining valid matches, safe original-response provenance summaries, and cached error/skip uncertainty without extra provider calls.
+
+### Research verification
+
+Citation resolution can now keep every parsed API response it read, used or not, and write them to a caller-chosen JSON file (`batch --response-evidence PATH`, or `resolve_batch(response_evidence_path=...)`). Each entry records the tier, whether the response was used, gave no match, or was not checked, and the time. Off by default; default output is unchanged.
+
+Evidence distinguishes URL/archive absence from incomplete checks and retains malformed cached Wayback answers before retrying.
+
+### Research Verification — Review Follow-up
+
+Recognize same-DOI Crossref updates without confusing separate notices with their targets, and preserve confirmed self-update evidence when incoming relations are malformed. URL probes now try the bounded GET fallback after HEAD 501. The citation ledger illustrates a synthetic Phase 2 content verdict alongside a pending locator-only case, with separate source-read evidence required.
+
+### Research verification
+
+Preserve incomplete direct-URL and malformed Wayback checks as not-checked, with bounded HEAD/GET liveness, provenance, and causal strict-mode accounting. A valid negative archive response remains distinct from an unavailable check.
+
+### Research verification
+
+Crossref retraction checks now read notices updating the cited work, distinguish a notice from its target, and keep relation evidence in standalone and DOI resolution results. Invalid metadata leaves source health unknown.
+
+### Revision Coach — Learning Mode follow-ups
+
+- `/coach` now accepts either state file, `Diagnostic_State.md` or `Argument_State.md`, matching the coach skill's fallback, so argument-track writers can reach L15.
+- `/coach stuck` with no state file offers an optional state-less Stuck-Point run before routing to `/start`. It works from the writer's description and writes nothing. For L15 it counts as `practiced`; clearing still needs a run against a state file.
+- `/plot-coach` has a spine-diagnosis branch for drafts (L6's assignment), following `plot-architecture/SKILL.md` §Diagnostic Process.
+
+### Test maintenance
+
+Removed CI policy tests that pinned text rather than behavior: the AGENTS.md phrase checks, the sha256 digests of four workflow files and the mutation cases built on them, the exact workflow-file and step-name inventories, and the admission and concurrency tables that exercised a test-local model of the workflow condition rather than the workflow itself. The retained checks read the parsed workflows: pull-request-only trigger, read-only permissions, job timeouts and no matrix, the merge-binding step, the real validation gate, the Windows PATH reduction, the draft-only sync updater, and the `@claude` workflow's safety boundaries.
+
 ## v2.15.0 - 2026-10-21
 
 ### Synthesis — Correction and Attribution

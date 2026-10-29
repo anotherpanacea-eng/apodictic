@@ -16,7 +16,7 @@ description: >
   "overmediated," "I don't know what I think anymore,"
   "structural experiment," "I need an exercise," "craft lesson,"
   or "syllabus."
-version: 2.15.0
+version: 2.16.0
 ---
 
 # APODICTIC Revision Coach
