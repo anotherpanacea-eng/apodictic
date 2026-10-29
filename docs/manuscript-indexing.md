@@ -22,10 +22,10 @@ The design center of this spec is to **take every painful part away from the aut
 | ASI-documented failure | This spec's answer |
 |---|---|
 | Under-indexing (earlier models) | Coverage check per chapter (W1) and a recall measurement against a professional index before release (§Evaluation) |
-| Entries for passing mentions | Every anchor carries a `substantive` / `passing` flag; passing anchors never become locators unless the author overrides (I6) |
-| Excessive, redundant subheadings | Subheading discipline checks: no subheading that repeats its parent's locators, no lone subheading, a per-heading cap (I5) |
-| Long strings of undifferentiated locators | A heading or subheading with more than six locators must be broken down (I4), following the usual Chicago guidance |
-| Locators that fail a copyeditor's page test | Page numbers are never written by a model. They are looked up mechanically from the proof PDF by quoted anchor text (Phase B), and an anchor that cannot be found is reported, never guessed (P1) |
+| Entries for passing mentions | Every anchor carries a `substantive` / `passing` flag; passing anchors never become locators unless the author overrides (I5) |
+| Excessive, redundant subheadings | Subheading discipline checks: no subheading that repeats its parent's locators, no lone subheading, a per-heading cap (W3) |
+| Long strings of undifferentiated locators | A heading or subheading with more than six locators is flagged for breaking down (W2), following the usual Chicago guidance |
+| Locators that fail a copyeditor's page test | Page numbers are never written by a model. They are looked up mechanically from the proof PDF by quoted anchor text (Phase B), and an anchor that cannot be found is reported, never guessed (P1, P2) |
 | Short snippets were not enough context for reviewers | The author's review sheet shows each heading with its substantive passages in context, grouped, with the chapter spread |
 | Roughly 70% of entries needing human remediation | The product is framed as the author's draft index for review, never as publication-ready (§Positioning) |
 
@@ -45,14 +45,14 @@ The design center of this spec is to **take every painful part away from the aut
 | Page ranges (45–52) for extended discussions | Tool, from anchor spans |
 | See and See also bookkeeping, blind and circular references | Tool generates; validator enforces |
 | Alphabetizing and press-style formatting | Tool, deterministic, from a style profile |
-| Fitting the press's page allowance | Tool trims lowest-weight entries and reports what it cut |
+| Fitting the press's page allowance | Tool proposes the lowest-weight cuts; author approves them |
 | Redoing page numbers after late corrections | Tool reruns placement against new proofs; no headings are touched |
 
 The author's remaining work is one review session over the heading sheet, plus a final read of the typeset index.
 
 ## Firewall fit
 
-An index is paratext about what the manuscript discusses. The tool **never changes the manuscript** and never invents content: every heading must point at real passages, and the validator proves the anchors exist (I2). Headings are proposals, and nothing becomes final without the author's decision, the same gate the [approval-gated reconstruction](approval-gated-reconstruction.md) workflow uses.
+An index is paratext about what the manuscript discusses. The tool **never changes the manuscript** and never invents content: every heading must point at real passages, and the validator proves the anchors exist (I2), and nothing the author has not accepted reaches the output (I4). Headings are proposals, and nothing becomes final without the author's decision, the same gate the [approval-gated reconstruction](approval-gated-reconstruction.md) workflow uses.
 
 One scope question remains for the owner: `ROADMAP.md` §Not Planned excludes line editing and copyediting as a different discipline. Indexing is a production task like copyediting. This spec proposes admitting it as a separate production module that shares the engine's extraction and validation machinery, with copyediting still excluded (design call D1).
 
@@ -75,9 +75,9 @@ Output: `[Project]_Index_Map_[runlabel].md` in the project root, one `apodictic.
   "status": "proposed",
   "weight": 0.81,
   "anchors": [
-    {"id": "IX-042.a1", "locus": "Ch 3 ¶12", "quote": "judgment that must find the universal for a given particular", "role": "substantive", "span_end": null},
-    {"id": "IX-042.a2", "locus": "Ch 7 ¶4", "quote": "returns to reflective judgment as the faculty", "role": "substantive", "span_end": "Ch 7 ¶9"},
-    {"id": "IX-042.a3", "locus": "Ch 9 ¶2", "quote": "as with reflective judgment, the", "role": "passing", "span_end": null}
+    {"id": "IX-042.a1", "locus": "Ch 3 ¶12", "quote": "judgment that must find the universal for a given particular", "role": "substantive", "end_quote": null},
+    {"id": "IX-042.a2", "locus": "Ch 7 ¶4", "quote": "returns to reflective judgment as the faculty", "role": "substantive", "end_quote": "which is why the spectator, not the actor"},
+    {"id": "IX-042.a3", "locus": "Ch 9 ¶2", "quote": "as with reflective judgment, the", "role": "passing", "end_quote": null}
   ],
   "subheadings": [],
   "see": [],
@@ -88,8 +88,8 @@ Output: `[Project]_Index_Map_[runlabel].md` in the project root, one `apodictic.
 
 - `kind` ∈ `name` / `place` / `work` / `concept` / `term` (closed).
 - `status` ∈ `proposed` / `accepted` / `renamed` / `merged` / `dropped` (closed). `merged` carries `merged_into`.
-- `quote` is a short verbatim string from the passage, long enough to be unique in the manuscript (the validator checks both). It is the anchor Phase B uses to find the page.
-- `span_end` marks an extended discussion that becomes a page range.
+- `quote` is a short verbatim string from the passage, long enough to be unique in the manuscript (the validator checks both). It is the anchor Phase B uses to find the page. `locus` is for the author's review sheet only; placement never uses it.
+- `end_quote` closes an extended discussion that becomes a page range. It is a second verbatim quote, so Phase B can find the end page the same way it finds the start. A `context` field (a few words before and after) is added only when a quote cannot be made unique on its own.
 - `weight` orders the review sheet and drives length trimming. It is a ranking aid, never shown in the index.
 
 Alongside the blocks, the run writes a **review sheet**: headings grouped by kind and sorted by weight, each with its preferred form, variants, chapter spread and two or three substantive passages in context. The author marks each one accept, rename, merge or drop. Unmarked headings stay `proposed` and are excluded from output, so silence never publishes anything.
@@ -98,28 +98,32 @@ Alongside the blocks, the run writes a **review sheet**: headings grouped by kin
 
 Input: the accepted map plus the typeset proof PDF.
 
-1. Extract page text and build the page-label map (printed folio versus PDF page index; roman front matter; unnumbered pages).
-2. For each accepted anchor, find its `quote` in the proof text after normalizing line-break hyphenation, ligatures, curly quotes and whitespace. The match must be unique.
-3. Assign the folio. A `span_end` that lands on a later page yields a range.
-4. Anything not found or not unique goes to an **unresolved list** for the author. No locator is ever estimated.
-5. Format the index under a style profile (indented or run-in, letter-by-letter or word-by-word, range style, See/See also placement) and write it out, plus the exports.
+1. Extract page text and build the page-label map: the PDF's own page labels when present, otherwise an author-supplied map (for example "PDF page 15 is folio 1; front matter is roman"). With neither, Phase B stops and asks; it never guesses folios. A proof with no extractable text (a scanned image) is refused with that reason.
+2. For each accepted anchor, find its `quote` in the proof text, searching across page breaks. Normalization is conservative and fixed: line-break hyphenation, ligatures, curly versus straight quotes, and whitespace. Nothing fuzzier, so a quote changed by copyediting fails to match instead of matching the wrong place.
+3. The match must be unique; `context` breaks a tie when present. A quote that spans a page break takes the page where it starts.
+4. Assign the folio. An `end_quote` found on a later page yields a range; one found earlier than its start, or not found, sends the anchor to the unresolved list.
+5. Anything not found, not unique, or reversed goes to an **unresolved list** for the author, with the reason. No locator is ever estimated.
+6. Format the index under a style profile (indented or run-in, letter-by-letter or word-by-word, range style, See/See also placement) and write it out, plus the exports. Each output locator keeps a trace record: anchor id, PDF page index, folio and match offset.
 
-Because anchors are quotes, repagination costs one rerun of Phase B.
+Because anchors are quotes, repagination costs one rerun of Phase B. Copyedits made after Phase A show up as unresolved anchors, which the author fixes by updating the quote.
 
 ## The `book-index` validator
 
 Mechanical checks, ERROR unless marked W:
 
 - **I1 schema.** `index_heading.v1` contract, closed enums, unique ids.
-- **I2 anchors exist.** Every `quote` occurs, after normalization, exactly once in the manuscript snapshot. This is a real firewall proof, stronger than the Continuity Bible's shape-only locus check, because the manuscript is an input here.
-- **I3 cross-reference integrity.** No See or See also to a missing, dropped or merged heading; no circular See; See only from a heading with no locators; See also only from a heading that has locators.
-- **I4 locator discipline.** No heading or subheading with more than six locators (configurable) without subheadings.
-- **I5 subheading discipline.** No lone subheading; no subheading whose locators equal its parent's; no more than a configurable number of subheadings per heading (default 12).
-- **I6 passing mentions.** Passing anchors never produce locators unless they carry an author override marker.
-- **P1 placement completeness.** Every accepted anchor is either placed or on the unresolved list.
-- **P2 folio sanity.** Folios are monotonic with PDF page order within each numbering sequence.
+- **I2 provenance.** Every `quote` and `end_quote` occurs, after the fixed normalization, exactly once in the manuscript snapshot (or once with its `context`). This proves the anchors are real, a stronger firewall check than the Continuity Bible's shape-only locus check, because the manuscript is an input here. Placement in the proofs is a separate check (P1).
+- **I3 cross-reference integrity.** No See or See also to a missing or dropped heading; a reference to a merged heading is rewritten to its `merged_into` target before output; no circular See; See only from a heading with no locators; See also only from a heading that has locators.
+- **I4 publication gate.** Only `accepted` and `renamed` headings, and the merged anchors they absorb, reach the output. A `proposed` heading in the formatted index is an error.
+- **I5 passing mentions.** Passing anchors never produce locators unless they carry an author override marker.
+- **P1 placement accounting.** Every anchor of a published heading is either placed, with a trace record, or on the unresolved list with a reason. Nothing is dropped silently.
+- **P2 locator integrity.** Every output locator matches its trace record's folio; folios are monotonic with PDF page order within each numbering sequence; every range starts no later than it ends; duplicate locators under one heading are merged.
 - **W1 coverage.** Chapters with no substantive anchors are flagged as possible under-indexing.
-- **W2 length budget.** Estimated index length against the press allowance, when one is given.
+- **W2 locator strings.** A heading or subheading with more than six locators (configurable) and no subheadings.
+- **W3 subheadings.** A lone subheading, a subheading whose locators equal its parent's, or more than a configurable number of subheadings per heading (default 12).
+- **W4 length budget.** Estimated index length against the press allowance, when one is given, with the proposed lowest-weight cuts for the author to approve.
+
+W2 and W3 are style warnings, not correctness errors, because presses and subjects differ; `--strict` promotes them for the canonical example only.
 
 **Honest limit.** The validator can prove anchors exist, references resolve, and locators came from the proofs. It cannot prove that a `substantive` flag is a good call or that a heading is the word a reader would look up. Those are the judgment calls left to the author, and the evaluation below measures them.
 
@@ -127,7 +131,7 @@ Mechanical checks, ERROR unless marked W:
 
 Run on at least one public-domain or permissioned book that already has a professional index, at both phases:
 
-- **Locator accuracy** on placed anchors: 100% required, checked by a copyeditor-style sample of 50 locators against the proofs.
+- **Locator accuracy.** Correctness of every placed locator rests on the trace records and P2, which are mechanical. A copyeditor-style audit of a random sample of 50 locators against the printed pages checks that the trace matches what a reader sees (page labels, cross-page quotes). Report the sample result and its confidence interval; zero errors in 50 is evidence, not proof of corpus-wide accuracy.
 - **Heading recall** against the professional index, reported per kind.
 - **Passing-mention rate** and **subheading excess** against the same index.
 - Report the numbers in the module doc. Do not claim parity with professional indexes.
@@ -146,8 +150,8 @@ Phase A is stdlib-only. Phase B needs PDF text extraction. Proposed: an optional
 
 ## Increment plan
 
-1. **Concept map.** `index_heading.v1`, the module, the review sheet, `book_index.py` with I1–I6 and W1, a canonical worked example in `--check-all`, and the `/book-index map` command.
-2. **Placement.** Proof PDF extraction, page-label map, anchor matching, P1–P2, W2, style profiles and formatted output (plain text and DOCX).
+1. **Concept map.** `index_heading.v1`, the module, the review sheet, `book_index.py` with I1–I5 and W1–W3, a canonical worked example in `--check-all`, and the `/book-index map` command.
+2. **Placement.** Proof PDF extraction, page-label map, anchor matching, P1–P2, W4, style profiles and formatted output (plain text and DOCX).
 3. **Exports and late changes.** Tab-delimited export for Cindex and SKY import, embedded-tag export (Word XE fields, LaTeX `\index`), and a repagination diff that lists every locator that moved.
 
 ## Open design calls (for the owner)
