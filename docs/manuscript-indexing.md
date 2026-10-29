@@ -1,6 +1,6 @@
 # Manuscript Index Builder: a back-of-book index the author only has to approve
 
-**Status:** **Proposed spec, 2026-10-29. Unbuilt.** Owner design calls resolved 2026-10-29 (§Resolved design calls). Codex review and the fleet `/spec-review` panel (verdict NEEDS-REWORK, 1 P1 and 9 P2) applied 2026-10-29. Awaits owner admission; no build until then. Roadmap: `ROADMAP.md` → [Horizon Capacities](../ROADMAP.md#horizon-capacities) Tier 2, item 20. Proposed implementation surface: `plugins/apodictic/scripts/book_index.py`, `validate.sh book-index`, a `core-editor/references/manuscript-indexing.md` module and a `/book-index` command.
+**Status:** **Proposed spec, 2026-10-29. Unbuilt.** Owner design calls resolved 2026-10-29 (§Resolved design calls). Codex review and two rounds of the fleet `/spec-review` panel applied 2026-10-29 (§Spec review record). Awaits owner admission; no build until then. Roadmap: `ROADMAP.md` → [Horizon Capacities](../ROADMAP.md#horizon-capacities) Tier 2, item 20. Proposed implementation surface: `plugins/apodictic/scripts/book_index.py`, `validate.sh book-index`, a `core-editor/references/manuscript-indexing.md` module and a `/book-index` command.
 <!-- built-when: plugins/apodictic/scripts/book_index.py -->
 
 ## Why
@@ -25,7 +25,7 @@ The design center of this spec is to **take every painful part away from the aut
 | Entries for passing mentions | Every anchor carries a `substantive` / `passing` flag; passing anchors never become locators; the author promotes one by changing its role |
 | Excessive, redundant subheadings | Subheading discipline checks: no subheading that repeats its parent's anchors, no lone subheading, a per-heading cap (W3) |
 | Long strings of undifferentiated locators | A heading or subheading with more than six substantive anchors is flagged for breaking down (W2), following the usual Chicago guidance |
-| Locators that fail a copyeditor's page test | Page numbers are never written by a model. They are looked up mechanically from the proof PDF by quoted anchor text (Phase B), and an anchor that cannot be found is reported, never guessed, and anchors that land out of manuscript order are held back (P1, P2) |
+| Locators that fail a copyeditor's page test | Page numbers are never written by a model. They are looked up mechanically from the proof PDF by quoted anchor text (Phase B), and an anchor that cannot be found is reported, never guessed, and anchors that land out of manuscript order are held back (the Phase B order check) |
 | Short snippets were not enough context for reviewers | The author's review list shows each heading with every anchor in context, grouped, with the chapter spread |
 | Roughly 70% of entries needing human remediation | The product is framed as the author's draft index for review, never as publication-ready (§Positioning) |
 
@@ -46,27 +46,29 @@ The design center of this spec is to **take every painful part away from the aut
 | See and See also bookkeeping, blind and circular references | Tool generates; validator enforces |
 | Alphabetizing and press-style formatting | Tool, deterministic, from a style profile |
 | Fitting the press's page allowance | Tool lists the lowest-weight headings as cut candidates; the author drops any they agree with |
-| Redoing locators after late corrections | Tool reruns the locator step; no headings are touched |
+| Redoing locators after late corrections | Tool re-snapshots the corrected text, lists the anchors whose quotes broke, and reruns the locator step; only headings whose quotes the author updates need re-accepting |
 
 The author's remaining work is one review session over the heading list, plus a final read of the finished index.
 
 ## Firewall fit
 
-An index is paratext about what the manuscript discusses. The tool **never changes the manuscript** and never invents passages: every heading either has anchors the validator proves exist in the manuscript (I2) or only redirects to a heading that does (a See-only heading). Headings are proposals, and only headings the author accepted reach the output (I4).
+An index is paratext about what the manuscript discusses. The tool **never changes the manuscript** and never invents passages: every heading either has anchors the validator proves exist in the manuscript (I2) or only redirects to a heading that does (a See-only heading). Headings are proposals, and only headings with a recorded author acceptance that still matches their content reach the output (I4).
 
-**Scope.** Indexing is a production task, admitted by the owner on 2026-10-29. It lives as a core-editor reference module because it reuses core-editor's manuscript snapshot and its quote-anchor rules; it is not an audit and emits no findings. Copyediting is out of scope here (ROADMAP §Not Planned records the owner's reopening of it as a separate spec).
+**Scope.** Indexing is a production task, admitted by the owner on 2026-10-29. It lives as a core-editor reference module because it reuses core-editor's manuscript-snapshot convention and quote-anchor rule; it is not an audit and emits no findings. Copyediting is out of scope here (ROADMAP §Not Planned records the owner's reopening of it as a separate spec).
 
 ## How it works: topic map first, locators optional
 
 ### Phase A: the topic map (manuscript stage)
 
-Input: the manuscript, ideally once the text is substantively final. The `/book-index map` command writes (or reuses) the run's `[Project]_Manuscript_Snapshot_[runlabel].md`, the same LF-normalized snapshot the [annotated-manuscript](annotated-manuscript.md) layer uses, and records its path and sha256 in the map header. Phase A works with nothing else. Two optional inputs, when present, only **seed** proposed headings and their loci never become anchors: Continuity Bible `canon_fact.v1` `entity` values (aliases come from facts whose `attribute` is `alias`), and the `argument_spine.v1` `key_terms`, `thesis` and `subclaims` that seed `Argument_State.md`.
+**Snapshot.** The author supplies the text to index, ideally the final post-copyedit text. `/book-index map` writes a fresh `[Project]_Manuscript_Snapshot_[runlabel].md` from it (LF-normalized, trailing newline, the annotated-manuscript convention) in its own run folder under its own runlabel. It never reuses or overwrites a developmental-edit snapshot, so the map is never anchored to stale pre-copyedit text. The Index_Map sits in the same run folder and its header records `snapshot_path`, relative to the map.
 
-Output: `[Project]_Index_Map_[runlabel].md` in the project root: a header block, then one `apodictic.index_heading.v1` block per heading.
+**Seeds.** Phase A works with no inputs beyond the snapshot. When an `argument_spine.v1` block is present, its `key_terms` (the text before ` = `) and its `subclaims` (with the `Cn:` prefix stripped) are offered as discovery candidates only; their wording and loci never become anchors.
+
+Output: `[Project]_Index_Map_[runlabel].md`: a header block, then one `apodictic.index_heading.v1` block per heading.
 
 ```markdown
 <!-- apodictic:index_map
-{"schema": "apodictic.index_map.v1", "snapshot_path": "Book_Manuscript_Snapshot_r1.md", "snapshot_sha256": "<64 lowercase hex>"}
+{"schema": "apodictic.index_map.v1", "snapshot_path": "Book_Manuscript_Snapshot_ix1.md"}
 -->
 
 <!-- apodictic:index_heading
@@ -106,10 +108,9 @@ Output: `[Project]_Index_Map_[runlabel].md` in the project root: a header block,
 | `heading` | string | non-empty; the preferred form as printed |
 | `kind` | enum | `name` / `place` / `work` / `concept` / `term` |
 | `variants` | string[] | may be empty; alternate forms folded into this heading |
-| `status` | enum | `proposed` / `accepted` / `merged` / `dropped` |
+| `status` | enum | `proposed` / `accepted` / `dropped` |
 | `accepted_hash` | string | required when `status` is `accepted`, absent otherwise (see I4) |
-| `merged_into` | string | required when `status` is `merged`, absent otherwise; an existing heading id |
-| `weight` | number | in [0, 1]; orders the review list and cut candidates, never printed |
+| `weight` | number | in [0, 1]; orders the review list, never printed |
 | `anchors` | anchor[] | the heading's own anchors, excluding any assigned to a subheading. Empty only for a See-only heading |
 | `subheadings` | subheading[] | may be empty; one level deep |
 | `see` | string[] | heading ids |
@@ -121,15 +122,23 @@ A **subheading** is `{id, label, anchors}`. `id` is `<heading id>.s<N>`; `label`
 
 A **See-only heading** has `anchors: []`, no subheadings, a non-empty `see` and an empty `see_also`. Every other non-dropped heading has at least one substantive anchor of its own or in a subheading.
 
-**Author decisions.** The Index_Map is the only state. The run renders a read-only **review list** from it: headings grouped by kind and sorted by weight, each with its variants, chapter spread and every anchor shown in context from the snapshot, and the headings with the lowest weight marked as cut candidates when a length allowance is given. The author accepts, renames (edits `heading`), merges or drops; the command writes those decisions into the map only from the author's explicit replies. Accepting a heading sets `accepted_hash`, a sha256 over its `heading`, `variants`, `see`, `see_also`, and its own and its subheadings' anchor quotes and end quotes. A heading that has never been decided stays `proposed` and is never published, so silence publishes nothing.
+Schema files cover shape only (types, enums, id patterns). Conditional rules (`accepted_hash` presence, See-only shape, `end_quote` nullability, substantive-anchor minimums) are checked in `book_index.py`.
+
+**Author decisions.** The Index_Map is the only state. The run renders a read-only **review list** from it: headings grouped by kind and sorted by weight, each with its variants, chapter spread and every anchor shown in context from the snapshot. The author accepts, renames (edits `heading`), merges or drops; the command writes those decisions into the map only from the author's explicit replies.
+
+- **Accepting** sets `accepted_hash` = sha256 of `json.dumps(projection, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")`, where `projection` is the whole heading object minus `status`, `accepted_hash` and `weight`. It therefore covers the heading text, kind, variants, See/See also, every anchor's id, quote, end quote, role and context in array order, and every subheading's id, label and anchors in array order. Any later change to printed text, roles, anchors or their grouping breaks the hash.
+- **Merging** is an action, not a stored state: the source's variants and anchors move into the target, See/See also references to the source are repointed to the target, the source is set to `dropped`, and the target returns to `proposed` until re-accepted.
+- A heading never decided stays `proposed` and is never published, so silence publishes nothing.
+
+**Re-snapshotting.** When the text changes (copyedits, late corrections), the author supplies the new text and `/book-index map --resnapshot` writes a new snapshot, points the map at it, reruns I2 over every anchor, and lists the anchors whose quotes no longer occur exactly once. Updating a broken quote changes the heading's hash, so that heading needs re-accepting; every other heading keeps its acceptance.
 
 ### Phase B: locators (optional, pluggable)
 
-The core deliverable is the topic map: headings, subheadings and See/See also, each tied to real passages. It can be output with no locators at all, as a topic guide or as a head start for a professional indexer. When locators are wanted, the author picks a **locator scheme**, and Phase B resolves every anchor of every accepted heading under it. Every scheme meets one contract: each anchor resolves from its quote to a locator, or goes to the unresolved list with a reason. No scheme ever estimates.
+The core deliverable is the topic map: headings, subheadings and See/See also, each tied to real passages. It can be output with no locators at all, as a topic guide or as a head start for a professional indexer. When locators are wanted, `/book-index locate` takes the accepted headings (only those passing I4), the author picks a **locator scheme**, and every anchor resolves from its quote to a locator or goes to the unresolved list with a reason. No scheme ever estimates, and passing anchors produce no locators.
 
 | Scheme | Locator | Source |
 |---|---|---|
-| `paragraph` | chapter and paragraph | the snapshot itself: the chapter is the nearest preceding chapter heading (the same heading lookup `annotation_manifest.py` uses), and paragraphs are blank-line-separated blocks after it, headings excluded |
+| `paragraph` | chapter and paragraph | the snapshot (see §Chapters) |
 | `page` | printed page (folio) | the typeset proof PDF (procedure below) |
 | `line` | line number | a line-numbered edition or text |
 | `ebook` | ebook location | the EPUB, or a location table the author exports |
@@ -137,43 +146,46 @@ The core deliverable is the topic map: headings, subheadings and See/See also, e
 
 Kindle locations are computed by Amazon from the published file, so the `ebook` scheme reads them from an author-supplied export rather than calculating them.
 
+**Chapters.** A new helper in `book_index.py` defines them for this module: every ATX heading at a configured level (default H1) starts a chapter, labeled by its heading text. Text before the first such heading is front matter and is excluded. A paragraph is a blank-line-separated block after a chapter heading, headings excluded. With no chapter headings, the `paragraph` scheme refuses with that reason and W1 is skipped with a note.
+
+**Match normalization (Phase B only).** Locating compares a folded form of both sides: inline markdown and footnote markers stripped, and dashes, quote styles, ligatures, line-break hyphenation and whitespace folded, so a quote containing `*Title*` or `[^12]` still finds its printed text. I2 is unaffected; it always checks the raw quote against the raw snapshot.
+
 **The `page` scheme.** Input: the accepted map plus the typeset proof PDF.
 
 1. Extract page text and build the page-label map: the PDF's own page labels when present, otherwise an author-supplied map (for example "PDF page 15 is folio 1; front matter is roman"). With neither, the scheme stops and asks; it never guesses folios. A proof with no extractable text (a scanned image) is refused with that reason.
 2. Search only the body page range by default. Front matter, running heads and back-matter notes are excluded unless the author includes them, because an epigraph, a preface or a running head can repeat a body sentence.
-3. For each anchor, find its `quote` (with `context` when present) in the proof text, searching across page breaks. Proof-side normalization is fixed: line-break hyphenation, ligatures, curly versus straight quotes, and whitespace. This normalization applies to the proof only; the manuscript side stays as-is (I2). The match must be unique. A quote that spans a page break takes the page where it starts.
+3. For each anchor, find its `quote` (with `context` when present) in the folded proof text, searching across page breaks. The match must be unique. A quote that spans a page break takes the page where it starts.
 4. Assign the folio. An `end_quote` found later yields a range; one found earlier than its start, or not found, sends the anchor to the unresolved list.
-5. **Order check.** Sort the placed anchors by their offset in the manuscript snapshot; their positions in the proof must be non-decreasing. An anchor out of order matched the wrong place (a copyedited sentence whose original wording survives elsewhere), so it goes to the unresolved list.
-6. Anything not found, not unique, reversed or out of order goes to the **unresolved list** for the author, with the reason. The author fixes it by updating the quote, which re-opens the heading for acceptance (I4).
-7. Format the index under a style profile (indented or run-in, letter-by-letter or word-by-word, range style, See/See also placement) and write it out. Match positions are printed with the unresolved list and on request; they are not a stored artifact.
+5. **Order check.** Sort every placed anchor in the book by its snapshot offset and take the longest subsequence whose proof positions are non-decreasing (ties broken by lower anchor id). Anchors outside that subsequence matched the wrong place, typically a copyedited sentence whose old wording survives elsewhere, and go to the unresolved list with reason `out_of_order`.
+6. Format the index under a style profile (indented or run-in, letter-by-letter or word-by-word, range style, See/See also placement) and write it out, with the unresolved list and its match positions alongside.
 
 Because anchors are quotes, repagination or a new edition costs one rerun of Phase B under any scheme.
 
+Locate behavior (only I4-passing headings formatted, every anchor placed or unresolved, the order check, range direction, duplicate locators merged under one heading) is covered by ordinary unit tests, including one early wrong match that step 5 must reject.
+
 ## The `book-index` validator
 
-`validate.sh book-index <index_map.md> <snapshot>`; with `--output <formatted index>` it also checks the output. A missing or mismatched snapshot is an ERROR, never a skip. Checks are ERROR unless marked W.
+`validate.py book-index <run_folder|index_map.md> [--strict]`, following the `world-bible` convention: it finds the snapshot through `snapshot_path`; a missing snapshot is an ERROR. W checks are advisory and ERROR under `--strict`; there are no override markers. Exit 0 clean or WARN-only, 1 ERROR, 2 usage.
 
-- **I1 schema.** Every field rule in the table above, including the See-only and substantive-anchor rules, the id patterns and the `accepted_hash`/`merged_into` presence rules.
-- **I2 provenance.** The snapshot's sha256 equals the map header's. Every `quote` and `end_quote` (with `context` when present) occurs in the snapshot as-is and exactly once, by the non-overlapping count `annotation_manifest.quote_anchor` and A6 already use. This proves the anchors are real passages of this exact draft.
-- **I3 cross-references.** Every See and See also target exists and is not dropped. A reference to a merged heading is rewritten to its `merged_into` target before output, and `merged_into` chains end at a non-merged heading. No circular See.
-- **I4 acceptance and publication** (with `--output`, from Increment 2). Every `accepted` heading's `accepted_hash` equals the hash of its current content; a heading changed after acceptance is an ERROR until it is re-accepted. The output contains only accepted headings, the anchors merged into them, and their See-only redirects. Passing anchors produce no locators.
-- **P1 placement accounting** (with `--output` and a scheme). Every anchor of a published heading is either placed or on the unresolved list with a reason. Nothing is dropped silently.
-- **P2 locator order** (with `--output` and a scheme). Re-derives step 5 in memory: placed anchors are non-decreasing in proof position when sorted by snapshot offset, every range starts no later than it ends, and duplicate locators under one heading are merged.
-- **W1 coverage.** A chapter with no substantive anchors, located by each anchor's I2 match offset in the snapshot, is flagged as possible under-indexing.
+- **I1 schema.** Every field rule above, including the See-only and substantive-anchor rules and the id patterns.
+- **I2 provenance.** Every `quote` and `end_quote` (with `context` when present) occurs in the raw snapshot exactly once, by the non-overlapping count `annotation_manifest.quote_anchor` and A6 already use, and a non-null `end_quote` starts at or after the end of its `quote`.
+- **I3 cross-references.** Every See and See also target exists and is `accepted`. A See whose target is itself See-only, and any cycle in See or See also, is an ERROR.
+- **I4 acceptance.** Every `accepted` heading's `accepted_hash` equals the hash of its current projection. A heading changed after acceptance is an ERROR until re-accepted.
+- **W1 coverage.** A chapter (§Chapters) with no substantive anchors, located by each anchor's I2 offset, is flagged as possible under-indexing.
 - **W2 locator strings.** A heading or subheading with more than six substantive anchors and no subheadings.
 - **W3 subheadings.** A lone subheading, a subheading whose anchors equal its parent's, or more than twelve subheadings under one heading.
 
-**Honest limit.** I2 proves an anchor is a real passage, not that the passage is about its heading; a real passage filed under a mistaken topic is the residual firewall risk, and the review list shows every anchor in context so the author judges it. I4 proves the output matches the recorded decisions and that nothing changed after acceptance. It does not prove a human made those decisions: the command records them from the author's replies, and the validator cannot tell an author's reply from a model's write. Approval-gated reconstruction has the same limit (its `actor` field is also written by the tool). The substantive/passing call and the choice of heading words are judgment the validator does not check.
+**Honest limit.** I2 proves an anchor is a real passage of this snapshot, not that the passage is about its heading; a real passage filed under a mistaken topic is the residual firewall risk, and the review list shows every anchor in context so the author judges it. I4 proves every accepted heading is unchanged since its acceptance was recorded. It does not prove a human made the decision: recording happens only from the author's explicit replies, a process rule the validator cannot verify. Approval-gated reconstruction has the same limit (its `actor` field is also written by the tool). The substantive/passing call and the choice of heading words are judgment the validator does not check.
 
-**Minimum negative self-tests:** a quote that occurs twice, a missing quote, a snapshot sha mismatch, an `end_quote` before its `quote`, circular See, See to a dropped heading, `merged` without `merged_into`, an accepted heading edited after acceptance, a lone subheading, a See-only heading with `see_also`, and a proof anchor out of manuscript order. The canonical worked example in `--check-all` includes accepted, merged, dropped and See-only headings and a populated subheading.
+**Negative self-tests.** Increment 1: a quote that occurs twice, a missing quote, a missing snapshot, an `end_quote` before its `quote`, circular See, See to a dropped heading, See to a proposed heading, an accepted heading edited after acceptance, a role flip after acceptance, a subheading relabel after acceptance, a lone subheading (W3) and a See-only heading with `see_also`. The canonical worked example includes accepted, dropped and See-only headings, a populated subheading and a titled (word-numbered) chapter. Increment 2's locate unit tests are listed above.
 
 ## Evaluation before release
 
-Run on at least one public-domain or permissioned book that already has a professional index. Report one overall heading-recall figure against that index, and for the `page` scheme a spot-check of 50 randomly sampled locators against the printed pages. Report the numbers in the module doc and do not claim parity with professional indexes.
+Run on at least one public-domain or permissioned book that already has a professional index. Report one overall heading-recall figure, adjudicated by hand against that index, and for the `page` scheme a spot-check of 50 randomly sampled locators against the printed pages. These are reported in the module doc, not used as gates, and the docs do not claim parity with professional indexes.
 
 ## Positioning
 
-A human must review and endorse the index before it is used: nothing reaches the output without the author's acceptance (I4), and the docs say so. The ASI evaluations above are prior-art evidence that shaped the design. APODICTIC is not bound by ASI guidance, and the docs do not present it as a rule. They do say which of the documented failure modes this design checks mechanically and which still rest on the author's review. An author who wants a professional indexer can hand over the Cindex/SKY export.
+A human must review and endorse the index before it is used. Nothing reaches the output without a recorded acceptance that still matches the heading's content (I4); recording happens only from the author's explicit replies, a process rule the validator cannot verify. The module doc and `/book-index` command text say exactly this. The ASI evaluations above are prior-art evidence that shaped the design. APODICTIC is not bound by ASI guidance, and the docs do not present it as a rule. They do say which of the documented failure modes this design checks mechanically and which still rest on the author's review. An author who wants a professional indexer can hand over the Cindex/SKY export.
 
 ## Where it lives
 
@@ -181,12 +193,12 @@ A core-editor reference module (`core-editor/references/manuscript-indexing.md`)
 
 ## Dependencies
 
-Phase A, the validator and the `paragraph` scheme are stdlib-only. DOCX output reuses `annotation_export.py`'s stdlib OOXML writer. The `page` scheme needs PDF text extraction: an optional `pypdf` import, loaded lazily, with the scheme refusing cleanly (and saying how to install it) when the package is missing, and tests that `skipif` without it. A model reading the PDF is rejected for locators because it is not deterministic.
+Phase A, the validator and the `paragraph` scheme are stdlib-only. The `page` scheme needs PDF text extraction: an optional `pypdf` import, loaded lazily, with the scheme refusing cleanly (and saying how to install it) when the package is missing, and tests that `skipif` without it. A model reading the PDF is rejected for locators because it is not deterministic.
 
 ## Increment plan
 
-1. **Topic map.** `index_map.v1` header, `index_heading.v1`, the module, the review list, `book_index.py` with I1–I3 and W1–W3, the negative self-tests, the canonical worked example in `--check-all`, and the `/book-index map` command.
-2. **Locators and output.** The scheme contract, the `paragraph` and `page` schemes, I4, P1, P2, style profiles and formatted output (plain text and DOCX), plus a locator-free topic-map output.
+1. **Topic map.** `index_map.v1` and `index_heading.v1`; the module and the review list; snapshot writing and `--resnapshot`; `book_index.py` with I1–I4 and W1–W3; the Increment 1 negative self-tests; the canonical worked example and its snapshot in `--check-all`; the `/book-index map` command. Registration points: the two schema files, a `schemas/_coverage.json` binding (`validators: ["book-index"]` with the canonical gate), the `validate.py` ROUTES entry, the `schemas/validator-runtime-inventory.json` entry, and the fixture paths.
+2. **Locators and output.** `/book-index locate` with the scheme contract, the `paragraph` and `page` schemes, match normalization, the order check, style profiles, the locate unit tests, length-allowance cut candidates (lowest-weight headings listed for the author to drop), a locator-free topic-map output, and plain-text and DOCX output. For DOCX, extract `annotation_export.py`'s deterministic-zip and OOXML helpers into a shared function rather than duplicating them.
 3. **More schemes and exports.** The `line`, `ebook` and `embedded` schemes, and a tab-delimited export for Cindex and SKY import.
 
 ## Resolved design calls (owner, 2026-10-29)
@@ -199,4 +211,7 @@ Phase A, the validator and the `paragraph` scheme are stdlib-only. DOCX output r
 
 ## Spec review record (2026-10-29)
 
-Fleet `/spec-review`, seven lenses, verdict NEEDS-REWORK (1 P1, 9 P2). All fixes applied in this revision. The P1 (author acceptance could not be enforced, and the spec wrongly claimed reconstruction's gate) is resolved by keeping one state file, binding each acceptance to a content hash so any later change re-opens it, and stating the human-decision limit honestly. Recording decisions in the approval-gated reconstruction ledger was considered and not taken: its event vocabulary is built for claim graphs, and its `actor` field carries the same limit, so it would add machinery without adding proof. Cut as ceremony: trace records as stored output, the passing-mention override marker, the `renamed` status, configurable thresholds, the re-locate diff, and the extra evaluation metrics.
+Fleet `/spec-review`, seven lenses, two rounds, all fixes applied.
+
+- **Round 1: NEEDS-REWORK (1 P1, 9 P2).** The P1 was that author acceptance could not be enforced and the spec wrongly claimed reconstruction's gate. Fixed with one state file, a content-hash binding that re-opens any changed heading, and an honest statement of the human-decision limit. Recording decisions in the reconstruction ledger was considered and not taken: its event vocabulary is built for claim graphs and its `actor` field carries the same limit. Cut as ceremony: stored trace records, the passing-mention override marker, the `renamed` status, configurable thresholds, the re-locate diff and extra evaluation metrics.
+- **Round 2: NEEDS-REWORK (3 P1, 10 P2).** P1s: the acceptance hash left out printed and locator-changing fields and had no canonical serialization (now the whole heading minus status, hash and weight, with a fixed JSON serialization); the validator's output gates had no way to receive their inputs (cut; locate behavior is unit-tested instead); the copyedit path had no re-snapshot step (added). Also fixed: snapshot ownership, merge as an action instead of a stored state, accepted-only cross-reference targets, a defined chapter helper, a longest-subsequence order check, match normalization on both sides in Phase B, the CLI and registration contract, the Continuity Bible seed dropped (fiction-shaped), and the snapshot hash cut (the exactly-once check is the provenance rule).
