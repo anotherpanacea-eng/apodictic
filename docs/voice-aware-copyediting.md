@@ -24,6 +24,19 @@ The tool never edits the manuscript. Everything it produces is one of two things
 - **Query.** A question to the author with no replacement text, for cases where the right answer depends on the author's intent ("Deliberate? *alright* here, *all right* in chapter 2").
 - **Stet.** The author's answer that the original stands. It goes on the voice ledger so the question is not asked again.
 
+## Intervention levels
+
+The author chooses how far the copyedit goes, for the whole run or per kind. Every level shows at least one real instance from the manuscript, because seeing an example is what makes a note usable. The levels, with one running example (a manuscript that writes *alright* 37 times and *all right* 4 times, all 4 in chapter 9):
+
+1. **Name the class.** "Consider: *alright* and *all right* are both used. Example: ch. 9, ¶14, 'It was all right by him.' (4 instances, all in ch. 9.)" One note per class, no replacement text.
+2. **Ask how to handle it.** "*all right* appears 4 times against 37 *alright*. Make them all *alright*, keep ch. 9 as is (a different narrator?), or something else? Example: ch. 9, ¶14." One query per class; the answer goes on the style sheet or the voice ledger.
+3. **One suggested fix.** The level-2 question plus one worked suggestion on the first instance: ch. 9, ¶14 'all right' → 'alright', with the other three instances listed. Accepting it settles the style-sheet choice, and the remaining instances follow at level 4 if the author wants them.
+4. **Suggest fixes for all.** One suggestion per instance (four here), each with its own span. This is the only level where opt-in bulk acceptance applies.
+
+A rewrite kind uses the same ladder. For a stepped-on move: (1) "Consider: some scene endings explain the image they end on. Example: ch. 4, last paragraph." (2) "Ch. 4 ends on 'He shut the door,' then explains it. Keep the explanation, cut it, or move it?" (3) A suggested rewrite that ends the paragraph at "He shut the door." (4) The same for every such ending the pass found.
+
+Defaults: level 3 for mechanical kinds, level 2 for rewrite kinds, and query-only kinds stop at level 2 whatever the setting. Levels 1 and 2 produce queries, so they are available in Increment 1. In the record, a level-1 or level-2 item carries `instances` (the spans it covers, with at least one) in place of a single `span`.
+
 ## Fleet prior art: consume or extend
 
 The coordinator asked first whether to consume or extend two existing pieces. Both are close; neither is a drop-in.
@@ -155,7 +168,7 @@ A core-editor workflow module (`core-editor/references/voice-aware-copyediting.m
 D2 is answered. The rest are recommendations that stand unless the owner objects.
 
 - **D1 Consume or extend.** *Recommend:* port Spec 113's suggestion contract and checks into APODICTIC (spec dependency, no code import or new pin); consume the SETEC idiolect, roughness, cadence and POV surfaces through the existing SETEC contract. *Alternatives:* pin voicewright and call the 113 runner (heavy private harness, period brief); or generalize 113 inside voicewright and have APODICTIC call it.
-- **D2 Replacement text and the Firewall. Answered 2026-10-29.** The owner: all three levels are acceptable, and "a copy editor may suggest rewrites for clarity or when the author is stepping on a move." Follow-up the same day: "the fixes should be suggested, not made." So: queries; typo-scale mechanical fixes; and one-sentence rewrites for the `clarity` and `stepped_on_move` kinds. A third note: review is one at a time by default, and bulk acceptance is optional, at the author's own responsibility. Every fix of any size is a suggestion the author accepts (§Terms); the tool applies nothing itself.
+- **D2 Replacement text and the Firewall. Answered 2026-10-29.** The owner: all three levels are acceptable, and "a copy editor may suggest rewrites for clarity or when the author is stepping on a move." Follow-up the same day: "the fixes should be suggested, not made." So: queries; typo-scale mechanical fixes; and one-sentence rewrites for the `clarity` and `stepped_on_move` kinds. A third note: review is one at a time by default, and bulk acceptance is optional, at the author's own responsibility. A fourth: the author picks an intervention level, from naming a class of edits up to suggesting a fix for every instance, and every level shows an example (§Intervention levels). Every fix of any size is a suggestion the author accepts (§Terms); the tool applies nothing itself.
 - **D3 Unknown departures.** A nonstandard form the ledger does not cover and that is used once. *Recommend:* a `voice_check` query. *Alternatives:* leave silently (misses real typos), or suggest a fix (the flattening the owner warned about).
 - **D4 Scope.** *Recommend:* fiction and nonfiction both; unlike an index, every book is copyedited.
 - **D5 Style authority.** *Recommend:* Chicago-style conventions for books and AP-style for short-form journalism by default, author-changeable, with the module stating every rule in its own words.
