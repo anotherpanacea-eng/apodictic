@@ -1,6 +1,6 @@
 # Voice-Aware Copyedit: a copyeditor that knows what to leave alone
 
-**Status:** **Proposed spec, 2026-10-29. Unbuilt.** Design calls open for the owner (§Design calls). Awaits owner admission; no build until then. Roadmap: a Horizon Capacities Tier 2 entry is added once the manuscript-indexing spec PR (#406, which holds `ROADMAP.md` and reopens copyediting in §Not Planned) has landed. Proposed implementation surface: `plugins/apodictic/scripts/copyedit.py`, `validate.sh copyedit`, a `core-editor/references/voice-aware-copyediting.md` module and a `/copyedit` command.
+**Status:** **Proposed spec, 2026-10-29. Unbuilt.** Owner ruled on replacement text 2026-10-29 (D2); D1 and D3–D5 stand as recommended unless the owner objects (§Design calls). Awaits owner admission; no build until then. Roadmap: a Horizon Capacities Tier 2 entry is added once the manuscript-indexing spec PR (#406, which holds `ROADMAP.md` and reopens copyediting in §Not Planned) has landed. Proposed implementation surface: `plugins/apodictic/scripts/copyedit.py`, `validate.sh copyedit`, a `core-editor/references/voice-aware-copyediting.md` module and a `/copyedit` command.
 <!-- built-when: plugins/apodictic/scripts/copyedit.py -->
 
 ## Why
@@ -11,9 +11,18 @@ Copyeditors manage this with three tools, and this spec builds all three:
 
 - **The style sheet.** A running record of every decision about spelling, hyphenation, capitalization, numbers and names, so the same choice is made the same way through the book. Its most important entries are often the departures: "Jim's dialect spellings are deliberate; do not regularize."
 - **The query.** When a copyeditor cannot tell whether something is error or intention, they ask the author instead of changing it.
+- **The suggested rewrite, used sparingly.** A good copyeditor will also offer a rewrite when a sentence is unclear, or when the author is stepping on their own move: explaining the joke, glossing an image the reader already has, hedging a claim the paragraph has earned, or adding a line after the one that should have ended the scene. The rewrite is offered, never imposed.
 - **Stet.** The author's answer that the original stands. Once given, it holds for every later instance.
 
 The design center is **inconsistency is the signal, deviation is not.** A nonstandard form used the same way forty times is probably a choice. A form that appears both ways is the classic copyedit target, and the useful question is which form the book uses.
+
+## Terms
+
+The tool never edits the manuscript. Everything it produces is one of two things, and the author acts on both:
+
+- **Suggestion.** A proposed change with the replacement text written out (`suggest` for a mechanical fix, `rewrite` for a one-sentence rewrite). It changes nothing until the author accepts it. Accepting is the author's act; the tool only shows what accepting would do.
+- **Query.** A question to the author with no replacement text, for cases where the right answer depends on the author's intent ("Deliberate? *alright* here, *all right* in chapter 2").
+- **Stet.** The author's answer that the original stands. It goes on the voice ledger so the question is not asked again.
 
 ## Fleet prior art: consume or extend
 
@@ -33,14 +42,15 @@ The coordinator asked first whether to consume or extend two existing pieces. Bo
 
 ## Firewall fit
 
-APODICTIC's Firewall says diagnostics identify problems and never rewrite manuscripts, and the annotated-manuscript spec rules out tracked changes. Copyediting needs some replacement text: "recieve" has one right answer, and making the author type it is the kind of busywork the tool exists to remove. This spec draws the line narrowly (D2):
+APODICTIC's Firewall says diagnostics identify problems and never rewrite manuscripts, and the annotated-manuscript spec rules out tracked changes. Copyediting needs some replacement text: "recieve" has one right answer, and making the author type it is the kind of busywork the tool exists to remove. The owner ruled on 2026-10-29 (D2) that all three levels are acceptable: queries, small mechanical fixes, and sentence-level rewrites for clarity or where the author is stepping on a move. The line is drawn like this:
 
 - **The snapshot is never changed.** All work is against the frozen snapshot, and the validator proves it (E8).
-- **Replacement text exists only for mechanical kinds** (§Kinds), and only inside a size cap (E5). Anything about wording, clarity, usage or voice is a **query** with no replacement text at all.
-- **Nothing is applied without the author's pick.** Picks can be made in bulk by kind ("accept every spelling suggestion"), but silence never applies anything.
+- **Two sizes of replacement.** Mechanical kinds get typo-scale fixes inside a size cap (E5). The two rewrite kinds, `clarity` and `stepped_on_move`, may offer a rewrite of up to one sentence, always paired with the question that explains it. Everything else (usage, agreement in voiced speech, fact consistency, possible voice) is a **query** with no replacement text.
+- **Rewrites keep the voice.** A rewrite may not alter any ledger entry inside its span and may not touch a zone (E3), and the flattening check covers accepted rewrites (W2).
+- **Nothing is applied without the author's pick.** Mechanical fixes can be accepted in bulk by kind ("accept every spelling suggestion"). Rewrites are picked one at a time and never in bulk. Silence never applies anything.
 - **Picks export to a copy** (CriticMarkup first, DOCX tracked changes later), the way Spec 113's export applies picks.
 
-So the tool writes no prose. Its replacements are the size of a typo fix, the author chooses each one, and everything larger is a question.
+So the tool's own prose is bounded: typo-scale fixes, and at most one sentence where clarity or a stepped-on move calls for it, each chosen by the author.
 
 ## The voice ledger
 
@@ -100,8 +110,9 @@ The author sees a numbered list (`P<paragraph>.<n>`, numbering fixed once as in 
  "reason": "misspelling; 'receive' appears 11 times elsewhere"}
 ```
 
-- `kind` is closed: mechanical kinds `spelling`, `consistency`, `punctuation_mechanics`, `word_confusion`, `style_sheet`; query-only kinds `agreement`, `usage`, `clarity`, `fact_consistency`, `voice_check`.
-- `disposition` is `suggest` (has a `replacement`) or `query` (`replacement` is null and `reason` is the question to the author). There is no `apply`.
+- `kind` is closed: mechanical kinds `spelling`, `consistency`, `punctuation_mechanics`, `word_confusion`, `style_sheet`; rewrite kinds `clarity`, `stepped_on_move`; query-only kinds `agreement`, `usage`, `fact_consistency`, `voice_check`.
+- `disposition` is `suggest` (a mechanical fix with a `replacement`), `rewrite` (a rewrite kind with a `replacement` of at most one sentence, and `reason` phrased as the question to the author) or `query` (`replacement` is null and `reason` is the question). There is no `apply`. A rewrite kind may also come as a plain `query` when the pass sees the problem but has no rewrite worth offering.
+- `stepped_on_move` names the move in `reason` ("the scene's last line lands at 'shut the door'; the next sentence explains it"). Deleting the stepping sentence is a valid rewrite when the paragraph stays non-empty (E4).
 - `consistency` and `style_sheet` items name the style-sheet decision in `style_ref`; their replacement must be the form that decision chose (E6).
 - `voice_check` is how the pass says "this looks like an error, but it may be voice": it is always a query, and it is the kind a converted ledger or zone hit becomes.
 
@@ -111,11 +122,11 @@ Mechanical checks, ERROR unless marked W. E1, E2, E4 and E7 follow Spec 113 §3 
 
 - **E1 schema.** The closed record; unique ids; closed enums.
 - **E2 provenance.** `original` equals the snapshot bytes at `span`; the span falls on code-point boundaries and inside one paragraph.
-- **E3 ledger and zone guard.** No `suggest` item whose span touches a ledger entry or a zone. Such an item must be a `query`. This is the check that enforces the owner's caution mechanically for everything the ledger knows about.
+- **E3 ledger and zone guard.** No `suggest` or `rewrite` item whose span touches a zone, and no `suggest` item whose span touches a ledger entry; those must be a `query`. A `rewrite` may contain ledger entries in its span only if each one appears unchanged in the replacement. This is the check that enforces the owner's caution mechanically for everything the ledger knows about.
 - **E4 shape.** A replacement differs from its original, contains no line break, and does not leave its paragraph empty.
-- **E5 size cap.** A `suggest` item's span covers at most a few words (default: three word tokens changed, one sentence touched); a larger change must be a query. This keeps replacement text at typo scale (D2).
+- **E5 size cap.** A `suggest` item changes at most a few words (default: three word tokens, one sentence touched); a larger change must be a `rewrite` of a rewrite kind or a query. A `rewrite` touches at most one sentence, or two when it merges or splits them, and only the `clarity` and `stepped_on_move` kinds may use it (D2).
 - **E6 style-sheet agreement.** A `consistency` or `style_sheet` suggestion's replacement equals the chosen form in its `style_ref`; a choice the author has not made yet yields a query.
-- **E7 combined selection.** The author's picks for a paragraph apply as a set only when no two overlap and the paragraph stays non-empty (Spec 113 §4).
+- **E7 combined selection.** The author's picks for a paragraph apply as a set only when no two overlap and the paragraph stays non-empty (Spec 113 §4). Bulk acceptance never includes a `rewrite`.
 - **E8 no mutation.** The snapshot's sha256 still matches its binding, and the export is the snapshot plus exactly the picked replacements.
 - **W1 never-flag list.** An item whose reason or kind matches a never-flag rule is withheld and counted.
 - **W2 flattening check** (when SETEC and a baseline are available). After picks are applied to the copy, punctuation cadence and productive roughness are rerun against the snapshot; a feature that moved beyond the writer's band is reported with the picks that moved it.
@@ -126,7 +137,7 @@ Mechanical checks, ERROR unless marked W. E1, E2, E4 and E7 follow Spec 113 §3 
 ## Evaluation before release
 
 - **Hostile fixtures.** Public-domain passages chosen for voice: dialect-heavy dialogue (Twain's *Adventures of Huckleberry Finn*, which opens with an explanatory note that its dialects are deliberate), unmarked or idiosyncratic punctuation, a period essay with long periodic sentences; plus synthetic passages with deliberate fragments and comma splices. Errors are planted into each fixture: typos, inconsistent hyphenation, wrong-word confusions, unbalanced quotation marks.
-- **Measures.** (a) **Voice false-correction rate:** suggestions that would change a voice item, reported separately for ledgered items (must be zero, by E3) and unledgered items (the honest-limit number). (b) **Planted-error recall** by kind. (c) **Query precision:** share of queries a reader judges worth asking.
+- **Measures.** (a) **Voice false-correction rate:** suggestions that would change a voice item, reported separately for ledgered items (must be zero, by E3) and unledgered items (the honest-limit number). (b) **Planted-error recall** by kind. (c) **Query precision:** share of queries a reader judges worth asking. (d) **Rewrite acceptance and voice cost:** share of rewrites a reader would take, and the W2 movement accepted rewrites cause. Fixtures include planted stepped-on moves (a gloss after a closing image, a hedge on an earned claim).
 - **Baseline arm.** The same fixtures through a plain "copyedit this" prompt with no ledger or register profile, to show what the voice machinery buys. Report the numbers in the module doc and claim nothing beyond them.
 
 ## Where it lives
@@ -136,15 +147,15 @@ A core-editor workflow module (`core-editor/references/voice-aware-copyediting.m
 ## Increment plan
 
 1. **Style sheet, ledger and queries only.** `voice_ledger.v1`, the Phase 1 harvest and review, the never-flag list, and a pass that emits only queries. No replacement text ships in this increment, so it stands inside today's Firewall on its own and is already useful: the consistency queries are most of a copyeditor's mechanical value.
-2. **Suggestions.** `copyedit_item.v1` with `suggest`, E1–E8, W1, W3, bulk accept by kind, CriticMarkup export of picks, a canonical worked example in `--check-all`.
+2. **Suggestions and rewrites.** `copyedit_item.v1` with `suggest` and `rewrite`, E1–E8, W1, W3, bulk accept by mechanical kind, CriticMarkup export of picks, a canonical worked example in `--check-all`.
 3. **Voice post-check and exports.** The productive-roughness shim, W2, DOCX tracked-changes export, and the fixture evaluation above.
 
 ## Design calls
 
-Recommendations first; the owner decides.
+D2 is answered. The rest are recommendations that stand unless the owner objects.
 
 - **D1 Consume or extend.** *Recommend:* port Spec 113's suggestion contract and checks into APODICTIC (spec dependency, no code import or new pin); consume the SETEC idiolect, roughness, cadence and POV surfaces through the existing SETEC contract. *Alternatives:* pin voicewright and call the 113 runner (heavy private harness, period brief); or generalize 113 inside voicewright and have APODICTIC call it.
-- **D2 Replacement text and the Firewall.** *Recommend:* replacements only for mechanical kinds, at typo scale (E5), author-picked, exported to a copy; everything else a query. *Alternatives:* queries only (purest Firewall, more author typing); or full sentence-level suggestions like Spec 113 (a larger Firewall exception).
+- **D2 Replacement text and the Firewall. Answered 2026-10-29.** The owner: all three levels are acceptable, and "a copy editor may suggest rewrites for clarity or when the author is stepping on a move." Follow-up the same day: "the fixes should be suggested, not made." So: queries; typo-scale mechanical fixes; and one-sentence rewrites for the `clarity` and `stepped_on_move` kinds, picked one at a time. Every fix of any size is a suggestion the author accepts (§Terms); the tool applies nothing itself.
 - **D3 Unknown departures.** A nonstandard form the ledger does not cover and that is used once. *Recommend:* a `voice_check` query. *Alternatives:* leave silently (misses real typos), or suggest a fix (the flattening the owner warned about).
 - **D4 Scope.** *Recommend:* fiction and nonfiction both; unlike an index, every book is copyedited.
 - **D5 Style authority.** *Recommend:* Chicago-style conventions for books and AP-style for short-form journalism by default, author-changeable, with the module stating every rule in its own words.
