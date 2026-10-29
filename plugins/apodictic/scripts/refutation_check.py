@@ -291,11 +291,15 @@ def refutation_coverage(letter_text, ledger_text, record_text):
     # (Must-Fix ∪ HIGH Should-Fix, dispositions excluded), bound is DERIVED from that
     # recompute vs the spec cap, and cap is the §5 spec constant — every one of the block's
     # fields is a claim to verify, never an input.
+    # A Should-Fix that Step 6b weakened or refuted was HIGH at lock: the §6.9
+    # transcription has since lowered its ledger confidence, so its record counts it.
+    demoted = {fid for fid, r in by_id.items() if r.get("outcome") in ("weakened", "refuted")}
     recomputed_eligible = sum(
         1 for f in locked
         if art.fid_key(f.get("id")) not in dispo
         and (f.get("severity") == "Must-Fix"
-             or (f.get("severity") == "Should-Fix" and f.get("confidence") == "HIGH")))
+             or (f.get("severity") == "Should-Fix"
+                 and (f.get("confidence") == "HIGH" or art.fid_key(f.get("id")) in demoted))))
     recomputed_bound = recomputed_eligible > SPEC_CAP
     if budget is not None:
         if budget.get("cap") != SPEC_CAP:
@@ -925,6 +929,19 @@ def run_self_test():
         e, _, _ = refutation_coverage(LETTER, LEDGER, rec7)
         check("v1_high_with_nonsurvived_record_errors",
               any("HIGH requires a survived attempt" in x for x in e), str(e))
+        # An honest run where 6b weakens a HIGH Should-Fix: the ledger now reads MEDIUM, and
+        # the budget's lock-time eligible (2) must still reconcile. V1 and V3 both pass.
+        led7w = (LEDGER + finding("F-P5-02", sev="Should-Fix", conf="MEDIUM",
+                                  mech="subplot stalls without payoff") + "\n")
+        let7w = LETTER.replace("## Appendix B",
+                               "The subplot stalls (Ch. 3). <!-- finding: F-P5-02 -->\n## Appendix B")
+        rec7w = ("# R\n" + ref_block() + "\n"
+                 + ref_block(fid="F-P5-02", outcome="weakened", conf_after="MEDIUM") + "\n"
+                 + budget_block(eligible=2, processed=2) + "\n")
+        e, w, _ = refutation_coverage(let7w, led7w, rec7w)
+        check("v1_weakened_should_fix_counts_as_eligible", not e, str(e + w))
+        e, w, _ = refutation_write_scope(led7w, rec7w, tmp)
+        check("v3_weakened_should_fix_transcribed_passes", not e, str(e + w))
 
         # 8. dangling record id -> V1 ERROR; non-dict payload -> clean named error, no crash
         rec8 = RECORD + ref_block(fid="F-ZZ-09") + "\n"
