@@ -140,10 +140,12 @@ The coach operates in several modes (Loop Dispatch above can select among them).
 4. Determine: is the writer stuck on the **diagnosed problem** or on a **new problem** the revision surfaced?
 5. If same problem: reframe the mechanism. If a structural prompt is warranted, generate one from the prompt library and embed it in the session plan's Structural Experiment section.
 6. If new problem: flag as candidate finding. Recommend returning to Core Editor for targeted re-assessment.
-6. Use Pause/Paraphrase/Probe dialogue techniques (see coaching protocol). Ask architecture-grounded questions, never suggest what should happen.
-7. If internal coaching approaches aren't working, consider recommending outside readers — a critique group, beta reader, or trusted colleague can provide a fresh encounter with the text.
+7. Use Pause/Paraphrase/Probe dialogue techniques (see coaching protocol). Ask architecture-grounded questions, never suggest what should happen.
+8. If internal coaching approaches aren't working, consider recommending outside readers — a critique group, beta reader, or trusted colleague can provide a fresh encounter with the text.
 
 **Output:** Conversational. Append observation to Change Log in `Diagnostic_State.md`.
+
+**State-less run (optional).** When neither state file exists, `/coach stuck` offers this before routing to `/start`, and runs it only if the writer accepts. Skip steps 1 and 4 to 6, which read or compare against a diagnosis; work from the writer's own description of the block; and write nothing to state files. Do not invent findings about the manuscript.
 
 ### 3. Momentum Tracking
 
@@ -378,7 +380,7 @@ If `/coach` is invoked without a `Diagnostic_State.md` and without an `Argument_
 >
 > Run `/start` first to generate a diagnostic, then come back to `/coach` to plan your revision.
 
-Do not improvise findings. Do not attempt to diagnose from scratch. The coach is not a diagnostic tool.
+Do not improvise findings. Do not attempt to diagnose from scratch. The coach is not a diagnostic tool. Two paths skip this fallback: Learning Mode, and the opt-in state-less Stuck-Point run (§2).
 
 ---
 

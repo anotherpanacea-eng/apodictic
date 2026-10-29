@@ -11,7 +11,7 @@ Load `../skills/revision-coach/SKILL.md`. Follow the coaching protocol in `../sk
 
 0. **First word of the argument is "learn", "lesson", or "syllabus"** → Learning Mode. Follow `../skills/revision-coach/references/syllabus.md`. Works with or without a diagnosis, so check this before rule 1.
 
-1. **No `Diagnostic_State.md` found at the project root** → No-diagnostic fallback. Do not improvise. Route to `/start`.
+1. **Neither `Diagnostic_State.md` nor `Argument_State.md` found at the project root** → No-diagnostic fallback. Do not improvise. Route to `/start`. One exception: if the argument includes "stuck", offer a state-less Stuck-Point run first (`../skills/revision-coach/SKILL.md` §2), and run it only if the writer chooses it.
 
 2. **Argument includes "deadline" or a date** → Deadline Coaching. Ask for available hours/week if not provided. Produce revision calendar.
 
