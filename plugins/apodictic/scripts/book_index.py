@@ -1021,12 +1021,12 @@ def _search(proof, key, start=0):
     """-> (count up to 2, index_map) for `key` in `proof` from `start`, counting overlapping matches.
     index_map(i) gives the proof index of key index i (len(key) maps to the match end). A _NOTE in
     the key matches the printed note number there: one to four digits (superscripts fold to digits),
-    with the one space PDF extraction often puts before a raised number."""
+    with the space PDF extraction often puts before or after a raised number."""
     if _NOTE not in key:
         at = proof.find(key, start)
         return _occurrences(proof, key, start), (lambda i: at + i)
     pieces = key.split(_NOTE)
-    rx = re.compile("(?=" + r"( ?\d{1,4})".join("(%s)" % re.escape(piece) for piece in pieces) + ")")
+    rx = re.compile("(?=" + r"( ?\d{1,4} ?)".join("(%s)" % re.escape(piece) for piece in pieces) + ")")
     found = []
     for m in rx.finditer(proof, start):
         found.append(m)
@@ -1372,8 +1372,7 @@ def _sort_key(text, letter_by_letter):
 
 def _chicago_range(a, b):
     """Chicago inclusive-number style for arabic folios (45-52, 101-8, 321-28, 1496-1500)."""
-    if (not (_ascii_number(a) and _ascii_number(b)) or len(a) > 9 or len(a) != len(b)
-            or int(a) < 100 or int(a) % 100 == 0):
+    if not (_ascii_number(a) and _ascii_number(b)) or len(a) != len(b) or int(a) < 100 or int(a) % 100 == 0:
         return "%s–%s" % (a, b)
     keep = 1 if int(a) % 100 < 10 else 2
     i = 0
@@ -1407,59 +1406,6 @@ def _merged(locs, ranges, scheme=None):
     return out
 
 
-_XML_BAD_RE = re.compile("[^\t\n\r\u0020-\ud7ff\ue000-\ufffd\U00010000-\U0010ffff]")
-
-
-def _label_ok(label):
-    """A usable printed locator: non-blank, at most 40 characters, valid Unicode, no control characters."""
-    if not isinstance(label, str) or not label.strip() or len(label) > 40 or _XML_BAD_RE.search(label):
-        return False
-    try:
-        label.encode("utf-8")
-    except UnicodeEncodeError:
-        return False
-    return True
-
-
-def _locator_record_errors(rec, published):
-    """Why a locators file can't be used with these published headings, or None."""
-    if not isinstance(rec, dict):
-        return "the locators file is not a JSON object"
-    if not isinstance(rec.get("snapshot_sha256"), str) or not isinstance(rec.get("chapter_level"), int):
-        return "the locators file lacks its snapshot hash or chapter level"
-    if not isinstance(rec.get("accepted"), dict) or not all(isinstance(v, str) for v in rec["accepted"].values()):
-        return "the locators file has no valid accepted-hash table"
-    if rec.get("scheme") not in ("paragraph", "page", "line", "ebook"):
-        return "the locators file names no known scheme"
-    # Every substantive anchor of every published heading is accounted for exactly once.
-    expected = {a["id"]: (h["id"], owner) for h in published for owner, a in _all_anchors(h)
-                if a["role"] == "substantive"}
-
-    def loc_ok(x):
-        return (isinstance(x, dict) and _label_ok(x.get("label")) and isinstance(x.get("sort"), list)
-                and all(type(v) is int for v in x["sort"]))
-
-    seen = []
-    for p in rec.get("placed") if isinstance(rec.get("placed"), list) else [None]:
-        if not (isinstance(p, dict) and isinstance(p.get("anchor"), str) and p["anchor"] in expected
-                and expected[p["anchor"]] == (p.get("heading"), p.get("owner")) and loc_ok(p.get("start"))
-                and "end" in p and (p["end"] is None or loc_ok(p["end"]))):
-            return "a placed locator is malformed or does not match a published anchor: %r" % (p,)
-        seen.append(p["anchor"])
-    for u in rec.get("unresolved") if isinstance(rec.get("unresolved"), list) else [None]:
-        if not (isinstance(u, dict) and all(isinstance(u.get(k), str) for k in ("anchor", "heading", "reason"))
-                and u["anchor"] in expected and expected[u["anchor"]][0] == u["heading"]
-                and isinstance(u.get("positions"), list)):
-            return "an unresolved entry is malformed or does not match a published anchor: %r" % (u,)
-        seen.append(u["anchor"])
-    if sorted(seen) != sorted(expected):
-        missing = sorted(set(expected) - set(seen))
-        twice = sorted({a for a in seen if seen.count(a) > 1})
-        return "the locators file does not account for each anchor once (missing %s, repeated %s)" % (
-            ", ".join(missing) or "none", ", ".join(twice) or "none")
-    return None
-
-
 def format_index(map_path, locators=None, layout="indented", sort="word", ranges="chicago",
                  see_also="end", output="txt", max_lines=None):
     """Write the formatted index (or, with no locators file, the locator-free topic map) and a report of
@@ -1473,26 +1419,23 @@ def format_index(map_path, locators=None, layout="indented", sort="word", ranges
     by_id = {h["id"]: h for h in published}
     placed, unresolved, scheme = {}, [], None
     if locators:
+        # The locators file is written only by `locate`; anything unreadable means: run locate again.
         try:
             rec = json.loads(_read(locators) or "")
-        except json.JSONDecodeError:
-            rec = None
-        why = _locator_record_errors(rec, published)
-        if why:
-            return 1, ["book-index format: refused: %s" % why]
-        if (rec["snapshot_sha256"] != hashlib.sha256(snapshot.encode("utf-8")).hexdigest()
-                or rec["chapter_level"] != header.get("chapter_level", 1)):
+            current = (rec["snapshot_sha256"] == hashlib.sha256(snapshot.encode("utf-8")).hexdigest()
+                       and rec["chapter_level"] == header.get("chapter_level", 1))
+            accepted_then, scheme, unresolved = rec["accepted"], rec["scheme"], rec["unresolved"]
+            for p in rec["placed"]:
+                placed.setdefault(p["owner"], []).append(p)
+        except (ValueError, KeyError, TypeError, AttributeError):
+            return 1, ["book-index format: the locators file can't be read; run locate again"]
+        if not current:
             return 1, ["book-index format: the locators were made against another snapshot or chapter level; "
                        "run locate again"]
-        stale = sorted(hid for hid, hsh in rec["accepted"].items()
-                       if hid not in by_id or by_id[hid]["accepted_hash"] != hsh)
-        stale += sorted(hid for hid in by_id if hid not in rec["accepted"])
+        stale = sorted(hid for hid, hsh in accepted_then.items() if hid not in by_id or by_id[hid]["accepted_hash"] != hsh)
+        stale += sorted(hid for hid in by_id if hid not in accepted_then)
         if stale:
             return 1, ["book-index format: the locators are stale for %s; run locate again" % ", ".join(stale)]
-        scheme = rec["scheme"]
-        for p in rec["placed"]:
-            placed.setdefault(p["owner"], []).append(p)
-        unresolved = rec["unresolved"]
     # Which headings print: See-only headings point only at printable non-See-only headings (I3), so
     # one pass settles the others and a second settles the See-only ones.
     printable = {h["id"] for h in published if not h["see"] and (
@@ -1568,9 +1511,6 @@ def format_index(map_path, locators=None, layout="indented", sort="word", ranges
     kind = "Index" if locators else "Index_Topics"
     out = _side_path(map_path, kind, "." + output)
     if output == "docx":
-        bad = [t for _lvl, t in lines if _XML_BAD_RE.search(t)]
-        if bad:
-            return 1, ["book-index format: refused: Word cannot hold control characters in %r" % bad[0][:60]]
         _write_bytes(out, _index_docx(lines))
     else:
         _write(out, "".join("    " * lvl + t + "\n" for lvl, t in lines))
@@ -1891,6 +1831,8 @@ def _phase_b_self_test(chk, head, anc, header):
         and _search(fold("The policy held.")[0], _quote_key({"quote": "The policy[^12] held."})[0])[0] == 0
         and all(_search(fold(proof_text)[0], _quote_key({"quote": "The policy [^12] held."})[0])[0] == 1
                 for proof_text in ("The policy12 held.", "The policy 12 held."))
+        and _search(fold("The policy (as Jones argues\n12\n) held.")[0],
+                    _quote_key({"quote": "The policy (as Jones argues[^12]) held."})[0])[0] == 1
         and _search(fold("The policy12 held. The policy 13 held.")[0],
                     _quote_key({"quote": "The policy [^12] held."})[0])[0] == 2
         and all(_fold_key(a) == _fold_key(b) for a, b in (
@@ -2110,22 +2052,11 @@ def _phase_b_self_test(chk, head, anc, header):
         resnapshot(mm, edited, "r2")
         chk("format_refuses_locators_from_older_snapshot",
             format_index(mm, os.path.join(moved, "T_Index_Locators_r1.json"))[0] == 1)
-        good = json.loads(_read(loc))
-        one = good["placed"][0]
-        no_end = {k: v for k, v in one.items() if k != "end"}
-        for bad in ("[]", "null", '{"accepted": []}', json.dumps(dict(good, placed=[{"owner": "IX-001"}])),
-                    json.dumps(dict(good, placed=[dict(one, owner=[])])), json.dumps(dict(good, placed=[no_end])),
-                    json.dumps(dict(good, placed=[dict(one, start={"label": "1", "sort": ["x"]})])),
-                    json.dumps(dict(good, placed=good["placed"][1:])),
-                    json.dumps(dict(good, placed=good["placed"] + [dict(one, anchor="IX-002.a1")])),
-                    json.dumps(dict(good, placed=[dict(one, start={"label": "\ud800", "sort": [1]})] + good["placed"][1:])),
-                    json.dumps(dict(good, placed=[dict(one, start={"label": "1" * 5000, "sort": [1]})] + good["placed"][1:])),
-                    json.dumps(dict(good, placed=[dict(one, start={"label": "\u0001", "sort": [1]})] + good["placed"][1:]))):
+        for bad in ("[]", "{}"):
             _write(os.path.join(d, "bad.json"), bad)
-            chk("format_refuses_malformed_locators %s" % bad[:16], format_index(m, os.path.join(d, "bad.json"))[0] == 1)
-        rename(m, "IX-003", "renamed\u0000heading")
+            chk("format_refuses_unreadable_locators %s" % bad, format_index(m, os.path.join(d, "bad.json"))[0] == 1)
+        rename(m, "IX-003", "renamed heading")
         accept(m, ["IX-003"])
-        chk("docx_refuses_control_characters", format_index(m, None, output="docx")[0] == 1)
         chk("format_refuses_stale_locators", format_index(m, loc)[0] == 1)
 
         # References are checked against what prints: a heading whose only anchor is unresolved drops
