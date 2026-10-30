@@ -568,12 +568,16 @@ def _refuse(errors, ids=None):
     return ["  ERROR: %s" % msg for hid, msg in errors if hid is None or ids is None or hid in ids]
 
 
+def _links(h):
+    """The string ids a heading's See and See also lists name (malformed entries are I1's job)."""
+    return {t for f in ("see", "see_also") if isinstance(h.get(f), list) for t in h[f] if isinstance(t, str)}
+
+
 def _save(map_path, header, headings, ids=None):
     """Validate the would-be map in memory and write it only if I1-I3 hold for `ids` and for every
     heading that links to one of them (or for all headings when `ids` is None)."""
     if ids is not None:
-        ids = set(ids) | {h.get("id") for h in headings if isinstance(h, dict)
-                          and ids & set(h.get("see", []) + h.get("see_also", []))}
+        ids = set(ids) | {h.get("id") for h in headings if isinstance(h, dict) and ids & _links(h)}
     snapshot = _read(_snapshot_path(map_path, header) or "")
     errors, _w, _n, _s = check(header, headings, snapshot)
     blocking = _refuse([(hid, msg) for hid, msg in errors if not msg.startswith("I4 ")], ids)
@@ -662,7 +666,11 @@ def update(map_path, proposals_path):
     for new in proposals:
         old = headings[index[new.get("id")]] if new.get("id") in index else None
         new.pop("accepted_hash", None)
-        if old is not None and old.get("status") == "accepted" and old["accepted_hash"] == accepted_hash(new):
+        try:
+            unchanged = old is not None and old.get("status") == "accepted" and old["accepted_hash"] == accepted_hash(new)
+        except UnicodeEncodeError:
+            unchanged = False  # I1 refuses it below
+        if unchanged:
             new.update(status="accepted", accepted_hash=old["accepted_hash"])
         else:
             new["status"] = "proposed"
@@ -1030,6 +1038,13 @@ def run_self_test():
         _write(props, json.dumps([dict(target, anchors=[], subheadings=[], see=["IX-007"], see_also=[])]))
         chk("update_breaking_a_referrer_refused", update(map_path, props)[0] == 1 and _read(map_path) == before)
         chk("drop_breaking_a_referrer_refused", drop(map_path, ["IX-004"])[0] == 1 and _read(map_path) == before)
+
+        accepted_one = next(h for h in parse_map(before)[1] if h["status"] == "accepted")
+        for name, bad in (("see_null", dict(accepted_one, see=None)),
+                          ("see_also_object", dict(accepted_one, see_also=[{}])),
+                          ("accepted_unencodable", dict(accepted_one, heading="\ud800"))):
+            _write(props, json.dumps([bad]))
+            chk("update_refuses_" + name, update(map_path, props)[0] == 1 and _read(map_path) == before)
 
         dup = head("IX-030", [anc("IX-030.a1", "Kant never wrote"), anc("IX-030.a1", "Arendt read Kant")])
         chk("i1_duplicate_anchor_id", "I1 schema" in codes([judgment, spectator, dup])[0])
