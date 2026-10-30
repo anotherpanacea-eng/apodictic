@@ -100,16 +100,19 @@ their only writers.
    - `page` gives printed folios from the typeset proof PDF. It needs `pypdf`
      (`pip install pypdf`); without it the scheme refuses and says so.
 2. **Run it:** `python scripts/book_index.py locate <map> --scheme paragraph`, or
-   `--scheme page --pdf <proof.pdf> --body-end N`.
+   `--scheme page --pdf <proof.pdf> --body-start N --body-end N`.
    - **Folios** come from the PDF's own page labels. Without labels, ask the author which PDF page is
      folio 1 and pass `--folio-start N`. The command never guesses folios, so front matter can be
      searched (`--include-front`) only when the PDF carries its own labels.
-   - **Body pages** are the only pages searched by default, because notes and other back matter can
-     repeat body sentences. Ask the author for the last PDF page of the body and pass `--body-end N`
-     (required); `--include-back` adds the pages after it.
+   - **Body pages** are the only pages searched by default, because front matter, notes and other
+     back matter can repeat body sentences. Ask the author for the first and last PDF pages of the body
+     (PDF page numbers, not folios) and pass `--body-start N --body-end N`; with `--folio-start`, the
+     body starts there unless `--body-start` says otherwise. `--include-front` and `--include-back` add
+     the pages before and after. A match on a page whose label is blank, or a range across two pages
+     with the same label, goes to the unresolved list.
    - **Running heads and folio lines** are dropped when, digits masked, they repeat on five or more
      pages.
-   - **Matching** folds both sides first: inline markdown, footnote markers, dashes, quote styles,
+   - **Matching** folds both sides first: inline markdown, escapes, entities, footnote markers, dashes, quote styles,
      ligatures, line-break hyphenation, whitespace and case. A quote must match exactly once.
    - **The order check** then keeps a matched passage only if it lies on every longest in-order
      sequence of matches. Others are unresolved as `out_of_order` or `ambiguous_order`; usually a

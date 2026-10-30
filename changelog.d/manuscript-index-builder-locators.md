@@ -8,7 +8,8 @@ with a reason. Two schemes:
 - `page`: printed folios from the proof PDF, with optional `pypdf`.
 
 The page scheme takes folios from the PDF's page labels or from `--folio-start`; it never guesses.
-It searches only the body, up to the author's `--body-end`.
+It searches only the body, between the author's `--body-start` and `--body-end` PDF pages; page
+labels are locator values, never page selectors.
 It strips running heads and folios, matches quotes on a folded form (markdown, footnote markers,
 dashes, quote styles, ligatures, line-break hyphenation and case), and keeps a match only if it lies
 on every longest in-order sequence of matches.

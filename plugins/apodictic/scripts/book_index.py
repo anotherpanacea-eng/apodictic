@@ -55,8 +55,8 @@ Phase B (Increment 2). `locate` and `format` are the only writers of the finishe
   book_index.py rename <index_map.md> <IX-id> <new heading>
   book_index.py merge <index_map.md> <source IX-id> <target IX-id>
   book_index.py resnapshot <index_map.md> <new_source_text> <runlabel>
-  book_index.py locate <index_map.md> --scheme paragraph|page [--pdf <proof.pdf> --body-end N]
-                [--folio-start N] [--include-front] [--include-back]
+  book_index.py locate <index_map.md> --scheme paragraph|page [--pdf <proof.pdf> --body-start N
+                --body-end N] [--folio-start N] [--include-front] [--include-back]
   book_index.py format <index_map.md> [--locators <file.json>] [--layout indented|run-in]
                 [--sort word|letter] [--ranges chicago|full] [--see-also end|after-heading] [--docx]
                 [--max-lines N]
@@ -79,6 +79,7 @@ import annotation_export as ax
 import annotation_manifest as am
 import apodictic_artifacts as art
 import reanchor
+from override_marker import strip_code_spans
 
 MAP_SCHEMA = "apodictic.index_map.v1"
 HEADING_SCHEMA = "apodictic.index_heading.v1"
@@ -171,6 +172,12 @@ def _snapshot_path(map_path, header):
 
 # ---------------------------------------------------------------- snapshot structure
 
+def _live_heading_lines(snapshot):
+    """1-based numbers of the ATX heading lines outside fenced code blocks."""
+    return {i + 1 for i, line in enumerate(strip_code_spans(snapshot).split("\n"))
+            if re.match(r"\s*#{1,6}\s", line)}
+
+
 def chapters(snapshot, level):
     """[(label, start, end)] char spans. A chapter starts at each ATX heading of `level` and runs to
     the next heading of that level or higher. Text before the first chapter is front matter."""
@@ -179,8 +186,11 @@ def chapters(snapshot, level):
     for line in snapshot.splitlines(keepends=True):
         line_starts.append(pos)
         pos += len(line)
+    live = _live_heading_lines(snapshot)
     heads = []
     for lineno, raw, _norm in am.atx_headings(snapshot):
+        if lineno not in live:
+            continue  # a "#" line inside a fenced code block is content, not a heading
         start = line_starts[lineno - 1]
         depth = re.match(r"#+", snapshot[start:]).end()
         heads.append((depth, raw.strip(), start))
@@ -877,47 +887,74 @@ def resnapshot(map_path, new_source, runlabel):
 _DASHES = dict.fromkeys(map(ord, "‐‑‒–—―−"), "-")
 _QUOTES = {ord(c): "'" for c in "‘’‚‛′"}
 _QUOTES.update({ord(c): '"' for c in "“”„‟″"})
-_MD_DROP_RE = re.compile(r"\[\^[^\]\s]*\]|\]\([^)\s]*\)|[*_`\[]|[\u00b9\u00b2\u00b3\u2070-\u2079]+")
+_MD_DROP_RE = re.compile(
+    r"\[\^[^\]\s]*\]"                                        # footnote marker [^n]
+    r"|\]\((?:[^()\s]|\([^()\s]*\))*(?:\s+\"[^\"]*\")?\)"  # link destination, nested parens, title
+    r"|\\(?=[\\`*_{}\[\]()#+\-.!&<>])"                   # the backslash of an escaped punctuation mark
+    r"|[*_`\[]"                                             # emphasis, code and link-open marks
+    r"|[\u00b9\u00b2\u00b3\u2070-\u2079]+")                  # printed superscript note numbers
+_ENTITIES = {"&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#39;": "'", "&apos;": "'", "&nbsp;": " "}
 
 
 def fold(text):
     """-> (folded, origins): the Phase B match form of `text` and, per folded character, the index of
-    the raw character it came from. Inline markdown and footnote markers are dropped; dashes, quote
-    styles, ligatures (NFKC), line-break hyphenation and whitespace are folded; case is folded."""
+    the raw character it came from. Inline markdown, escapes, entities and footnote markers are
+    dropped or decoded; dashes, quote styles, compatibility forms (NFKC over whole grapheme clusters),
+    soft and line-break hyphenation, line endings and whitespace are folded; case is casefolded."""
     drop = [False] * len(text)
     for m in _MD_DROP_RE.finditer(text):
-        for i in range(m.start(), m.end()):
-            drop[i] = True
+        for k in range(m.start(), m.end()):
+            drop[k] = True
     out, origins = [], []
     i, n = 0, len(text)
+
+    def emit(chars, at):
+        for ch in chars:
+            if ch.isspace():
+                if out and out[-1] != " ":
+                    out.append(" ")
+                    origins.append(at)
+            elif not (ch == "-" and out and out[-1] == "-"):  # "--" is one dash
+                out.append(ch)
+                origins.append(at)
+
+    def wrapped(j):
+        """Index of the next word character if `j` starts a line break (CR, LF or CRLF, with spaces),
+        else None."""
+        while j < n and text[j] in " \t":
+            j += 1
+        if j < n and text[j] in "\r\n":
+            k = j + 1
+            while k < n and text[k].isspace():
+                k += 1
+            if k < n and text[k].isalpha():
+                return k
+        return None
+
     while i < n:
         c = text[i]
-        if drop[i] or c == "­":
+        if drop[i]:
             i += 1
             continue
-        if c in "-‐" and out and out[-1].isalpha():
-            j = i + 1
-            while j < n and text[j] in " \t":
-                j += 1
-            if j < n and text[j] == "\n":
-                k = j + 1
-                while k < n and text[k].isspace():
-                    k += 1
-                if k < n and text[k].isalpha():  # "peo-\nple" joins
-                    i = k
-                    continue
-        if c.isspace():
-            if out and out[-1] != " ":
-                out.append(" ")
-                origins.append(i)
+        entity = next((e for e in _ENTITIES if text.startswith(e, i)), None)
+        if entity:
+            emit(_ENTITIES[entity], i)
+            i += len(entity)
+            continue
+        if c in "-\u2010\u00ad" and out and out[-1].isalpha():
+            k = wrapped(i + 1)
+            if k is not None:  # "peo-\nple" and a soft-hyphen break join
+                i = k
+                continue
+        if c == "\u00ad":
             i += 1
             continue
-        for ch in unicodedata.normalize("NFKC", c).translate(_DASHES).translate(_QUOTES).lower():
-            if ch == "-" and out and out[-1] == "-":
-                continue  # "--" is one dash
-            out.append(ch)
-            origins.append(i)
-        i += 1
+        j = i + 1
+        while j < n and unicodedata.combining(text[j]) and not drop[j]:
+            j += 1
+        cluster = text[i:j].translate(_QUOTES).translate(_DASHES)
+        emit(unicodedata.normalize("NFKC", cluster).translate(_QUOTES).translate(_DASHES).casefold(), i)
+        i = j
     return "".join(out), origins
 
 
@@ -973,11 +1010,14 @@ def _paragraph_index(snapshot, level):
     heading lines and front matter are excluded; body text after a heading counts whether or not a
     blank line separates them."""
     chaps = chapters(snapshot, level)
+    live = _live_heading_lines(snapshot)
+    line_starts = [0] + [m.end() for m in re.finditer("\n", snapshot)]
+    heading_starts = {line_starts[n - 1] for n in live if n - 1 < len(line_starts)}
     segments = []
     for s, e in _paragraph_spans(snapshot):
         run_start, pos = None, s
         for line in snapshot[s:e].splitlines(keepends=True):
-            if re.match(r"\s*#{1,6}\s", line):
+            if pos in heading_starts:
                 if run_start is not None:
                     segments.append((run_start, pos))
                 run_start = None
@@ -1029,8 +1069,9 @@ def _load_pypdf():
     return pypdf
 
 
-def _proof_pages(pdf_path, folio_start, body_end, include_front, include_back):
-    """-> (pages, None) with pages [{label, text, body}] or (None, reason)."""
+def _proof_pages(pdf_path, folio_start, body_start, body_end, include_front, include_back):
+    """-> (pages, None) with pages [{label, text, body, index}] or (None, reason). The body is the
+    physical page range body_start..body_end (1-based); page labels are only locator values."""
     pypdf = _load_pypdf()
     if pypdf is None:
         return None, "the page scheme needs pypdf (pip install pypdf)"
@@ -1043,14 +1084,16 @@ def _proof_pages(pdf_path, folio_start, body_end, include_front, include_back):
         return None, "cannot read the proof PDF: %s" % exc
     if not any(t.strip() for t in texts):
         return None, "the proof has no extractable text (a scanned image?)"
-    if folio_start is not None and folio_start < 1:
-        return None, "--folio-start is a 1-based PDF page number"
     if pdf_labels is None and folio_start is None:
         return None, ("the proof has no page labels: give --folio-start <PDF page that is folio 1> "
                       "(this tool never guesses folios)")
-    if body_end is None:
-        return None, ("give --body-end <last PDF page of the body text>: notes and other back matter can "
-                      "repeat body sentences, so the body's end is the author's to state")
+    body_start = body_start if body_start is not None else folio_start
+    if body_start is None or body_end is None:
+        return None, ("give --body-start and --body-end, the first and last PDF pages of the body text: "
+                      "front matter, notes and other back matter can repeat body sentences")
+    n = len(texts)
+    if not (1 <= body_start <= body_end <= n) or (folio_start is not None and not 1 <= folio_start <= n):
+        return None, "page numbers must be PDF pages 1 to %d, with --body-start <= --body-end" % n
     if include_front and pdf_labels is None:
         return None, ("--include-front needs the PDF's own page labels: front-matter folios are never "
                       "inferred from --folio-start")
@@ -1058,15 +1101,11 @@ def _proof_pages(pdf_path, folio_start, body_end, include_front, include_back):
     for i, text in enumerate(texts):
         if pdf_labels is not None:
             label = pdf_labels[i]
-            arabic = _ascii_number(label)
         else:
-            arabic = i + 1 >= folio_start
-            label = str(i + 2 - folio_start) if arabic else None
-        back = i + 1 > body_end
-        body = (arabic and not back) or (include_front and not arabic and not back) or (include_back and back)
-        pages.append({"label": label, "text": text, "body": body})
-    if not any(p["body"] for p in pages):
-        return None, "no body pages to search: check --folio-start and --body-end against the proof"
+            label = str(i + 2 - folio_start) if i + 1 >= folio_start else None
+        body = (body_start <= i + 1 <= body_end or (include_front and i + 1 < body_start)
+                or (include_back and i + 1 > body_end))
+        pages.append({"label": label, "text": text, "body": body, "index": i})
     return pages, None
 
 
@@ -1092,23 +1131,31 @@ def _strip_running_heads(pages):
     return out
 
 
+def _occurrences(hay, needle, start=0, limit=2):
+    """Matches of `needle` in `hay` from `start`, counting overlapping ones, up to `limit`."""
+    count, at = 0, hay.find(needle, start)
+    while at != -1 and count < limit:
+        count += 1
+        at = hay.find(needle, at + 1)
+    return count
+
+
 def _page_locators(pdf_path, placements, folio_start=None, body_end=None, include_front=False,
-                   include_back=False):
-    """Page scheme: find each anchor's folded quote in the folded body text of the proof, assign folios,
-    then run the order check over distinct snapshot spans."""
-    pages, why = _proof_pages(pdf_path, folio_start, body_end, include_front, include_back)
+                   include_back=False, body_start=None):
+    """Page scheme: find each anchor's folded quote in the folded text of the searched pages, assign
+    folios, then run the order check over distinct snapshot spans."""
+    pages, why = _proof_pages(pdf_path, folio_start, body_start, body_end, include_front, include_back)
     if pages is None:
         return None, why
     texts = _strip_running_heads(pages)
     raw, page_at = [], []
     for p, text in zip(pages, texts):
-        if p["body"]:
+        if p["body"]:  # searched pages are always one contiguous run: front, body, back
             raw.append(text)
-            page_at.extend([p["label"]] * (len(text) + 1))
-    raw_text = "\n".join(raw)
-    proof, origins = fold(raw_text)
+            page_at.extend([p] * (len(text) + 1))
+    proof, origins = fold("\n".join(raw))
 
-    def label_at(folded_index):
+    def page_of(folded_index):
         return page_at[origins[folded_index]]
 
     found = []
@@ -1119,7 +1166,7 @@ def _page_locators(pdf_path, placements, folio_start=None, body_end=None, includ
             found.append(dict(p, reason="quote_folds_away", positions=[]))
             continue
         key, qs, qe = bounds
-        n = proof.count(key)
+        n = _occurrences(proof, key)
         if n != 1:
             found.append(dict(p, reason="not_found" if n == 0 else "ambiguous_match", positions=[]))
             continue
@@ -1130,7 +1177,7 @@ def _page_locators(pdf_path, placements, folio_start=None, body_end=None, includ
             if not ekey:
                 found.append(dict(p, reason="end_quote_folds_away", positions=[q0]))
                 continue
-            after = proof.count(ekey, q_end)
+            after = _occurrences(proof, ekey, q_end)
             if after == 1:
                 end_pos = proof.find(ekey, q_end) + len(ekey) - 1
             else:
@@ -1156,11 +1203,17 @@ def _page_locators(pdf_path, placements, folio_start=None, body_end=None, includ
         if v != "kept":
             out.append(dict(p, reason=v, positions=[p["proof_pos"]]))
             continue
-        start = label_at(p["proof_pos"])
-        end = label_at(p["proof_end"]) if p["proof_end"] is not None else None
-        sort = [p["proof_pos"]]
-        out.append(dict(p, start={"label": start, "sort": sort},
-                        end={"label": end, "sort": [p["proof_end"]]} if end not in (None, start) else None))
+        first = page_of(p["proof_pos"])
+        last_page = page_of(p["proof_end"]) if p["proof_end"] is not None else first
+        start, end = first["label"], last_page["label"]
+        if not (start or "").strip() or not (end or "").strip():
+            out.append(dict(p, reason="blank_folio", positions=[p["proof_pos"]]))
+            continue
+        if last_page is not first and end == start:
+            out.append(dict(p, reason="duplicate_folio", positions=[p["proof_pos"]]))
+            continue
+        out.append(dict(p, start={"label": start, "sort": [p["proof_pos"]]},
+                        end={"label": end, "sort": [p["proof_end"]]} if last_page is not first else None))
     return out, None
 
 
@@ -1181,7 +1234,7 @@ def _side_path(map_path, kind, ext):
 
 
 def locate_index(map_path, scheme, pdf=None, folio_start=None, body_end=None, include_front=False,
-                 include_back=False):
+                 include_back=False, body_start=None):
     """Resolve every substantive anchor of every published heading to a locator under `scheme`, or to
     the unresolved list with a reason. Writes `[Project]_Index_Locators_[runlabel].json`."""
     text, header, headings, parse_errs, snapshot = load(map_path)
@@ -1200,7 +1253,8 @@ def locate_index(map_path, scheme, pdf=None, folio_start=None, body_end=None, in
     elif scheme == "page":
         if not pdf:
             return 2, ["book-index locate: the page scheme needs --pdf <proof.pdf>"]
-        results, why = _page_locators(pdf, placements, folio_start, body_end, include_front, include_back)
+        results, why = _page_locators(pdf, placements, folio_start, body_end, include_front, include_back,
+                                      body_start)
     else:
         return 2, ["book-index locate: scheme must be paragraph or page (line, ebook and embedded are "
                    "Increment 3)"]
@@ -1234,7 +1288,8 @@ def _sort_key(text, letter_by_letter):
 
 def _chicago_range(a, b):
     """Chicago inclusive-number style for arabic folios (45-52, 101-8, 321-28, 1496-1500)."""
-    if not (_ascii_number(a) and _ascii_number(b)) or int(a) < 100 or int(a) % 100 == 0 or len(a) != len(b):
+    if (not (_ascii_number(a) and _ascii_number(b)) or len(a) > 9 or len(a) != len(b)
+            or int(a) < 100 or int(a) % 100 == 0):
         return "%s–%s" % (a, b)
     keep = 1 if int(a) % 100 < 10 else 2
     i = 0
@@ -1245,26 +1300,41 @@ def _chicago_range(a, b):
     return "%s–%s" % (a, b[i:])
 
 
-def _locator_text(loc, ranges):
+def _locator_text(loc, ranges, scheme=None):
     start, end = loc["start"]["label"], (loc["end"] or {}).get("label")
     if not end:
         return start
     if ranges == "chicago":
         dotted = re.fullmatch(r"\d+\.\d+", start) and re.fullmatch(r"\d+\.\d+", end)
-        if dotted and start.split(".")[0] == end.split(".")[0]:
+        if scheme == "paragraph" and dotted and start.split(".")[0] == end.split(".")[0]:
             return "%s–%s" % (start, end.split(".", 1)[1])
         return _chicago_range(start, end)
     return "%s–%s" % (start, end)
 
 
-def _merged(locs, ranges):
+def _merged(locs, ranges, scheme=None):
+    """Distinct locators (by start and end label) in document order, as printed text."""
     seen, out = set(), []
     for loc in sorted(locs, key=lambda x: x["start"]["sort"]):
-        t = _locator_text(loc, ranges)
-        if t not in seen:
-            seen.add(t)
-            out.append(t)
+        ident = (loc["start"]["label"], (loc["end"] or {}).get("label"))
+        if ident not in seen:
+            seen.add(ident)
+            out.append(_locator_text(loc, ranges, scheme))
     return out
+
+
+_XML_BAD_RE = re.compile("[^\t\n\r\u0020-\ud7ff\ue000-\ufffd\U00010000-\U0010ffff]")
+
+
+def _label_ok(label):
+    """A usable printed locator: non-blank, at most 40 characters, valid Unicode, no control characters."""
+    if not isinstance(label, str) or not label.strip() or len(label) > 40 or _XML_BAD_RE.search(label):
+        return False
+    try:
+        label.encode("utf-8")
+    except UnicodeEncodeError:
+        return False
+    return True
 
 
 def _locator_record_errors(rec, published):
@@ -1275,22 +1345,34 @@ def _locator_record_errors(rec, published):
         return "the locators file lacks its snapshot hash or chapter level"
     if not isinstance(rec.get("accepted"), dict) or not all(isinstance(v, str) for v in rec["accepted"].values()):
         return "the locators file has no valid accepted-hash table"
-    owners = {h["id"]: h["id"] for h in published}
-    owners.update({s["id"]: h["id"] for h in published for s in h["subheadings"]})
+    if rec.get("scheme") not in ("paragraph", "page", "line", "ebook"):
+        return "the locators file names no known scheme"
+    # Every substantive anchor of every published heading is accounted for exactly once.
+    expected = {a["id"]: (h["id"], owner) for h in published for owner, a in _all_anchors(h)
+                if a["role"] == "substantive"}
 
     def loc_ok(x):
-        return (isinstance(x, dict) and isinstance(x.get("label"), str) and isinstance(x.get("sort"), list)
+        return (isinstance(x, dict) and _label_ok(x.get("label")) and isinstance(x.get("sort"), list)
                 and all(type(v) is int for v in x["sort"]))
 
+    seen = []
     for p in rec.get("placed") if isinstance(rec.get("placed"), list) else [None]:
-        if not (isinstance(p, dict) and isinstance(p.get("owner"), str) and p["owner"] in owners
-                and owners[p["owner"]] == p.get("heading") and loc_ok(p.get("start"))
+        if not (isinstance(p, dict) and isinstance(p.get("anchor"), str) and p["anchor"] in expected
+                and expected[p["anchor"]] == (p.get("heading"), p.get("owner")) and loc_ok(p.get("start"))
                 and "end" in p and (p["end"] is None or loc_ok(p["end"]))):
-            return "a placed locator is malformed or names a heading that is not published: %r" % (p,)
+            return "a placed locator is malformed or does not match a published anchor: %r" % (p,)
+        seen.append(p["anchor"])
     for u in rec.get("unresolved") if isinstance(rec.get("unresolved"), list) else [None]:
         if not (isinstance(u, dict) and all(isinstance(u.get(k), str) for k in ("anchor", "heading", "reason"))
+                and u["anchor"] in expected and expected[u["anchor"]][0] == u["heading"]
                 and isinstance(u.get("positions"), list)):
-            return "an unresolved entry is malformed: %r" % (u,)
+            return "an unresolved entry is malformed or does not match a published anchor: %r" % (u,)
+        seen.append(u["anchor"])
+    if sorted(seen) != sorted(expected):
+        missing = sorted(set(expected) - set(seen))
+        twice = sorted({a for a in seen if seen.count(a) > 1})
+        return "the locators file does not account for each anchor once (missing %s, repeated %s)" % (
+            ", ".join(missing) or "none", ", ".join(twice) or "none")
     return None
 
 
@@ -1305,7 +1387,7 @@ def format_index(map_path, locators=None, layout="indented", sort="word", ranges
     if published is None:
         return 1, ["book-index format: refused; the map has errors:"] + ["  ERROR: %s" % e for e in errs]
     by_id = {h["id"]: h for h in published}
-    placed, unresolved = {}, []
+    placed, unresolved, scheme = {}, [], None
     if locators:
         try:
             rec = json.loads(_read(locators) or "")
@@ -1323,6 +1405,7 @@ def format_index(map_path, locators=None, layout="indented", sort="word", ranges
         stale += sorted(hid for hid in by_id if hid not in rec["accepted"])
         if stale:
             return 1, ["book-index format: the locators are stale for %s; run locate again" % ", ".join(stale)]
+        scheme = rec["scheme"]
         for p in rec["placed"]:
             placed.setdefault(p["owner"], []).append(p)
         unresolved = rec["unresolved"]
@@ -1333,10 +1416,10 @@ def format_index(map_path, locators=None, layout="indented", sort="word", ranges
     printable |= {h["id"] for h in published if h["see"] and any(t in printable for t in h["see"])}
     report, entries = [], []
     for h in published:
-        own = _merged(placed.get(h["id"], []), ranges) if locators else []
+        own = _merged(placed.get(h["id"], []), ranges, scheme) if locators else []
         subs = []
         for s in h["subheadings"]:
-            locs = _merged(placed.get(s["id"], []), ranges) if locators else []
+            locs = _merged(placed.get(s["id"], []), ranges, scheme) if locators else []
             if locators and not locs:
                 report.append("subheading %s (%s) left out: no placed locators" % (s["id"], s["label"]))
                 continue
@@ -1401,6 +1484,9 @@ def format_index(map_path, locators=None, layout="indented", sort="word", ranges
     kind = "Index" if locators else "Index_Topics"
     out = _side_path(map_path, kind, "." + output)
     if output == "docx":
+        bad = [t for _lvl, t in lines if _XML_BAD_RE.search(t)]
+        if bad:
+            return 1, ["book-index format: refused: Word cannot hold control characters in %r" % bad[0][:60]]
         _write_bytes(out, _index_docx(lines))
     else:
         _write(out, "".join("    " * lvl + t + "\n" for lvl, t in lines))
@@ -1716,14 +1802,25 @@ def _phase_b_self_test(chk, head, anc, header):
 
     # Folding and ordering, as pure functions.
     chk("fold_normalizes", _fold_key("*Its* \ufb01ne\u2014\u201cso\u201d[^12] it-\n  self") == 'its fine-"so" itself'
-        and _fold_key("The policy[^12] held.") == _fold_key("The policy\u00b9\u00b2 held."))
+        and _fold_key("The policy[^12] held.") == _fold_key("The policy\u00b9\u00b2 held.")
+        and all(_fold_key(a) == _fold_key(b) for a, b in (
+            ('See [policy](https://x.org "title").', "See policy."), ("See [policy](https://x.org/a_(b)).", "See policy."),
+            ("A &amp; B", "A & B"), ("A \\*star\\* B", "A star B"), ("caf\u00e9", "cafe\u0301"),
+            ("Stra\u00dfe", "STRASSE"), ("5\u2033", '5"'), ("people", "peo\u00ad\nple"), ("people", "peo-\r\nple"))))
+    chk("overlapping_matches_counted", _occurrences("banana", "ana") == 2)
+    chk("merge_dedupes_by_locator_not_text", _merged([
+        {"start": {"label": "1.1", "sort": [1]}, "end": {"label": "1.2", "sort": [2]}},
+        {"start": {"label": "1.1", "sort": [3]}, "end": {"label": "2", "sort": [4]}}], "chicago", "page")
+        == ["1.1\u20131.2", "1.1\u20132"])
     chk("order_abc_case", order_verdicts([20, 10, 30]) == ["ambiguous_order", "ambiguous_order", "kept"])
     chk("order_early_wrong_match", order_verdicts([10, 20, 5, 40]) == ["kept", "kept", "out_of_order", "kept"])
     chk("chicago_ranges", [_chicago_range(a, b) for a, b in (("45", "52"), ("101", "108"), ("321", "328"),
                                                                ("1496", "1500"), ("100", "104"), ("ix", "xi"))]
         == ["45\u201352", "101\u20138", "321\u201328", "1496\u20131500", "100\u2013104", "ix\u2013xi"])
     chk("dotted_and_plain_folio_range", _locator_text({"start": {"label": "1.1"}, "end": {"label": "1"}}, "chicago")
-        == "1.1\u20131" and _locator_text({"start": {"label": "3.12"}, "end": {"label": "3.14"}}, "chicago") == "3.12\u201314")
+        == "1.1\u20131" and _locator_text({"start": {"label": "3.12"}, "end": {"label": "3.14"}}, "chicago", "paragraph")
+        == "3.12\u201314" and _locator_text({"start": {"label": "1.1"}, "end": {"label": "1.2"}}, "chicago", "page")
+        == "1.1\u20131.2")
     chk("chicago_unicode_digits_kept_whole", _chicago_range("\u00b2", "\u00b3") == "\u00b2\u2013\u00b3")
     chk("quote_bounds_from_origins", _quote_key({"quote": "policy", "context": {
         "before": "See [", "after": "](https://example.org)."}})[0][4:10] == "policy"
@@ -1788,6 +1885,14 @@ def _phase_b_self_test(chk, head, anc, header):
         locate_index(os.path.join(tight, "G_Index_Map_r1.md"), "paragraph")
         chk("paragraph_after_heading_without_blank_line", {p["anchor"]: p["start"]["label"] for p in json.loads(
             _read(os.path.join(tight, "G_Index_Locators_r1.json")))["placed"]} == {"IX-001.a1": "1.1", "IX-002.a1": "1.2"})
+        fenced = os.path.join(d, "fenced")
+        os.makedirs(fenced)
+        _write(os.path.join(fenced, "H_Manuscript_Snapshot_r1.md"), "# C\n\n```\n# code\n```\n\nBeta.\n")
+        hh = [head("IX-001", [anc("IX-001.a1", "Beta.")], status="accepted")]
+        _write(os.path.join(fenced, "H_Index_Map_r1.md"), render_map(dict(header, snapshot_path="H_Manuscript_Snapshot_r1.md"), hh))
+        locate_index(os.path.join(fenced, "H_Index_Map_r1.md"), "paragraph")
+        chk("fenced_heading_is_not_a_chapter", json.loads(_read(os.path.join(fenced, "H_Index_Locators_r1.json")))[
+            "placed"][0]["start"]["label"] == "1.2")
         chk("paragraph_refuses_without_chapters", locate_index(os.path.join(flat, "F_Index_Map_r1.md"), "paragraph")[0] == 1)
 
         if _load_pypdf() is None:
@@ -1802,7 +1907,7 @@ def _phase_b_self_test(chk, head, anc, header):
             with open(pdf, "wb") as fh_:
                 fh_.write(_tiny_pdf(pages, labels="0 << /S /r >> 1 << /S /D >>"))
             chk("page_requires_body_end", locate_index(m, "page", pdf=pdf)[0] == 1)
-            code, _l = locate_index(m, "page", pdf=pdf, body_end=7)
+            code, _l = locate_index(m, "page", pdf=pdf, body_start=2, body_end=7)
             rec = json.loads(_read(loc))
             why = {u["anchor"]: u["reason"] for u in rec["unresolved"]}
             got = {p["anchor"]: p["start"]["label"] for p in rec["placed"]}
@@ -1818,6 +1923,35 @@ def _phase_b_self_test(chk, head, anc, header):
             chk("page_refuses_without_folios", locate_index(m, "page", pdf=unlabeled, body_end=7)[0] == 1)
             chk("page_front_matter_needs_pdf_labels",
                 locate_index(m, "page", pdf=unlabeled, folio_start=2, body_end=7, include_front=True)[0] == 1)
+            # Round-5 cases: overlapping matches, duplicate and blank folios, body chosen by page number.
+            pd = os.path.join(d, "pdfcases")
+            os.makedirs(pd)
+            _write(os.path.join(pd, "P_Manuscript_Snapshot_r1.md"), "# One\n\nx very very y.\n\nAlpha starts. Omega ends.\n")
+            ph = [head("IX-001", [anc("IX-001.a1", "very very")], status="accepted"),
+                  head("IX-002", [anc("IX-002.a1", "Alpha starts", end_quote="Omega ends")], status="accepted")]
+            pm = os.path.join(pd, "P_Index_Map_r1.md")
+            _write(pm, render_map(dict(header, snapshot_path="P_Manuscript_Snapshot_r1.md"), ph))
+            ploc = os.path.join(pd, "P_Index_Locators_r1.json")
+
+            def page_case(pages_, labels_, **kw):
+                path = os.path.join(pd, "case.pdf")
+                with open(path, "wb") as fh2:
+                    fh2.write(_tiny_pdf(pages_, labels=labels_))
+                locate_index(pm, "page", pdf=path, **kw)
+                rec_ = json.loads(_read(ploc))
+                return ({u["anchor"]: u["reason"] for u in rec_["unresolved"]},
+                        {q["anchor"]: q["start"]["label"] for q in rec_["placed"]})
+
+            why_, _got = page_case([["very"], ["very"], ["very"]], "0 << /S /D >>", body_start=1, body_end=3)
+            chk("page_overlapping_match_is_ambiguous", why_.get("IX-001.a1") == "ambiguous_match")
+            why_, _got = page_case([["Alpha starts."], ["Omega ends."]], "0 << /S /D >> 1 << /S /D /St 1 >>",
+                                   body_start=1, body_end=2)
+            chk("page_duplicate_folio_unresolved", why_.get("IX-002.a1") == "duplicate_folio")
+            why_, _got = page_case([["Alpha starts."], ["Omega ends."]], "0 << /P () >>", body_start=1, body_end=2)
+            chk("page_blank_folio_unresolved", why_.get("IX-002.a1") == "blank_folio")
+            why_, got_ = page_case([["Alpha starts."], ["x very very y"], ["Alpha starts. Omega ends."]],
+                                   "0 << /S /r >> 1 << /P (1.) /S /D >>", body_start=2, body_end=3)
+            chk("page_body_chosen_by_page_number", got_.get("IX-001.a1") == "1.1" and got_.get("IX-002.a1") == "1.2")
             chk("page_folio_start_map", locate_index(m, "page", pdf=unlabeled, folio_start=2, body_end=7)[0] == 0
                 and {p["anchor"]: p["start"]["label"] for p in json.loads(_read(loc))["placed"]}.get("IX-004.a1") == "4")
 
@@ -1842,11 +1976,17 @@ def _phase_b_self_test(chk, head, anc, header):
         no_end = {k: v for k, v in one.items() if k != "end"}
         for bad in ("[]", "null", '{"accepted": []}', json.dumps(dict(good, placed=[{"owner": "IX-001"}])),
                     json.dumps(dict(good, placed=[dict(one, owner=[])])), json.dumps(dict(good, placed=[no_end])),
-                    json.dumps(dict(good, placed=[dict(one, start={"label": "1", "sort": ["x"]})]))):
+                    json.dumps(dict(good, placed=[dict(one, start={"label": "1", "sort": ["x"]})])),
+                    json.dumps(dict(good, placed=good["placed"][1:])),
+                    json.dumps(dict(good, placed=good["placed"] + [dict(one, anchor="IX-002.a1")])),
+                    json.dumps(dict(good, placed=[dict(one, start={"label": "\ud800", "sort": [1]})] + good["placed"][1:])),
+                    json.dumps(dict(good, placed=[dict(one, start={"label": "1" * 5000, "sort": [1]})] + good["placed"][1:])),
+                    json.dumps(dict(good, placed=[dict(one, start={"label": "\u0001", "sort": [1]})] + good["placed"][1:]))):
             _write(os.path.join(d, "bad.json"), bad)
             chk("format_refuses_malformed_locators %s" % bad[:16], format_index(m, os.path.join(d, "bad.json"))[0] == 1)
-        rename(m, "IX-003", "renamed heading")
+        rename(m, "IX-003", "renamed\u0000heading")
         accept(m, ["IX-003"])
+        chk("docx_refuses_control_characters", format_index(m, None, output="docx")[0] == 1)
         chk("format_refuses_stale_locators", format_index(m, loc)[0] == 1)
 
         # References are checked against what prints: a heading whose only anchor is unresolved drops
@@ -1886,6 +2026,7 @@ def _phase_b_cli(cmd, rest):
         ap.add_argument("--scheme", required=True, choices=("paragraph", "page"))
         ap.add_argument("--pdf")
         ap.add_argument("--folio-start", type=int)
+        ap.add_argument("--body-start", type=int)
         ap.add_argument("--body-end", type=int)
         ap.add_argument("--include-front", action="store_true")
         ap.add_argument("--include-back", action="store_true")
@@ -1903,7 +2044,7 @@ def _phase_b_cli(cmd, rest):
         return 2
     if cmd == "locate":
         code, lines = locate_index(a.map, a.scheme, a.pdf, a.folio_start, a.body_end, a.include_front,
-                                   a.include_back)
+                                   a.include_back, a.body_start)
     else:
         code, lines = format_index(a.map, a.locators, a.layout, a.sort, a.ranges, a.see_also,
                                    "docx" if a.docx else "txt", a.max_lines)
