@@ -86,8 +86,12 @@ def _read(path):
 
 
 def _write(path, text):
-    with open(path, "w", encoding="utf-8", newline="") as fh:
-        fh.write(text)
+    """Encode first, then replace atomically, so a failed write never truncates the old file."""
+    data = text.encode("utf-8")
+    tmp = path + ".tmp"
+    with open(tmp, "wb") as fh:
+        fh.write(data)
+    os.replace(tmp, path)
 
 
 def _one_line(value):
@@ -107,7 +111,7 @@ def parse_map(text):
     """-> (header_or_None, headings, errors). Errors are (heading_id_or_None, message) for blocks
     that cannot be read at all; a heading that parses but breaks a rule is left to check()."""
     header, headings, errs = None, [], []
-    n_headers = 0
+    n_headers = n_blocks = 0
     for btype, obj, jerr in art.parse_blocks(text or ""):
         if btype == "index_map":
             n_headers += 1
@@ -116,13 +120,14 @@ def parse_map(text):
             elif n_headers == 1:
                 header = obj
         elif btype == "index_heading":
+            n_blocks += 1
             if jerr:
-                errs.append((None, "I1 schema: index_heading #%d: invalid JSON — %s"
-                             % (len(headings) + 1, jerr)))
-            headings.append(obj if not jerr else None)
+                errs.append((None, "I1 schema: index_heading #%d: invalid JSON — %s" % (n_blocks, jerr)))
+            else:
+                headings.append(obj)
     if n_headers != 1:
         errs.append((None, "I1 schema: a map needs exactly one index_map header (found %d)" % n_headers))
-    return header, [h for h in headings if h is not None], errs
+    return header, headings, errs
 
 
 def _block(btype, obj):
@@ -269,6 +274,10 @@ def heading_errs(h, index):
     errs = art.validate_obj(h, art.load_schema(HEADING_SCHEMA), hid)
     if errs:
         return ["I1 schema: " + e for e in errs]
+    try:
+        json.dumps(h, ensure_ascii=False).encode("utf-8")
+    except UnicodeEncodeError:
+        return ["I1 schema: %s: a string is not valid Unicode (a lone surrogate)" % hid]
     w = h["weight"]
     if isinstance(w, bool) or not 0 <= w <= 1:
         errs.append("%s: weight must be a number in [0, 1]" % hid)
@@ -341,6 +350,9 @@ def check(header, headings, snapshot):
         if hid in seen_ids:
             errs.append("I1 schema: duplicate heading id %s" % hid)
         seen_ids.add(hid)
+        if not errs:
+            nested = [s["id"] for s in h["subheadings"]] + [a["id"] for _o, a in _all_anchors(h)]
+            errs.extend("I1 schema: duplicate id %s" % x for x in sorted({x for x in nested if nested.count(x) > 1}))
         errors.extend((hid, e) for e in errs)
         if not errs:
             ok.append(h)
@@ -380,7 +392,7 @@ def check(header, headings, snapshot):
             errors.append((h["id"], "I4 acceptance: %s changed after it was accepted; re-accept it"
                            % h["id"]))
 
-    if snapshot is not None and header is not None:
+    if snapshot is not None and isinstance(header, dict):
         level = header.get("chapter_level", 1)
         chaps = chapters(snapshot, level) if isinstance(level, int) else []
         if not chaps:
@@ -465,8 +477,9 @@ def run(path, strict=False):
     errors = parse_errs + errors
     counts = {}
     for h in headings:
-        if isinstance(h, dict):
-            counts[h.get("status")] = counts.get(h.get("status"), 0) + 1
+        status = h.get("status") if isinstance(h, dict) else None
+        status = status if status in ("proposed", "accepted", "dropped") else "malformed"
+        counts[status] = counts.get(status, 0) + 1
     lines = ["book-index: %d heading(s) (%s)" % (
         len(headings), ", ".join("%d %s" % (n, s) for s, n in sorted(counts.items(), key=str)))]
     lines.extend("  ERROR: %s" % msg for _hid, msg in errors)
@@ -556,13 +569,20 @@ def _refuse(errors, ids=None):
 
 
 def _save(map_path, header, headings, ids=None):
-    """Validate the would-be map in memory and write it only if I1-I3 hold for `ids` (or for all)."""
+    """Validate the would-be map in memory and write it only if I1-I3 hold for `ids` and for every
+    heading that links to one of them (or for all headings when `ids` is None)."""
+    if ids is not None:
+        ids = set(ids) | {h.get("id") for h in headings if isinstance(h, dict)
+                          and ids & set(h.get("see", []) + h.get("see_also", []))}
     snapshot = _read(_snapshot_path(map_path, header) or "")
     errors, _w, _n, _s = check(header, headings, snapshot)
     blocking = _refuse([(hid, msg) for hid, msg in errors if not msg.startswith("I4 ")], ids)
     if blocking:
         return 1, ["book-index: refused; the map would not validate:"] + blocking
-    _write(map_path, render_map(header, headings))
+    try:
+        _write(map_path, render_map(header, headings))
+    except (OSError, UnicodeEncodeError) as exc:
+        return 1, ["book-index: write failed, map unchanged: %s" % exc]
     return 0, []
 
 
@@ -636,6 +656,8 @@ def update(map_path, proposals_path):
     proposals, why = _read_proposals(proposals_path)
     if why:
         return 2, ["book-index update: " + why]
+    if not all(isinstance(h.get("id"), str) and _HEADING_ID_RE.match(h["id"]) for h in proposals):
+        return 1, ["book-index update: every proposal needs an id like IX-001"]
     index = {h.get("id"): i for i, h in enumerate(headings)}
     for new in proposals:
         old = headings[index[new.get("id")]] if new.get("id") in index else None
@@ -683,8 +705,8 @@ def drop(map_path, ids):
     for i in ids:
         by_id[i]["status"] = "dropped"
         by_id[i].pop("accepted_hash", None)
-    _write(map_path, render_map(header, headings))
-    return 0, ["book-index drop: dropped %s" % ", ".join(ids)]
+    code, lines = _save(map_path, header, headings, set(ids))
+    return code, lines or ["book-index drop: dropped %s" % ", ".join(ids)]
 
 
 def rename(map_path, hid, new_heading):
@@ -814,7 +836,7 @@ def resnapshot(map_path, new_source, runlabel):
                 reasons.append("changed passage")
         if reasons and h["status"] == "accepted":
             _reopen(h)
-    header = dict(header, snapshot_path=new_name)
+    header = dict(header, snapshot_path=os.path.relpath(new_path, os.path.dirname(os.path.abspath(map_path))))
     _write(new_path, new)
     _write(map_path, render_map(header, headings))
     lines = ["book-index resnapshot: map now points at %s (the old snapshot stays)" % new_name]
@@ -991,6 +1013,42 @@ def run_self_test():
         resnapshot(range_map, interior, "r4")
         chk("resnapshot_range_interior_change_reopens",
             parse_map(_read(range_map))[1][0]["status"] == "proposed")
+
+        # Writer safety (Codex review 1): a heading the hash or the writer cannot encode is refused
+        # and the map is untouched; a change that breaks a live link from another heading is refused.
+        before = _read(map_path)
+        _write(props, json.dumps([head("IX-020", [anc("IX-020.a1", "Kant never wrote")], heading="\ud800")]))
+        chk("unencodable_update_refused_map_unchanged", update(map_path, props)[0] == 1 and _read(map_path) == before)
+        _h, cur, _e = parse_map(before)
+        target = next(h for h in cur if h["id"] == "IX-004")
+        referrer = next(h for h in cur if h["id"] == "IX-001")
+        referrer["see_also"] = ["IX-004"]
+        _write(props, json.dumps([referrer]))
+        update(map_path, props)
+        accept(map_path, ["IX-001"])
+        before = _read(map_path)
+        _write(props, json.dumps([dict(target, anchors=[], subheadings=[], see=["IX-007"], see_also=[])]))
+        chk("update_breaking_a_referrer_refused", update(map_path, props)[0] == 1 and _read(map_path) == before)
+        chk("drop_breaking_a_referrer_refused", drop(map_path, ["IX-004"])[0] == 1 and _read(map_path) == before)
+
+        dup = head("IX-030", [anc("IX-030.a1", "Kant never wrote"), anc("IX-030.a1", "Arendt read Kant")])
+        chk("i1_duplicate_anchor_id", "I1 schema" in codes([judgment, spectator, dup])[0])
+        _write(map_path, before + "\n<!-- apodictic:index_heading\nnull\n-->\n")
+        chk("i1_null_heading_block", run(map_path)[0] == 1)
+        _write(map_path, before.replace('"status": "accepted"', '"status": []', 1))
+        chk("i1_malformed_status_no_crash", run(map_path)[0] == 1)
+        _write(map_path, before)
+        _write(props, json.dumps([{"id": []}]))
+        chk("update_malformed_id_refused", update(map_path, props)[0] == 1)
+
+        sub_dir = os.path.join(d, "nested")
+        os.makedirs(os.path.join(sub_dir, "snaps"))
+        _write(os.path.join(sub_dir, "snaps", "S_Manuscript_Snapshot_r1.md"), snap)
+        nested_map = os.path.join(sub_dir, "S_Index_Map_r1.md")
+        _write(nested_map, render_map(dict(header, snapshot_path="snaps/S_Manuscript_Snapshot_r1.md"),
+                                      [judgment, spectator]))
+        resnapshot(nested_map, src, "r2")
+        chk("resnapshot_keeps_snapshot_directory", run(nested_map)[0] == 0)
     finally:
         shutil.rmtree(d, ignore_errors=True)
 
