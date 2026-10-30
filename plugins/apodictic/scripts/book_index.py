@@ -925,6 +925,25 @@ def _fold_key(text):
     return fold(text)[0].strip()
 
 
+def _quote_key(anchor):
+    """-> (key, qs, qe): the folded match key for an anchor (with its context) and the quote's own
+    span inside the key, from the fold's origin map; None when the quote folds away entirely."""
+    ctx = anchor.get("context") or {}
+    before, quote = ctx.get("before", ""), anchor["quote"]
+    folded, origins = fold(before + quote + ctx.get("after", ""))
+    lead = len(folded) - len(folded.lstrip())
+    key = folded.strip()
+    inside = [i for i, o in enumerate(origins) if len(before) <= o < len(before) + len(quote)
+              and lead <= i < lead + len(key) and folded[i] != " "]
+    if not key or not inside:
+        return None
+    return key, inside[0] - lead, inside[-1] + 1 - lead
+
+
+def _ascii_number(label):
+    return re.fullmatch(r"[0-9]+", label or "") is not None
+
+
 def order_verdicts(positions):
     """`positions`: proof positions of distinct snapshot spans, in snapshot order. -> one verdict per
     span: "kept" when the span is in every longest non-decreasing subsequence, "ambiguous_order" when
@@ -1039,7 +1058,7 @@ def _proof_pages(pdf_path, folio_start, body_end, include_front, include_back):
     for i, text in enumerate(texts):
         if pdf_labels is not None:
             label = pdf_labels[i]
-            arabic = label.isdigit()
+            arabic = _ascii_number(label)
         else:
             arabic = i + 1 >= folio_start
             label = str(i + 2 - folio_start) if arabic else None
@@ -1095,14 +1114,16 @@ def _page_locators(pdf_path, placements, folio_start=None, body_end=None, includ
     found = []
     for p in placements:
         a = p["anchor"]
-        ctx = a.get("context") or {}
-        key = _fold_key(ctx.get("before", "") + a["quote"] + ctx.get("after", ""))
+        bounds = _quote_key(a)
+        if bounds is None:
+            found.append(dict(p, reason="quote_folds_away", positions=[]))
+            continue
+        key, qs, qe = bounds
         n = proof.count(key)
         if n != 1:
             found.append(dict(p, reason="not_found" if n == 0 else "ambiguous_match", positions=[]))
             continue
-        q0 = proof.find(key) + len(fold(ctx.get("before", ""))[0].lstrip())
-        q_end = q0 + len(_fold_key(a["quote"]))
+        q0, q_end = proof.find(key) + qs, proof.find(key) + qe
         end_pos = None
         if a.get("end_quote") is not None:
             ekey = _fold_key(a["end_quote"])
@@ -1210,7 +1231,7 @@ def _sort_key(text, letter_by_letter):
 
 def _chicago_range(a, b):
     """Chicago inclusive-number style for arabic folios (45-52, 101-8, 321-28, 1496-1500)."""
-    if not (a.isdigit() and b.isdigit()) or int(a) < 100 or int(a) % 100 == 0 or len(a) != len(b):
+    if not (_ascii_number(a) and _ascii_number(b)) or int(a) < 100 or int(a) % 100 == 0 or len(a) != len(b):
         return "%s–%s" % (a, b)
     keep = 1 if int(a) % 100 < 10 else 2
     i = 0
@@ -1697,6 +1718,10 @@ def _phase_b_self_test(chk, head, anc, header):
     chk("chicago_ranges", [_chicago_range(a, b) for a, b in (("45", "52"), ("101", "108"), ("321", "328"),
                                                                ("1496", "1500"), ("100", "104"), ("ix", "xi"))]
         == ["45\u201352", "101\u20138", "321\u201328", "1496\u20131500", "100\u2013104", "ix\u2013xi"])
+    chk("chicago_unicode_digits_kept_whole", _chicago_range("\u00b2", "\u00b3") == "\u00b2\u2013\u00b3")
+    chk("quote_bounds_from_origins", _quote_key({"quote": "policy", "context": {
+        "before": "See [", "after": "](https://example.org)."}})[0][4:10] == "policy"
+        and _quote_key({"quote": "example.org", "context": {"before": "See [policy](https://", "after": ")."}}) is None)
     chk("word_vs_letter_sort", sorted(["Newark", "New York"], key=lambda t: _sort_key(t, False)) == ["New York", "Newark"]
         and sorted(["New York", "Newark"], key=lambda t: _sort_key(t, True)) == ["Newark", "New York"])
 
