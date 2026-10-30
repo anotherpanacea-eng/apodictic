@@ -1247,7 +1247,8 @@ def _locator_text(loc, ranges):
     if not end:
         return start
     if ranges == "chicago":
-        if "." in start and start.split(".")[0] == end.split(".")[0]:
+        dotted = re.fullmatch(r"\d+\.\d+", start) and re.fullmatch(r"\d+\.\d+", end)
+        if dotted and start.split(".")[0] == end.split(".")[0]:
             return "%s–%s" % (start, end.split(".", 1)[1])
         return _chicago_range(start, end)
     return "%s–%s" % (start, end)
@@ -1718,6 +1719,8 @@ def _phase_b_self_test(chk, head, anc, header):
     chk("chicago_ranges", [_chicago_range(a, b) for a, b in (("45", "52"), ("101", "108"), ("321", "328"),
                                                                ("1496", "1500"), ("100", "104"), ("ix", "xi"))]
         == ["45\u201352", "101\u20138", "321\u201328", "1496\u20131500", "100\u2013104", "ix\u2013xi"])
+    chk("dotted_and_plain_folio_range", _locator_text({"start": {"label": "1.1"}, "end": {"label": "1"}}, "chicago")
+        == "1.1\u20131" and _locator_text({"start": {"label": "3.12"}, "end": {"label": "3.14"}}, "chicago") == "3.12\u201314")
     chk("chicago_unicode_digits_kept_whole", _chicago_range("\u00b2", "\u00b3") == "\u00b2\u2013\u00b3")
     chk("quote_bounds_from_origins", _quote_key({"quote": "policy", "context": {
         "before": "See [", "after": "](https://example.org)."}})[0][4:10] == "policy"
