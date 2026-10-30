@@ -1127,6 +1127,9 @@ def _page_locators(pdf_path, placements, folio_start=None, body_end=None, includ
         end_pos = None
         if a.get("end_quote") is not None:
             ekey = _fold_key(a["end_quote"])
+            if not ekey:
+                found.append(dict(p, reason="end_quote_folds_away", positions=[q0]))
+                continue
             after = proof.count(ekey, q_end)
             if after == 1:
                 end_pos = proof.find(ekey, q_end) + len(ekey) - 1
