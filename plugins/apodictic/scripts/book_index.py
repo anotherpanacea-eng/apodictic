@@ -956,7 +956,7 @@ def fold(text):
             continue
         entity = _ENTITY_RE.match(text, i) if c == "&" else None
         if entity and html.unescape(entity.group()) != entity.group():
-            decoded = html.unescape(entity.group()).translate(_QUOTES).translate(_DASHES)
+            decoded = html.unescape(entity.group()).replace("\u00ad", "").translate(_QUOTES).translate(_DASHES)
             emit(_nfkc(decoded).translate(_QUOTES).translate(_DASHES).casefold(), i)
             i = entity.end()
             continue
@@ -975,7 +975,11 @@ def fold(text):
         cluster = text[i:j].translate(_QUOTES).translate(_DASHES)
         emit(unicodedata.normalize("NFKC", cluster).translate(_QUOTES).translate(_DASHES).casefold(), i)
         i = j
-    return "".join(out), origins
+    # A hyphen between two letters folds away on both sides, so "self-governing", a proof that wraps
+    # it as "self-/governing" and one that drops the hyphen at the break all match.
+    keep = [not (ch == "-" and 0 < k < len(out) - 1 and out[k - 1].isalpha() and out[k + 1].isalpha())
+            for k, ch in enumerate(out)]
+    return "".join(c for c, ok in zip(out, keep) if ok), [o for o, ok in zip(origins, keep) if ok]
 
 
 def _fold_key(text):
@@ -1216,11 +1220,14 @@ def _page_locators(pdf_path, placements, folio_start=None, body_end=None, includ
         found.append(dict(p, proof_pos=q0, proof_end=end_pos))
 
     placed = [p for p in found if "proof_pos" in p]
-    spans = sorted({tuple(p["span"]) for p in placed})
-    pos_of = {}
-    for p in placed:
-        pos_of.setdefault(tuple(p["span"]), p["proof_pos"])
-    verdict = dict(zip(spans, order_verdicts([pos_of[s] for s in spans])))
+    where = {}
+    for p in placed:  # anchors on one snapshot passage must agree on where it is in the proof
+        where.setdefault(tuple(p["span"]), set()).add((p["proof_pos"], p["proof_end"]))
+    conflicting = {sp for sp, found_at in where.items() if len(found_at) > 1}
+    spans = sorted(sp for sp in where if sp not in conflicting)
+    pos_of = {sp: min(where[sp])[0] for sp in spans}
+    verdict = dict(zip(spans, order_verdicts([pos_of[sp] for sp in spans])))
+    verdict.update({sp: "conflicting_matches" for sp in conflicting})
     out = []
     for p in found:
         if "proof_pos" not in p:
@@ -1834,6 +1841,8 @@ def _phase_b_self_test(chk, head, anc, header):
             ("See [policy](url 'title').", "See policy."), ("See [policy](a_(b_(c))).", "See policy."),
             ("A &#38; B", "A & B"), ("A &eacute;", "A \u00e9"), ("\uac01", "\u1100\u1161\u11a8"),
             ("policy&mdash;rather", "policy\u2014rather"), ("&ldquo;so&rdquo;", "\u201cso\u201d"), ("&#65;B", "ab"),
+            ("A self-governing council", "A self-\ngoverning council"), ("A self-governing council", "A self\u2010governing council"),
+            ("policy&shy;making", "policymaking"), ("policy&#173;making", "policymaking"),
             ('See [policy](https://x.org "title").', "See policy."), ("See [policy](https://x.org/a_(b)).", "See policy."),
             ("A &amp; B", "A & B"), ("A \\*star\\* B", "A star B"), ("caf\u00e9", "cafe\u0301"),
             ("Stra\u00dfe", "STRASSE"), ("5\u2033", '5"'), ("people", "peo\u00ad\nple"), ("people", "peo-\r\nple"))))
@@ -1997,6 +2006,21 @@ def _phase_b_self_test(chk, head, anc, header):
             why_, got_ = page_case([["Alpha starts."], ["x very very y"], ["Alpha starts. Omega ends."]],
                                    "0 << /S /r >> 1 << /P (1.) /S /D >>", body_start=2, body_end=3)
             chk("page_body_chosen_by_page_number", got_.get("IX-001.a1") == "1.1" and got_.get("IX-002.a1") == "1.2")
+            cm = os.path.join(pd, "C_Index_Map_r1.md")
+            _write(os.path.join(pd, "C_Manuscript_Snapshot_r1.md"), "# One\n\nleft shared passage right.\n")
+            _write(cm, render_map(dict(header, snapshot_path="C_Manuscript_Snapshot_r1.md"), [
+                head("IX-001", [anc("IX-001.a1", "shared passage", context={"before": "left ", "after": ""})],
+                     status="accepted"),
+                head("IX-002", [anc("IX-002.a1", "shared passage", context={"before": "", "after": " right"})],
+                     status="accepted")]))
+            cpdf = os.path.join(pd, "conflict.pdf")
+            with open(cpdf, "wb") as fh2:
+                fh2.write(_tiny_pdf([["left shared passage wrong."], ["middle marker."], ["other shared passage right."]],
+                                    labels="0 << /S /D >>"))
+            locate_index(cm, "page", pdf=cpdf, body_start=1, body_end=3)
+            why_ = {u["anchor"]: u["reason"] for u in json.loads(_read(os.path.join(pd, "C_Index_Locators_r1.json")))["unresolved"]}
+            chk("page_conflicting_matches_for_one_passage",
+                why_.get("IX-001.a1") == why_.get("IX-002.a1") == "conflicting_matches")
             chk("page_folio_start_map", locate_index(m, "page", pdf=unlabeled, folio_start=2, body_end=7)[0] == 0
                 and {p["anchor"]: p["start"]["label"] for p in json.loads(_read(loc))["placed"]}.get("IX-004.a1") == "4")
 
