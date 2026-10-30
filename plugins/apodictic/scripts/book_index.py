@@ -177,7 +177,7 @@ def _live_heading_lines(snapshot):
     scan: override_marker.strip_code_spans also folds multiline inline code spans into one line, which
     would shift every later line number."""
     live, fence = set(), None
-    for i, line in enumerate(snapshot.split("\n"), start=1):
+    for i, line in enumerate(snapshot.splitlines(), start=1):  # the same line numbering as atx_headings
         t = line.lstrip(" ")
         mark = t[:1] if t[:1] in ("`", "~") else ""
         run = len(t) - len(t.lstrip(mark)) if mark else 0
@@ -956,7 +956,8 @@ def fold(text):
             continue
         entity = _ENTITY_RE.match(text, i) if c == "&" else None
         if entity and html.unescape(entity.group()) != entity.group():
-            emit(html.unescape(entity.group()), i)
+            decoded = html.unescape(entity.group()).translate(_QUOTES).translate(_DASHES)
+            emit(_nfkc(decoded).translate(_QUOTES).translate(_DASHES).casefold(), i)
             i = entity.end()
             continue
         if c in "-\u2010\u00ad" and out and out[-1].isalpha():
@@ -1030,7 +1031,10 @@ def _paragraph_index(snapshot, level):
     blank line separates them."""
     chaps = chapters(snapshot, level)
     live = _live_heading_lines(snapshot)
-    line_starts = [0] + [m.end() for m in re.finditer("\n", snapshot)]
+    line_starts, pos = [], 0
+    for line in snapshot.splitlines(keepends=True):
+        line_starts.append(pos)
+        pos += len(line)
     heading_starts = {line_starts[n - 1] for n in live if n - 1 < len(line_starts)}
     segments = []
     for s, e in _paragraph_spans(snapshot):
@@ -1829,6 +1833,7 @@ def _phase_b_self_test(chk, head, anc, header):
         and all(_fold_key(a) == _fold_key(b) for a, b in (
             ("See [policy](url 'title').", "See policy."), ("See [policy](a_(b_(c))).", "See policy."),
             ("A &#38; B", "A & B"), ("A &eacute;", "A \u00e9"), ("\uac01", "\u1100\u1161\u11a8"),
+            ("policy&mdash;rather", "policy\u2014rather"), ("&ldquo;so&rdquo;", "\u201cso\u201d"), ("&#65;B", "ab"),
             ('See [policy](https://x.org "title").', "See policy."), ("See [policy](https://x.org/a_(b)).", "See policy."),
             ("A &amp; B", "A & B"), ("A \\*star\\* B", "A star B"), ("caf\u00e9", "cafe\u0301"),
             ("Stra\u00dfe", "STRASSE"), ("5\u2033", '5"'), ("people", "peo\u00ad\nple"), ("people", "peo-\r\nple"))))
@@ -1920,6 +1925,10 @@ def _phase_b_self_test(chk, head, anc, header):
                "# One\n\nA `line\ncode` here.\n\n# Two\n\nBeta.\n")
         locate_index(os.path.join(fenced, "H_Index_Map_r1.md"), "paragraph")
         chk("multiline_inline_code_keeps_chapters", json.loads(_read(os.path.join(fenced, "H_Index_Locators_r1.json")))[
+            "placed"][0]["start"]["label"] == "2.1")
+        _write(os.path.join(fenced, "H_Manuscript_Snapshot_r1.md"), "# One\n\nAlpha\u2028tail.\n\n# Two\n\nBeta.\n")
+        locate_index(os.path.join(fenced, "H_Index_Map_r1.md"), "paragraph")
+        chk("line_separator_keeps_chapters", json.loads(_read(os.path.join(fenced, "H_Index_Locators_r1.json")))[
             "placed"][0]["start"]["label"] == "2.1")
         _write(os.path.join(fenced, "H_Manuscript_Snapshot_r1.md"), "# C\n\n```\n# code\n```\n\nBeta.\n")
         locate_index(os.path.join(fenced, "H_Index_Map_r1.md"), "paragraph")
