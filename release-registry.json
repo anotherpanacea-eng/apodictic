@@ -88,6 +88,7 @@
       "projects": "core-editor",
       "legal-risk": "core-editor",
       "world-bible": "core-editor",
+      "book-index": "core-editor",
       "triage-feedback": "revision-coach",
       "reader-questions": "revision-coach"
     },
@@ -126,6 +127,7 @@
       "projects": "core-editor",
       "legal-risk": "core-editor",
       "world-bible": "core-editor",
+      "book-index": "core-editor",
       "triage-feedback": "revision-coach",
       "reader-questions": "revision-coach"
     }
@@ -285,6 +287,14 @@
       "routerEquivalent": null,
       "writerQuestion": "Check my worldbuilding bible for self-contradiction (rules, magic costs, geography/timeline).",
       "description": "Check a pre-draft worldbuilding bible for self-contradiction — surfaces conflicts, never resolves them."
+    },
+    {
+      "command": "/book-index",
+      "category": "focused",
+      "status": "first_class_shortcut",
+      "routerEquivalent": null,
+      "writerQuestion": "Draft a back-of-book index for my nonfiction book that I only have to approve.",
+      "description": "Draft a quote-anchored topic map for an index; the author accepts, renames, merges or drops each heading."
     },
     {
       "command": "/triage-feedback",

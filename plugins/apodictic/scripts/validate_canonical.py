@@ -330,6 +330,14 @@ def _voice_world_state(references):
         _line(f'ERROR: {references}/example-worldbuilding-bible.md not found')
         failed = 1
     _line('')
+    _line('== canonical Index Map (book-index: schema I1 + provenance I2 + cross-references I3 + acceptance I4 + coverage W1 + locator strings W2 + subheadings W3, directory fixture, under --strict) ==')
+    if (references / 'example-book-index').is_dir():
+        result = run_validator('book-index', references / 'example-book-index', '--strict')
+        failed |= _relay(result)
+    else:
+        _line(f'ERROR: {references}/example-book-index not found')
+        failed = 1
+    _line('')
     _line('== canonical State Card (state-card-diff: cross-round coherence; self-diff + round-2 diff) ==')
     if (references / 'example-state-card.md').is_file():
         result = run_validator('state-card-diff', references / 'example-state-card.md')

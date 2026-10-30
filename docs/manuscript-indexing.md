@@ -1,6 +1,6 @@
 # Manuscript Index Builder: a back-of-book index the author only has to approve
 
-**Status:** **Admitted spec, 2026-10-30 (owner). Unbuilt; Increment 1 is the next build.** Owner design calls resolved 2026-10-29 (§Resolved design calls). Codex review and three rounds of the fleet `/spec-review` panel applied 2026-10-29; round 3 verdict BUILD-READY-WITH-FIXES, with its fixes folded in (§Spec review record). Roadmap: `ROADMAP.md` → [Horizon Capacities](../ROADMAP.md#horizon-capacities) Tier 2, item 20. Proposed implementation surface: `plugins/apodictic/scripts/book_index.py`, `validate.sh book-index`, a `core-editor/references/manuscript-indexing.md` module and a `/book-index` command.
+**Status:** **Increment 1 built (topic map), 2026-10-30; Increments 2 (locators and output) and 3 (more schemes and exports) unbuilt.** Admitted by the owner 2026-10-30. Owner design calls resolved 2026-10-29 (§Resolved design calls). Codex review and three rounds of the fleet `/spec-review` panel applied 2026-10-29; round 3 verdict BUILD-READY-WITH-FIXES, with its fixes folded in (§Spec review record). Roadmap: `ROADMAP.md` → [Horizon Capacities](../ROADMAP.md#horizon-capacities) Tier 2, item 20. Proposed implementation surface: `plugins/apodictic/scripts/book_index.py`, `validate.sh book-index`, a `core-editor/references/manuscript-indexing.md` module and a `/book-index` command.
 <!-- built-when: plugins/apodictic/scripts/book_index.py -->
 
 ## Why

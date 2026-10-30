@@ -53,6 +53,7 @@ AGG_VALIDATORS = (
     'continuity-bible',
     'setup-payoff',
     'world-bible',
+    'book-index',
     'intake-interview',
     'author-fingerprint',
     'content-advisory',
@@ -187,6 +188,7 @@ _ARTIFACT_PLANNING = {
     "continuity-bible": "continuity_bible.py",
     "setup-payoff": "setup_payoff_checks.py",
     "world-bible": "world_bible.py",
+    "book-index": "book_index.py",
     "argument-spine": "argument_spine.py",
     "scene-ethics": "scene_ethics.py",
 }

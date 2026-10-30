@@ -1,0 +1,13 @@
+{
+  "$id": "apodictic.index_map.v1",
+  "$comment": "Header block of a Manuscript Index Builder Index_Map ([Project]_Index_Map_[runlabel].md): exactly one per map. `snapshot_path` is the manuscript snapshot the anchors are proven against, relative to the map. `chapter_level` (integer 1 to 6, default 1) is the ATX heading level that starts a chapter, read by W1. The range check is in scripts/book_index.py. See docs/manuscript-indexing.md.",
+  "title": "APODICTIC index map header (apodictic.index_map.v1)",
+  "type": "object",
+  "required": ["schema", "snapshot_path"],
+  "properties": {
+    "schema": {"const": "apodictic.index_map.v1"},
+    "snapshot_path": {"type": "string"},
+    "chapter_level": {"type": "integer"}
+  },
+  "additionalProperties": false
+}
