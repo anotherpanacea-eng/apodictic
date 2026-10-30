@@ -571,6 +571,8 @@ Bigger lifts, still philosophy-compatible.
 
 20. **Manuscript Index Builder (back-of-book index). Increments 1–3 built, 2026-10-30 (not the embedded LaTeX/Word tags or EPUB-direct locations); the pre-release evaluation next.** Authors hate self-indexing, so the tool takes the painful parts. It drafts a quote-anchored topic map (headings, variants, subheadings, See/See also) from the manuscript, and the author approves headings on a short review sheet. Locators are optional and pluggable: chapter and paragraph numbers, printed pages from the proof PDF, line numbers, ebook locations or embedded tags, each resolved mechanically from the anchor quotes, never by a model. A `book-index` validator proves every anchor exists, re-opens any accepted heading that changes, gates output on author acceptance, and checks cross-references. Nonfiction only. *Effort: medium–large.* Spec: [`docs/manuscript-indexing.md`](docs/manuscript-indexing.md).
 
+21. **Voice-Aware Copyedit. Admitted spec, 2026-10-30; unbuilt.** A copyeditor that knows what to leave alone: a style sheet, a voice ledger of the author's deliberate departures (dialect, unmarked dialogue, fragments, house spellings), and queries in place of corrections wherever error and voice can't be told apart. The design center is "inconsistency is the signal, deviation is not." Every fix is a suggestion the author accepts, from typo-scale fixes up to one-sentence rewrites for clarity or a stepped-on move. Nothing is applied to the manuscript. Increment 1 is queries only. Fiction and nonfiction. *Effort: medium–large.* Spec: [`docs/voice-aware-copyediting.md`](docs/voice-aware-copyediting.md).
+
 ### Reconsidered from the boundary
 
 Two capacities first scanned as boundary-pushing are, on reflection, **closer to buildable** than the non-viable set below — each has prior art in the framework and a firewall-safe diagnostic form.
@@ -597,7 +599,7 @@ These three were surfaced by the same scan but **collide with a load-bearing com
 
 - **Live project dashboard** — separate product, not a plugin feature
 - **Prose execution mode** — violates the Firewall; explicitly out of scope
-- **Line editing** — different discipline, different tooling. (Copyediting was reopened by the owner on 2026-10-29, to be specced on its own as voice- and register-aware work; not yet written.)
+- **Line editing** — different discipline, different tooling. (Copyediting was reopened by the owner on 2026-10-29 and is now [Horizon item 21](#horizon-capacities); its one-sentence rewrites are the only line-level prose it offers.)
 - **Commercial viability guarantees** — the plugin diagnoses structure, not market outcomes
 
 ---
