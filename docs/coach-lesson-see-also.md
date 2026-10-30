@@ -12,15 +12,20 @@ linking existing content; the desktop app can make the links clickable.
 
 Only `plugins/apodictic/skills/revision-coach/references/syllabus.md`:
 
-1. **A See also column** in both Sequence tables, holding 2–3 lesson ids each, from the map below.
+1. **A See also column** in both Sequence tables. Each entry gives a lesson id and a reason of a few
+   words ("L3: whether the pressure shapes the choice"), 2–3 per lesson, from the map below. The
+   reasons are written once into the syllabus, from the cited sources, so the coach never reads past
+   a lesson's existing Teach range to explain a link.
 2. **One closing line in step 2 (Teach).** After explaining the concept and its nearest neighbor, name
-   the lesson's See also lessons, one line each on how it borders this one (from the boundary text
-   just read), and offer its deeper reading. The writer may take any of them as the next lesson. That
-   fits AP-LRN-1's map-not-course direction without building it.
+   the lesson's See also entries with their reasons, and offer its deeper reading. The writer may take
+   any of them as the next lesson. That fits AP-LRN-1's map-not-course direction without building
+   it.
 3. **Deeper reading prefers the writer guides.** Point to the writer-facing guide in
    `docs/writer-guides/` (OCA-A7) where one exists, and keep the research brief as the second link.
-   The guides exist for L2, L3, L4, L9 (`female-interiority.md`, whose subject is interiority across
-   scene types), L11, L12, L13 (mystery and thriller only), L15, A1, A2 and A3.
+   Matching guides exist for L2, L3, L4, L11, L12, L13 (mystery and thriller only), L15, A1, A2 and A3.
+   For L9, offer `female-interiority.md` only as optional related reading for a female POV character.
+   It is about female characters and points to `/audit female-interiority`, while L9 is general and its
+   assignment stays `/audit interiority`.
 
 There is no new validator. A wrong lesson id would show in the first session and costs one edit to fix.
 
@@ -40,9 +45,9 @@ cut.
 | L6 The spine | L5, L7, L12 | `scene-turn.md`: "not a substitute for Plot Architecture"; `compression-audit.md` cuts against the spine |
 | L7 Scene turns | L6, L10, L8 | `scene-turn.md` "What this audit is not": Plot Architecture, Emotional Craft, Character Architecture |
 | L8 Character architecture | L9, L10, L3 | `character-architecture.md` Interiority Function Check; `emotional-craft.md` fine-grain boundary; decision logic |
-| L9 Interiority under pressure | L4, L8, L10 | `interiority-preservation.md`: "see Force Architecture (Disembodied Combatant)"; the Interiority Function Check |
-| L10 Emotional craft | L8, L9, L6 | `emotional-craft.md` "What this audit is not": Plot Architecture, Character Architecture; the interiority fine-grain boundary |
-| L11 Load-bearing prose | L10, L13 | `literary-craft.md`: the Emotional Craft boundary; Literary Fiction genre calibration |
+| L9 Interiority under pressure | L4, L8, L10 | `interiority-preservation.md`: "Force Architecture provides the Disembodied Combatant flag" (L4). L8 from `character-architecture.md`'s Interiority Function Check, from L8's side. L10 is **proposed** |
+| L10 Emotional craft | L8, L6, L9 | `emotional-craft.md` "What this audit is not": Plot Architecture (L6), Character Architecture (L8). L9 is **proposed** (its fine-grain boundary is with Character Architecture) |
+| L11 Load-bearing prose | L10, L12 | `literary-craft.md`: the Emotional Craft boundary (L10). L12 is **proposed**: a device that can be cut without changing interpretation is the compression question |
 | L12 Compression | L7, L6 | `compression-audit.md` (1): "Scene Turn checks whether scenes turn. This audit checks whether material is expendable" |
 | L13 Delivering your genre's promise | L1, L2 | **proposed**. L1 is the same promise from the shelf side; `stakes-system.md`'s genre table |
 | L14 Using feedback | L15, L1 | **proposed**. Process neighbors; L1 because feedback often disputes the book's promise |
@@ -54,7 +59,7 @@ cut.
 
 ## Owner calls
 
-1. Keep or cut the six **proposed** links (L1, L13, L14, L15, A3, and the L5 → L15 link)?
+1. Keep or cut the **proposed** links (all of L1, L13, L14, L15 and A3, plus L9 → L10, L10 → L9, L11 → L12 and L5 → L15)?
 2. Is "the writer may take any See also lesson next" in step 2 acceptable now, ahead of AP-LRN-1?
 
 ## Not in scope
