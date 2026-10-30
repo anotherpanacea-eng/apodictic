@@ -207,6 +207,11 @@
       "omitted_capability": "world-bible validation is unavailable in desktop: no signed, brokered leaf."
     },
     {
+      "id": "book-index",
+      "desktop_disposition": "not-yet-supported",
+      "omitted_capability": "book-index validation is unavailable in desktop: no signed, brokered leaf."
+    },
+    {
       "id": "intake-interview",
       "desktop_disposition": "not-yet-supported",
       "omitted_capability": "intake-interview validation is unavailable in desktop: no signed, brokered leaf."
