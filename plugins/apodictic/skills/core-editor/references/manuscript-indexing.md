@@ -100,7 +100,7 @@ their only writers.
    - `page` gives printed folios from the typeset proof PDF. It needs `pypdf`
      (`pip install pypdf`); without it the scheme refuses and says so.
 2. **Run it:** `python scripts/book_index.py locate <map> --scheme paragraph`, or
-   `--scheme page --pdf <proof.pdf>`.
+   `--scheme page --pdf <proof.pdf> --body-end N`.
    - **Folios** come from the PDF's own page labels. Without labels, ask the author which PDF page is
      folio 1 and pass `--folio-start N`. The command never guesses folios, so front matter can be
      searched (`--include-front`) only when the PDF carries its own labels.

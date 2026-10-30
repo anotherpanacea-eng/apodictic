@@ -55,8 +55,8 @@ Phase B (Increment 2). `locate` and `format` are the only writers of the finishe
   book_index.py rename <index_map.md> <IX-id> <new heading>
   book_index.py merge <index_map.md> <source IX-id> <target IX-id>
   book_index.py resnapshot <index_map.md> <new_source_text> <runlabel>
-  book_index.py locate <index_map.md> --scheme paragraph|page [--pdf <proof.pdf>] [--folio-start N]
-                [--body-end N] [--include-front] [--include-back]
+  book_index.py locate <index_map.md> --scheme paragraph|page [--pdf <proof.pdf> --body-end N]
+                [--folio-start N] [--include-front] [--include-back]
   book_index.py format <index_map.md> [--locators <file.json>] [--layout indented|run-in]
                 [--sort word|letter] [--ranges chicago|full] [--see-also end|after-heading] [--docx]
                 [--max-lines N]

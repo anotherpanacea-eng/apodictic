@@ -19,7 +19,7 @@ Load `../skills/core-editor/SKILL.md` and follow `../skills/core-editor/referenc
 4. `python scripts/book_index.py review <map>` and present the review list.
 5. Record the author's decisions with `accept`, `drop`, `rename` and `merge`; apply any other change (a promoted anchor, a fixed quote) with `update`.
 6. After late corrections: `python scripts/book_index.py resnapshot <map> <new_text> <new_runlabel>`.
-7. For locators: `python scripts/book_index.py locate <map> --scheme paragraph|page [--pdf <proof.pdf>] [--folio-start N]`, then `python scripts/book_index.py format <map> --locators <[Project]_Index_Locators_[runlabel].json>` with the press's style flags. Show the index with its report; never write or edit locators or the index yourself.
+7. For locators: `python scripts/book_index.py locate <map> --scheme paragraph`, or `--scheme page --pdf <proof.pdf> --body-end N [--folio-start N]`; then `python scripts/book_index.py format <map> --locators <[Project]_Index_Locators_[runlabel].json>` with the press's style flags. Show the index with its report; never write or edit locators or the index yourself.
 
 **Gate before finalizing:** `python scripts/validate.py book-index <run_folder> --strict`. Resolve any ERROR (I1 schema, I2 a quote missing or not unique, I3 a broken See or See also, I4 a heading changed after acceptance) and review W1 (a chapter with no substantive anchor), W2 (more than six substantive anchors on one heading) and W3 (subheading problems). See `docs/manuscript-indexing.md`.
 
