@@ -950,19 +950,30 @@ def order_verdicts(positions):
 
 
 def _paragraph_index(snapshot, level):
-    """[(start, end, chapter_no, paragraph_no)] for body paragraphs, chapters numbered from 1; heading
-    blocks and front matter are excluded."""
+    """[(start, end, chapter_no, paragraph_no)] for body paragraphs, chapters numbered from 1. ATX
+    heading lines and front matter are excluded; body text after a heading counts whether or not a
+    blank line separates them."""
     chaps = chapters(snapshot, level)
+    segments = []
+    for s, e in _paragraph_spans(snapshot):
+        run_start, pos = None, s
+        for line in snapshot[s:e].splitlines(keepends=True):
+            if re.match(r"\s*#{1,6}\s", line):
+                if run_start is not None:
+                    segments.append((run_start, pos))
+                run_start = None
+            elif run_start is None and line.strip():
+                run_start = pos
+            pos += len(line)
+        if run_start is not None:
+            segments.append((run_start, e))
     out = []
     for ch_no, (_label, cstart, cend) in enumerate(chaps, start=1):
         para = 0
-        for s, e in _paragraph_spans(snapshot):
-            if s < cstart or s >= cend or not snapshot[s:e].strip():
-                continue
-            if re.match(r"#{1,6}\s", snapshot[s:e].lstrip()):
-                continue
-            para += 1
-            out.append((s, e, ch_no, para))
+        for s, e in segments:
+            if cstart <= s < cend and snapshot[s:e].strip():
+                para += 1
+                out.append((s, e, ch_no, para))
     return out
 
 
@@ -1243,11 +1254,13 @@ def _locator_record_errors(rec, published):
     owners.update({s["id"]: h["id"] for h in published for s in h["subheadings"]})
 
     def loc_ok(x):
-        return isinstance(x, dict) and isinstance(x.get("label"), str) and isinstance(x.get("sort"), list)
+        return (isinstance(x, dict) and isinstance(x.get("label"), str) and isinstance(x.get("sort"), list)
+                and all(type(v) is int for v in x["sort"]))
 
     for p in rec.get("placed") if isinstance(rec.get("placed"), list) else [None]:
-        if not (isinstance(p, dict) and p.get("owner") in owners and owners[p["owner"]] == p.get("heading")
-                and loc_ok(p.get("start")) and (p.get("end") is None or loc_ok(p.get("end")))):
+        if not (isinstance(p, dict) and isinstance(p.get("owner"), str) and p["owner"] in owners
+                and owners[p["owner"]] == p.get("heading") and loc_ok(p.get("start"))
+                and "end" in p and (p["end"] is None or loc_ok(p["end"]))):
             return "a placed locator is malformed or names a heading that is not published: %r" % (p,)
     for u in rec.get("unresolved") if isinstance(rec.get("unresolved"), list) else [None]:
         if not (isinstance(u, dict) and all(isinstance(u.get(k), str) for k in ("anchor", "heading", "reason"))
@@ -1735,6 +1748,15 @@ def _phase_b_self_test(chk, head, anc, header):
         _write(os.path.join(flat, "F_Manuscript_Snapshot_r1.md"), "No chapters. Alpha passage opens here.\n")
         fh = head("IX-001", [anc("IX-001.a1", "Alpha passage opens")], status="accepted")
         _write(os.path.join(flat, "F_Index_Map_r1.md"), render_map(dict(header, snapshot_path="F_Manuscript_Snapshot_r1.md"), [fh]))
+        tight = os.path.join(d, "tight")
+        os.makedirs(tight)
+        _write(os.path.join(tight, "G_Manuscript_Snapshot_r1.md"), "# Chapter One\nAlpha passage.\n\nBravo passage.\n")
+        gh = [head("IX-001", [anc("IX-001.a1", "Alpha passage.")], status="accepted"),
+              head("IX-002", [anc("IX-002.a1", "Bravo passage.")], status="accepted")]
+        _write(os.path.join(tight, "G_Index_Map_r1.md"), render_map(dict(header, snapshot_path="G_Manuscript_Snapshot_r1.md"), gh))
+        locate_index(os.path.join(tight, "G_Index_Map_r1.md"), "paragraph")
+        chk("paragraph_after_heading_without_blank_line", {p["anchor"]: p["start"]["label"] for p in json.loads(
+            _read(os.path.join(tight, "G_Index_Locators_r1.json")))["placed"]} == {"IX-001.a1": "1.1", "IX-002.a1": "1.2"})
         chk("paragraph_refuses_without_chapters", locate_index(os.path.join(flat, "F_Index_Map_r1.md"), "paragraph")[0] == 1)
 
         if _load_pypdf() is None:
@@ -1784,7 +1806,12 @@ def _phase_b_self_test(chk, head, anc, header):
         resnapshot(mm, edited, "r2")
         chk("format_refuses_locators_from_older_snapshot",
             format_index(mm, os.path.join(moved, "T_Index_Locators_r1.json"))[0] == 1)
-        for bad in ("[]", "null", '{"accepted": []}', json.dumps(dict(json.loads(_read(loc)), placed=[{"owner": "IX-001"}]))):
+        good = json.loads(_read(loc))
+        one = good["placed"][0]
+        no_end = {k: v for k, v in one.items() if k != "end"}
+        for bad in ("[]", "null", '{"accepted": []}', json.dumps(dict(good, placed=[{"owner": "IX-001"}])),
+                    json.dumps(dict(good, placed=[dict(one, owner=[])])), json.dumps(dict(good, placed=[no_end])),
+                    json.dumps(dict(good, placed=[dict(one, start={"label": "1", "sort": ["x"]})]))):
             _write(os.path.join(d, "bad.json"), bad)
             chk("format_refuses_malformed_locators %s" % bad[:16], format_index(m, os.path.join(d, "bad.json"))[0] == 1)
         rename(m, "IX-003", "renamed heading")
