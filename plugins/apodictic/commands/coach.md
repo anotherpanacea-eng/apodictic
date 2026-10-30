@@ -29,6 +29,7 @@ Load `../skills/revision-coach/SKILL.md`. Follow the coaching protocol in `../sk
 - On session completion, archive the plan: create `runs/YYYY-MM-DD_{model}_coaching/` and move the completed session plan there, along with any revision calendars or momentum reports
 - Update `Diagnostic_State.md` coaching log at the project root
 - Learning Mode writes only `Syllabus_Progress.md` (at the project root, or the folder the writer names); it skips the other steps in this list
+- A state-less Stuck-Point run writes nothing and skips every step in this list
 - Append row to `README.md` run archive table
 - Never write to the plugin repo
 
