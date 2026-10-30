@@ -14,7 +14,7 @@ Each live goal below has a stable goal ID (`AP-G1` to `AP-G12`, under its headin
 |---|-----|------------|
 | 1 | **Hosting exit.** Retire the Cloud Run site in favor of the desktop app (maintainer-private cutover checklist). | Engine tag, cutover go, user email |
 | 2 | **Desktop app installable by strangers.** In-app updater, clean-machine install test on Windows and Mac. | Updater signing key |
-| 3 | **Directory listing as the front door.** Install docs lead with the Claude plugin directory. | — |
+| 3 | ~~**Directory listing as the front door.**~~ Shipped: the README install table leads with the Claude plugin directory. | — |
 | 4 | **Trim before adding.** Keep this file to open work; cut CI gates that no longer protect a behavior. | — |
 | 5 | **One piece of external validation.** A blind sample ([V3](#v3--blind-demonstration)) before the editor panel. | A permissioned manuscript |
 | 6 | **Feature work, chosen by directory-user demand.** Candidates: [Multi-Party Intake](#multi-party-intake), [Genre & Audit Expansion](#genre--audit-expansion), [Coaching Deepening](#coaching-deepening). | Items 1–5 |
