@@ -56,14 +56,19 @@ plainly. APODICTIC is not bound by ASI guidance, and the docs do not present it 
    (with the `Cn:` prefix stripped) are discovery candidates only: their wording and loci never become
    anchors. A missing block or field changes nothing.
 2. **Propose headings** as a JSON array of `apodictic.index_heading.v1` objects in a scratch file
-   (outside the run folder). For each heading:
+   (outside the run folder). Every heading carries all of `schema` (`"apodictic.index_heading.v1"`),
+   `id`, `heading`, `kind`, `variants`, `status` (`"proposed"`), `weight`, `anchors`, `subheadings`,
+   `see` and `see_also`, with empty lists where nothing applies. Every anchor carries `id`, `quote`,
+   `role` and `end_quote` (`null` when there is none). For each heading:
    - `heading`: the preferred form as it will print ("Carnegie, Andrew"; "reading rooms").
      `kind`: `name` / `place` / `work` / `concept` / `term`. `variants`: other forms the text uses.
-   - `anchors`: verbatim single-line quotes, copied exactly from the text, long enough to occur only
-     once. Add `context` (`{"before": ..., "after": ...}`) only when a quote cannot be made unique on
+   - `anchors`: verbatim single-line quotes, copied exactly from the text with its Markdown markup
+     (`_italics_`, `**bold**`, link brackets), long enough to occur only once. Add `context` (`{"before": ..., "after": ...}`) only when a quote cannot be made unique on
      its own. `end_quote` closes an extended discussion that will become a range.
    - `role`: `substantive` when the passage discusses the topic; `passing` for a mention. Passing
-     anchors never become locators. When in doubt, mark it passing; the author can promote it.
+     anchors never become locators. When in doubt, mark it passing; the author can promote it. A
+     heading needs at least one substantive anchor, so a name or work the text only mentions in
+     passing gets no heading. Leave it out rather than call the mention substantive.
    - `subheadings` (one level deep) break down a big topic. Avoid a lone subheading, a subheading
      that repeats its parent's passages, and more than twelve under one heading. A heading or
      subheading with more than six substantive anchors should be broken down.
@@ -71,7 +76,7 @@ plainly. APODICTIC is not bound by ASI guidance, and the docs do not present it 
      `see_also` links related headings; reciprocal links are normal.
    - `weight` in [0, 1]: how likely a reader is to look this up. It orders the review list and, later,
      the cut candidates. It is never printed.
-   - Ids: `IX-001`, `IX-001.a1`, `IX-001.s1`, `IX-001.s1.a1`. Status is set by the tool.
+   - Ids: `IX-001`, `IX-001.a1`, `IX-001.s1`, `IX-001.s1.a1`. `init` sets every status to `proposed`.
 3. **Write the snapshot and map:**
    `python scripts/book_index.py init <text.md> <run_folder> <Project> <runlabel> <proposals.json> [--chapter-level N]`.
    `chapter_level` is the heading level that starts a chapter (1 for `#`, 2 for `##` under a `#` book
@@ -181,3 +186,24 @@ one. The command lists broken quotes separately from changed passages. Fix broke
 
 **Honest limit.** I2 proves a passage is real, not that it is about its heading. I4 proves an accepted
 heading is unchanged since acceptance was recorded, not that a human made the decision.
+
+## Evaluation, 2026-10-30
+
+Run on Henry B. Wheatley, *What Is an Index?* (1878, Project Gutenberg), against the book's own index
+of 283 main entries. One agent drafted the map from the text and this module alone, without seeing
+the printed index: 405 proposed headings and 164 subheadings, clean under `book-index --strict`.
+Each printed entry was then judged by hand against the proposals.
+
+- **Heading recall: 232 of 283 (82%).** The proposals have a heading for the entry's person, work or
+  topic.
+- **Found under a related heading: 31 more (11%),** for 263 of 283 (93%) in all. Most are Wheatley's
+  one-entry-per-word headings ("Da," "De," "Du"; "Summary," "Syllabus" as synonyms of index), which
+  the draft gathers under one heading with subheadings ("prefixes in names"; "index (the word):
+  synonyms of").
+- **Missed: 20 (7%).** Mostly single remarks: the three indexers paid thousands of pounds,
+  Greenhill's support for an Index Society, the red hats Jews wore in Italy. Two were wrong matches: "North, Sir Thomas"
+  for Roger North's *Lives of the Norths*, and "alphabetical arrangement" for bad arrangement.
+
+The draft has more headings than the printed index (405 against 283), and recall does not measure
+whether the extra ones are useful. The page-locator spot-check was not done, since the Gutenberg text
+has no typeset proof. None of this is a gate, and it does not show parity with a professional index.
