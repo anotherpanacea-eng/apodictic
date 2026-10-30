@@ -9,3 +9,7 @@ schema and ids, E2 UTF-8 byte provenance against the snapshot, E3 the ledger gua
 author settled in an enforceable scope is never re-raised; inferred and speaker/zone entries must be
 named), and best-effort W1 never-flag reasons. Canonical fixture `example-copyedit/` runs under
 `--check-all --strict`.
+
+Review fixes preserve raw byte offsets and paragraph/chapter boundaries with CRLF, whitespace-only
+blank lines and UTF-8 BOM snapshots; keep exact capitalization counts in the harvest; reject
+replacement fields inside instances; and require possible-voice labels on marked quotations.

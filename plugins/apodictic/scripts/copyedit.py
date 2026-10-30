@@ -63,13 +63,22 @@ _NEVER_FLAG = (
 def paragraphs(data):
     """[(start_byte, end_byte, chapter)] for each blank-line-separated block of `data` (bytes)."""
     out, chapter = [], 0
-    for m in re.finditer(rb"[^\n]+(?:\n[^\n]+)*", data):
-        block = m.group(0)
-        if not block.strip():
+    start = end = None
+    for m in re.finditer(rb"[^\n]*(?:\n|$)", data):
+        line = m.group(0).rstrip(b"\r\n")
+        if not line.strip():
+            if start is not None:
+                out.append((start, end, chapter))
+                start = None
             continue
-        if block.startswith(b"# "):
-            chapter += 1
-        out.append((m.start(), m.end(), chapter))
+        if start is None:
+            start = m.start()
+            heading = line.removeprefix(b"\xef\xbb\xbf") if start == 0 else line
+            if heading.startswith(b"# "):
+                chapter += 1
+        end = m.start() + len(line)
+    if start is not None:
+        out.append((start, end, chapter))
     return out
 
 
@@ -156,7 +165,12 @@ def check(items_text, snapshot, ledger_text, strict=False):
         if obj.get("replacement") is not None:
             errors.append("E1 %s: a query carries no replacement text (Increment 1 is queries only)" % iid)
         located = []
+        instance_schema = art.load_schema(_ITEM_SCHEMA)["properties"]["instances"]["items"]
         for k, inst in enumerate(obj["instances"]):
+            instance_errors = art.validate_obj(inst, instance_schema, "%s instance %d" % (iid, k))
+            if instance_errors:
+                errors.extend("E1 %s" % err for err in instance_errors)
+                continue
             s, e, orig = inst.get("start_byte"), inst.get("end_byte"), inst.get("original")
             if not (isinstance(s, int) and isinstance(e, int) and isinstance(orig, str)
                     and not isinstance(s, bool) and not isinstance(e, bool) and 0 <= s < e):
@@ -179,6 +193,19 @@ def check(items_text, snapshot, ledger_text, strict=False):
             if p is None:
                 errors.append("E2 %s: instance %d crosses a paragraph break" % (iid, k))
                 continue
+            # Marked quotations need a possible-voice zone even without a ledger entry.
+            a, b, _ = paras[p - 1]
+            block = snapshot[a:b].decode("utf-8")
+            local_start = len(snapshot[a:s].decode("utf-8"))
+            local_end = len(snapshot[a:e].decode("utf-8"))
+            marked = []
+            for quote in re.finditer(r'"[^"\n]+"|\u201c[^\u201d\n]+\u201d', block):
+                marked.append((quote.start(), quote.end(), {"dialogue", "quotation"}))
+            for quote in re.finditer(r"(?m)^[ \t]{0,3}>[^\n]*", block):
+                marked.append((quote.start(), quote.end(), {"quotation"}))
+            if any(local_start < right and left < local_end and obj["zone"] not in zones
+                   for left, right, zones in marked):
+                errors.append("E3 %s: marked quotation/dialogue requires a possible-voice zone label" % iid)
             located.append((orig, p, paras[p - 1][2]))
         if located and int(iid[1:].split(".")[0]) != located[0][1]:
             errors.append("E1 %s: id names paragraph %s but its first instance is in paragraph %d"
@@ -249,11 +276,12 @@ _WORD = re.compile(r"[A-Za-z]+(?:[-'][A-Za-z]+)*")
 
 def harvest(data):
     """Competing-form groups: [{"class", "forms": {form: [paragraph, ...]}}]."""
-    text = data.decode("utf-8")
     loci = {}  # form -> [paragraph numbers]
-    caps = {}  # lower -> {"lower": [...], "cap": [...]}
+    caps = {}  # case-folded word -> exact spelling -> paragraph loci
     for n, (a, b, _ch) in enumerate(paragraphs(data), 1):
         block = data[a:b].decode("utf-8")
+        if a == 0:
+            block = block.removeprefix("\ufeff")
         if block.startswith("#"):
             continue
         words = list(_WORD.finditer(block))
@@ -265,8 +293,7 @@ def harvest(data):
             before = block[:m.start()].rstrip()
             sentence_start = not before or before[-1] in ".!?:\"“'‘(—"
             if not sentence_start and w.isalpha():
-                slot = caps.setdefault(w.lower(), {"lower": [], "cap": []})
-                slot["cap" if w[0].isupper() else "lower"].append(n)
+                caps.setdefault(w.lower(), {}).setdefault(w, []).append(n)
     groups = []
     by_key = {}
     for form in loci:
@@ -276,9 +303,8 @@ def harvest(data):
         if len(forms) > 1 and any(" " not in f for f in forms):
             groups.append({"class": "compound", "forms": {f: loci[f] for f in sorted(forms)}})
     for w, slot in sorted(caps.items()):
-        if slot["lower"] and slot["cap"]:
-            groups.append({"class": "capitalization",
-                           "forms": {w: slot["lower"], w[0].upper() + w[1:]: slot["cap"]}})
+        if len(slot) > 1:
+            groups.append({"class": "capitalization", "forms": slot})
     for w in sorted(loci):
         for a, b, cls in (("ise", "ize", "ise/ize"), ("our", "or", "our/or")):
             if w.isalpha() and a in w:
@@ -393,6 +419,62 @@ def run_self_test():
     chk("harvest_compound", ("compound", ("e-mail", "email")) in classes)
     chk("harvest_alright", ("compound", ("all right", "alright")) in classes)
     chk("harvest_capitalization", ("capitalization", ("God", "god")) in classes)
+
+    # Behavioral regressions: raw UTF-8 offsets survive real Windows file I/O.
+    import tempfile
+    from pathlib import Path
+    base_snap = snap
+    for label, snap in (
+            ("lf", base_snap),
+            ("crlf", base_snap.replace(b"\n", b"\r\n")),
+            ("bom", b"\xef\xbb\xbf" + base_snap),
+            ("whitespace_blank", base_snap.replace(b"\n\n", b"\n \t\n"))):
+        e, _ = check(item("P5.1", "god"), snap, "")
+        chk(label + "_paragraph_id", not e)
+        e, _ = check(item("P5.1", "god"), snap, entry("VL-01", "god", "chapter:2"))
+        chk(label + "_chapter_stet", any(x.startswith("E3") for x in e))
+        start, end = snap.index(b"e-mail"), snap.index(b"The email") + 3
+        cross = {"start_byte": start, "end_byte": end,
+                 "original": snap[start:end].decode("utf-8")}
+        query = item("P2.1", "e-mail").replace(json.dumps(at("e-mail")), json.dumps(cross))
+        e, _ = check(query, snap, "")
+        chk(label + "_cross_paragraph", any("paragraph break" in x for x in e))
+        chk(label + "_harvest_loci", harvest(snap) == harvest(base_snap))
+        # A multibyte character precedes god: character indexes are not byte offsets.
+        snap = snap.replace(b"Thank God; god", "Caf\u00e9. Thank God; god".encode("utf-8"))
+        with tempfile.TemporaryDirectory(prefix="copyedit-") as td:
+            root = Path(td)
+            (root / "T_Manuscript_Snapshot_t1.md").write_bytes(snap)
+            (root / "T_Copyedit_Queries_t1.md").write_bytes(item("P5.1", "god").encode("utf-8-sig"))
+            code, _ = run(td)
+            chk(label + "_raw_byte_file_roundtrip", code == 0)
+            obj = json.loads(item("P5.1", "god").split("copyedit_item ", 1)[1].split(" -->", 1)[0])
+            decoded = (root / "T_Manuscript_Snapshot_t1.md").read_text(encoding="utf-8-sig")
+            char_start = decoded.index("god")
+            obj["instances"][0].update(start_byte=char_start, end_byte=char_start + len("god"))
+            e, _ = check("<!-- apodictic:copyedit_item %s -->" % json.dumps(obj), snap, "")
+            chk(label + "_translated_offsets_rejected", any(x.startswith("E2") for x in e))
+    snap = base_snap
+
+    plain = b"Email arrived. We need email."
+    chk("bom_harvest_sentence_start", harvest(b"\xef\xbb\xbf" + plain) == harvest(plain))
+
+    groups = harvest(b"We need Email, EMAIL, and email today.")
+    chk("harvest_exact_case_counts", any(g == {"class": "capitalization", "forms":
+        {"Email": [1], "EMAIL": [1], "email": [1]}} for g in groups))
+
+    nested = dict(at("e-mail"), replacement="email")
+    e, _ = check(item("P2.1", "e-mail").replace(json.dumps(at("e-mail")), json.dumps(nested)), snap, "")
+    chk("e1_nested_replacement_rejected", any(x.startswith("E1") for x in e))
+
+    for snap, form in ((b'"We was there," said Jim.', "We was"),
+                       ('\u201cWe was there,\u201d said Jim.'.encode("utf-8"), "We was"),
+                       (b"> We was there.", "We was")):
+        e, _ = check(item("P1.1", form), snap, "")
+        chk("e3_marked_zone_requires_label", any(x.startswith("E3") for x in e))
+        e, _ = check(item("P1.1", form, zone="quotation"), snap, "")
+        chk("e3_marked_zone_label_passes", not e)
+    snap = base_snap
 
     if fails:
         print("copyedit self-test FAILED: %s" % ", ".join(fails))

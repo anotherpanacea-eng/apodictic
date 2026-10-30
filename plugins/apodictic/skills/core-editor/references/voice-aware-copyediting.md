@@ -46,7 +46,8 @@ author setting:
 
 Reuse the annotated-manuscript snapshot, `[Project]_Manuscript_Snapshot_[runlabel].md`. Paragraphs
 are blank-line-separated blocks numbered from 1 (headings count); a `# ` heading starts a chapter.
-Offsets are UTF-8 byte offsets over the snapshot. Never change the snapshot.
+Offsets are UTF-8 byte offsets over the raw snapshot, including any BOM and CRLF bytes.
+Blank lines may contain spaces or tabs. Never change the snapshot.
 
 ## Phase 1: style sheet and ledger harvest (one review)
 
@@ -113,7 +114,9 @@ file, its snapshot by run label, and the style sheet in the folder or its parent
 - **E2** every instance's `original` is the snapshot's bytes at its offsets, on code-point
   boundaries, inside one paragraph.
 - **E3** no item re-raises a form the author settled in an enforceable scope; an item touching an
-  inferred or declared entry carries the label.
+  inferred or declared entry carries the label. Markdown block quotes require `quotation`; paired
+  double or curly double quotes within a line require `dialogue` or `quotation`. Other zones,
+  including verse and unmarked dialogue, rely on the pass or declared ledger entries.
 - **W1** best-effort never-flag reasons (ERROR under `--strict`).
 
 ## Phase 3: author review
