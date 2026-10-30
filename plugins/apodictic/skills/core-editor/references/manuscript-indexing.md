@@ -102,10 +102,11 @@ their only writers.
 2. **Run it:** `python scripts/book_index.py locate <map> --scheme paragraph`, or
    `--scheme page --pdf <proof.pdf>`.
    - **Folios** come from the PDF's own page labels. Without labels, ask the author which PDF page is
-     folio 1 and pass `--folio-start N`; pages before it are front matter, numbered in roman. The
-     command never guesses folios.
-   - **Body pages** are searched by default. `--body-end N` marks the last body page;
-     `--include-front` and `--include-back` widen the search.
+     folio 1 and pass `--folio-start N`. The command never guesses folios, so front matter can be
+     searched (`--include-front`) only when the PDF carries its own labels.
+   - **Body pages** are the only pages searched by default, because notes and other back matter can
+     repeat body sentences. Ask the author for the last PDF page of the body and pass `--body-end N`
+     (required); `--include-back` adds the pages after it.
    - **Running heads and folio lines** are dropped when, digits masked, they repeat on five or more
      pages.
    - **Matching** folds both sides first: inline markdown, footnote markers, dashes, quote styles,
