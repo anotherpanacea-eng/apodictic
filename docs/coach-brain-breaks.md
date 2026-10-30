@@ -33,7 +33,7 @@ while dropping the link to the diagnosis that brain breaks exist to escape.
 
 ## Where it goes
 
-All the changes are prose, in two files.
+All the changes are prose, in two files (a third if owner call 1 is a yes).
 
 1. **`structural-prompt-library.md`, a new "Brain breaks" section:**
    - the test 1 variant above;
@@ -67,8 +67,14 @@ All the changes are prose, in two files.
 ## Owner calls
 
 1. **No state file:** may a writer with no `Diagnostic_State.md` or `Argument_State.md` get a brain break?
-   They need no diagnosis, but the "state file missing" No-Prompt Zone and `/coach`'s route to `/start`
-   currently stop them. The proposal is yes, through `/coach stuck` only.
+   Today `/coach stuck` already offers such a writer a state-less run before routing to `/start`
+   (`commands/coach.md`; `SKILL.md` §2 "State-less run"). That run skips steps 4 to 6, which include
+   prompt generation, and it writes nothing. The library's "state file missing" No-Prompt Zone also
+   applies. The proposal is yes, and it adds a third file to the scope. In `SKILL.md` §2's state-less
+   paragraph, after the conversation, the coach may offer one brain break in the conversation itself,
+   under the same Type 2, Type 6 and perfectionism conditions. Nothing is written, as now. The No-Prompt
+   Zone gains "except a brain break in the state-less run". With a no, brain breaks need a state file,
+   like every other prompt.
 2. **Learning Mode:** may it offer a brain break as the lesson's exercise when the writer hasn't named a
    passage? Today the exercise is grounded in a passage the writer names.
 
