@@ -66,9 +66,9 @@ plainly. APODICTIC is not bound by ASI guidance, and the docs do not present it 
      (`_italics_`, `**bold**`, link brackets), long enough to occur only once. Add `context` (`{"before": ..., "after": ...}`) only when a quote cannot be made unique on
      its own. `end_quote` closes an extended discussion that will become a range.
    - `role`: `substantive` when the passage discusses the topic; `passing` for a mention. Passing
-     anchors never become locators. When in doubt, mark it passing; the author can promote it. A
-     heading needs at least one substantive anchor, so a name or work the text only mentions in
-     passing gets no heading. Leave it out rather than call the mention substantive.
+     anchors never become locators. When in doubt, mark it passing; the author can promote it. Every
+     heading except a See-only one needs a substantive anchor, its own or a subheading's, so a name
+     or work the text only mentions in passing gets no heading. Leave it out rather than call the mention substantive.
    - `subheadings` (one level deep) break down a big topic. Avoid a lone subheading, a subheading
      that repeats its parent's passages, and more than twelve under one heading. A heading or
      subheading with more than six substantive anchors should be broken down.
