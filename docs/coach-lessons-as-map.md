@@ -22,7 +22,7 @@ Session Planning (`revision-coach/SKILL.md` §1) never mentions lessons.
 
 ## Changes
 
-All the changes are prose, in two files. No validator reads `Syllabus_Progress.md`.
+All the changes are prose, in `syllabus.md` and `SKILL.md`. No validator reads `Syllabus_Progress.md`.
 
 1. **The lesson door, in Session Planning.**
    - **The door:** add one optional step to §1. When a finding the plan targets came from an audit
@@ -31,9 +31,15 @@ All the changes are prose, in two files. No validator reads `Syllabus_Progress.m
      "Optional lesson: L2 Stakes (`/coach learn L2`)".
    - **Limits:** at most one door per plan, for the highest-leverage target that has one. Never one
      for a cleared lesson, and never when the writer is depleted (the existing No-Prompt Zone).
-   - **Matching:** the coach judges the match from the finding's source audit, the same judgment as
-     syllabus step 1. Finding ids carry no audit code that could be looked up (their `ORIGIN` is chosen
-     per run, `findings-ledger-format.md`), so this adds no table.
+   - **Matching:** the coach judges the match from the finding's source audit: its id's `ORIGIN`, which
+     is the pass or audit code (`F-P5-01`, `F-DP-02`, `findings-ledger-format.md`), read with the ledger
+     context. That is the same judgment as syllabus step 1. There is no canonical list of `ORIGIN` codes,
+     so this adds no lookup table.
+   - **Loading:** to match, Session Planning reads only the syllabus's two Sequence tables (lesson,
+     concept file, Assignment). Today `syllabus.md` ("Load this file only in Learning Mode") and
+     `SKILL.md` §10 ("Load `syllabus.md` only in this mode") forbid that, so both sentences change to:
+     "Learning Mode loads this file; Session Planning may read only its Sequence tables, to offer a
+     lesson door." Teaching, exercises and progress stay in Learning Mode.
 2. **No default lesson.** Rewrite syllabus step 1 so `/coach learn` with no lesson named offers up to
    three doors and lets the writer choose:
    - the lesson matching the highest-leverage open finding (as now);
