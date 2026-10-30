@@ -112,8 +112,11 @@ their only writers.
      with the same label, goes to the unresolved list.
    - **Running heads and folio lines** are dropped when, digits masked, they repeat on five or more
      pages.
-   - **Matching** folds both sides first: inline markdown, escapes, entities, footnote markers, dashes, quote styles,
-     ligatures, line-break hyphenation, whitespace and case. A quote must match exactly once.
+   - **Matching** folds both sides first: inline markdown, escapes, entities, quote styles,
+     ligatures, line-break and soft hyphenation, whitespace and case. A hyphen between letters folds
+     away, and a dash loses the spaces or line break beside it. A footnote marker such as `[^12]`
+     matches the printed note number at that spot, as raised digits or superscripts. A quote must
+     match exactly once, counting overlapping matches.
    - **The order check** then keeps a matched passage only if it lies on every longest in-order
      sequence of matches. Others are unresolved as `out_of_order` or `ambiguous_order`; usually a
      copyedited sentence whose old wording survives elsewhere.

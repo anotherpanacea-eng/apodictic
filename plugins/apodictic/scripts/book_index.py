@@ -897,7 +897,10 @@ def resnapshot(map_path, new_source, runlabel):
 
 # ---------------------------------------------------------------- Phase B: locators
 
-_DASHES = dict.fromkeys(map(ord, "‐‑‒–—―−"), "-")
+_DASHES = dict.fromkeys(map(ord, "\u2012\u2013\u2014\u2015\u2212"), "\u2014")  # punctuation dashes -> one dash
+_DASHES.update(dict.fromkeys(map(ord, "\u2010\u2011"), "-"))                    # hyphens -> "-"
+_NOTE = "\x01"  # a footnote marker in a quote: matches up to four digits at that point in the proof
+_NOTE_RE = re.compile(r"\[\^[^\]\s]*\]")
 _QUOTES = {ord(c): "'" for c in "‘’‚‛′"}
 _QUOTES.update({ord(c): '"' for c in "“”„‟″"})
 _MD_DROP_RE = re.compile(
@@ -914,15 +917,18 @@ def _nfkc(text):
     return unicodedata.normalize("NFKC", text)
 
 
-def fold(text):
+def fold(text, notes=False):
     """-> (folded, origins): the Phase B match form of `text` and, per folded character, the index of
     the raw character it came from. Inline markdown, escapes, entities and footnote markers are
-    dropped or decoded; dashes, quote styles, compatibility forms (NFKC over whole grapheme clusters),
-    soft and line-break hyphenation, line endings and whitespace are folded; case is casefolded."""
+    dropped or decoded (with `notes`, a footnote marker becomes _NOTE instead); quote styles,
+    compatibility forms (NFKC over whole grapheme clusters), soft and line-break hyphenation, line
+    endings and whitespace are folded; a hyphen between letters folds away and a punctuation dash
+    loses the spaces around it; case is casefolded."""
     drop = [False] * len(text)
     for m in _MD_DROP_RE.finditer(text):
         for k in range(m.start(), m.end()):
             drop[k] = True
+    note_end = {m.start(): m.end() for m in _NOTE_RE.finditer(text)} if notes else {}
     out, origins = [], []
     i, n = 0, len(text)
 
@@ -932,7 +938,9 @@ def fold(text):
                 if out and out[-1] != " ":
                     out.append(" ")
                     origins.append(at)
-            elif not (ch == "-" and out and out[-1] == "-"):  # "--" is one dash
+            elif ch == "-" and out and out[-1] in "-\u2014":  # "--" and "---" are one dash
+                out[-1] = "\u2014"
+            else:
                 out.append(ch)
                 origins.append(at)
 
@@ -951,6 +959,11 @@ def fold(text):
 
     while i < n:
         c = text[i]
+        if i in note_end:
+            out.append(_NOTE)
+            origins.append(i)
+            i = note_end[i]
+            continue
         if drop[i]:
             i += 1
             continue
@@ -977,7 +990,8 @@ def fold(text):
         i = j
     # A hyphen between two letters folds away on both sides, so "self-governing", a proof that wraps
     # it as "self-/governing" and one that drops the hyphen at the break all match.
-    keep = [not (ch == "-" and 0 < k < len(out) - 1 and out[k - 1].isalpha() and out[k + 1].isalpha())
+    keep = [not ((ch == "-" and 0 < k < len(out) - 1 and out[k - 1].isalpha() and out[k + 1].isalpha())
+                 or (ch == " " and ((k > 0 and out[k - 1] == "\u2014") or (k + 1 < len(out) and out[k + 1] == "\u2014"))))
             for k, ch in enumerate(out)]
     return "".join(c for c, ok in zip(out, keep) if ok), [o for o, ok in zip(origins, keep) if ok]
 
@@ -991,7 +1005,7 @@ def _quote_key(anchor):
     span inside the key, from the fold's origin map; None when the quote folds away entirely."""
     ctx = anchor.get("context") or {}
     before, quote = ctx.get("before", ""), anchor["quote"]
-    folded, origins = fold(before + quote + ctx.get("after", ""))
+    folded, origins = fold(before + quote + ctx.get("after", ""), notes=True)
     lead = len(folded) - len(folded.lstrip())
     key = folded.strip()
     inside = [i for i, o in enumerate(origins) if len(before) <= o < len(before) + len(quote)
@@ -999,6 +1013,38 @@ def _quote_key(anchor):
     if not key or not inside:
         return None
     return key, inside[0] - lead, inside[-1] + 1 - lead
+
+
+def _search(proof, key, start=0):
+    """-> (count up to 2, index_map) for `key` in `proof` from `start`, counting overlapping matches.
+    index_map(i) gives the proof index of key index i (len(key) maps to the match end). A _NOTE in
+    the key matches zero to four digits there: printed note numbers are often plain raised digits."""
+    if _NOTE not in key:
+        at = proof.find(key, start)
+        return _occurrences(proof, key, start), (lambda i: at + i)
+    pieces = key.split(_NOTE)
+    rx = re.compile("(?=" + r"(\d{0,4})".join("(%s)" % re.escape(piece) for piece in pieces) + ")")
+    found = []
+    for m in rx.finditer(proof, start):
+        found.append(m)
+        if len(found) == 2:
+            break
+    if not found:
+        return 0, None
+    m, starts, at = found[0], [], 0
+    for piece in pieces:
+        starts.append(at)
+        at += len(piece) + 1
+
+    def index_map(i):
+        for k, piece in enumerate(pieces):
+            if i < starts[k] + len(piece):
+                return m.start(2 * k + 1) + (i - starts[k])
+            if i == starts[k] + len(piece):
+                return m.end(2 * k + 1) if k == len(pieces) - 1 else m.start(2 * k + 2)
+        return m.end(2 * len(pieces) - 1)
+
+    return len(found), index_map
 
 
 def _ascii_number(label):
@@ -1197,22 +1243,23 @@ def _page_locators(pdf_path, placements, folio_start=None, body_end=None, includ
             found.append(dict(p, reason="quote_folds_away", positions=[]))
             continue
         key, qs, qe = bounds
-        n = _occurrences(proof, key)
+        n, at = _search(proof, key)
         if n != 1:
             found.append(dict(p, reason="not_found" if n == 0 else "ambiguous_match", positions=[]))
             continue
-        q0, q_end = proof.find(key) + qs, proof.find(key) + qe
+        q0, q_end = at(qs), at(qe)
         end_pos = None
         if a.get("end_quote") is not None:
-            ekey = _fold_key(a["end_quote"])
-            if not ekey:
+            ekey = fold(a["end_quote"], notes=True)[0].strip()
+            if not ekey.strip(_NOTE + " "):
                 found.append(dict(p, reason="end_quote_folds_away", positions=[q0]))
                 continue
-            after = _occurrences(proof, ekey, q_end)
+            after, eat = _search(proof, ekey, q_end)
             if after == 1:
-                end_pos = proof.find(ekey, q_end) + len(ekey) - 1
+                end_pos = eat(len(ekey)) - 1
             else:
-                before = 0 <= proof.find(ekey) < q0
+                first, fat = _search(proof, ekey)
+                before = first > 0 and fat(0) < q0
                 reason = ("end_quote_ambiguous" if after > 1 else
                           "end_quote_before_start" if before else "end_quote_not_found")
                 found.append(dict(p, reason=reason, positions=[q0]))
@@ -1835,7 +1882,7 @@ def _phase_b_self_test(chk, head, anc, header):
     import zipfile
 
     # Folding and ordering, as pure functions.
-    chk("fold_normalizes", _fold_key("*Its* \ufb01ne\u2014\u201cso\u201d[^12] it-\n  self") == 'its fine-"so" itself'
+    chk("fold_normalizes", _fold_key("*Its* \ufb01ne\u2014\u201cso\u201d[^12] it-\n  self") == 'its fine\u2014"so" itself'
         and _fold_key("The policy[^12] held.") == _fold_key("The policy\u00b9\u00b2 held.")
         and all(_fold_key(a) == _fold_key(b) for a, b in (
             ("See [policy](url 'title').", "See policy."), ("See [policy](a_(b_(c))).", "See policy."),
@@ -1843,6 +1890,8 @@ def _phase_b_self_test(chk, head, anc, header):
             ("policy&mdash;rather", "policy\u2014rather"), ("&ldquo;so&rdquo;", "\u201cso\u201d"), ("&#65;B", "ab"),
             ("A self-governing council", "A self-\ngoverning council"), ("A self-governing council", "A self\u2010governing council"),
             ("policy&shy;making", "policymaking"), ("policy&#173;making", "policymaking"),
+            ("The choice\u2014not the rule", "The choice\u2014\nnot the rule"), ("The choice\u2014not", "The choice \u2014 not"),
+            ("The choice--not", "The choice\u2014not"),
             ('See [policy](https://x.org "title").', "See policy."), ("See [policy](https://x.org/a_(b)).", "See policy."),
             ("A &amp; B", "A & B"), ("A \\*star\\* B", "A star B"), ("caf\u00e9", "cafe\u0301"),
             ("Stra\u00dfe", "STRASSE"), ("5\u2033", '5"'), ("people", "peo\u00ad\nple"), ("people", "peo-\r\nple"))))
@@ -2021,6 +2070,17 @@ def _phase_b_self_test(chk, head, anc, header):
             why_ = {u["anchor"]: u["reason"] for u in json.loads(_read(os.path.join(pd, "C_Index_Locators_r1.json")))["unresolved"]}
             chk("page_conflicting_matches_for_one_passage",
                 why_.get("IX-001.a1") == why_.get("IX-002.a1") == "conflicting_matches")
+            nm = os.path.join(pd, "N_Index_Map_r1.md")
+            _write(os.path.join(pd, "N_Manuscript_Snapshot_r1.md"), "# One\n\nThe policy[^12] held throughout. Vitamin B12 helps.\n")
+            _write(nm, render_map(dict(header, snapshot_path="N_Manuscript_Snapshot_r1.md"), [
+                head("IX-001", [anc("IX-001.a1", "The policy[^12] held throughout.")], status="accepted")]))
+            npdf = os.path.join(pd, "notes.pdf")
+            with open(npdf, "wb") as fh2:
+                fh2.write(_tiny_pdf([["The policy12 held throughout.", "Vitamin B12 helps."]], labels="0 << /S /D >>"))
+            locate_index(nm, "page", pdf=npdf, body_start=1, body_end=1)
+            nrec = json.loads(_read(os.path.join(pd, "N_Index_Locators_r1.json")))
+            chk("page_note_marker_matches_printed_digits", [q["anchor"] for q in nrec["placed"]] == ["IX-001.a1"]
+                and _search("vitamin b12 helps", "vitamin b helps")[0] == 0)
             chk("page_folio_start_map", locate_index(m, "page", pdf=unlabeled, folio_start=2, body_end=7)[0] == 0
                 and {p["anchor"]: p["start"]["label"] for p in json.loads(_read(loc))["placed"]}.get("IX-004.a1") == "4")
 
