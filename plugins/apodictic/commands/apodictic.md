@@ -47,6 +47,7 @@ It covers two kinds of manuscript. **Fiction** gets structural passes, genre cal
 **Risk & submission**
 - `/legal-risk` — flag defamation / privacy / rights-clearance exposure for a lawyer's review (flags, never adjudicates).
 - `/ready` — the full "is this ready to submit?" workflow, ending in a verdict.
+- `/book-index` — draft a back-of-book index (nonfiction) as a quote-anchored topic map you approve heading by heading; locators come later.
 
 **Projects**
 - `/projects` — list and tidy your registered projects (the registry surface).

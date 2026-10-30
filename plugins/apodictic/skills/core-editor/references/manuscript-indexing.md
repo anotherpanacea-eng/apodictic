@@ -1,0 +1,209 @@
+# Manuscript Index Builder — a back-of-book index the author only has to approve
+
+*Reference module for the APODICTIC Core Editor. A production task, not an audit: it emits no
+findings and never changes the manuscript. The tool drafts a topic map (headings, variants,
+subheadings, See and See also), each heading tied to real passages by verbatim quotes, and the author
+accepts, renames, merges or drops headings on a short review list. Spec: `docs/manuscript-indexing.md`.
+Script and validator: `python scripts/book_index.py`, `python scripts/validate.py book-index`. Worked
+example: `example-book-index/`.*
+
+---
+
+## When to use
+
+Nonfiction only, argument-shaped or narrative, when the author needs an index: the press has handed
+them the job, or they want a head start to give a professional indexer. Fiction gets an index only in
+scholarly or annotated editions, which are handled as nonfiction apparatus. Ask for the final,
+copyedited text; an index built on an earlier draft will need a re-snapshot.
+
+**Positioning.** This is the author's draft index for review, never a publication-ready index. A human
+must review and endorse it before use. The American Society for Indexing has documented how
+AI-drafted indexes fail (under-indexing, entries for passing mentions, redundant subheadings, long
+strings of undifferentiated locators, wrong page numbers). The validator checks some of these
+mechanically (anchors exist, passing mentions never become locators, W1 to W3); whether a passage is
+really about its heading, and which words a reader will look up, rest on the author's review. Say so
+plainly. APODICTIC is not bound by ASI guidance, and the docs do not present it as a rule.
+
+## What is built
+
+- **Increment 1, the topic map:** snapshot, proposals, the review list, author decisions, re-snapshot
+  and the `book-index` gate.
+- **Increment 2, locators and output:** `locate` under the `paragraph` and `page` schemes, then
+  `format` to a plain-text or .docx index, or to the locator-free topic map.
+- **Increment 3, more schemes and exports:** the `line` and `ebook` schemes, and the tab-delimited
+  export for Cindex and SKY Index (`format --cindex`).
+- **Not built:**
+  - **The `embedded` scheme**, LaTeX `\index` and Word XE tags. Tagging a source safely needs a real
+    lexer (escapes, verbatim, reference keys, TeX and makeindex escaping), so it waits for its own
+    design. Use the `page` scheme on the typeset proof instead.
+  - **Ebook locations read straight from an EPUB.** The author exports a location table instead.
+
+## The firewall for this module
+
+- **The scripts are the only writers.** `book_index.py` writes the snapshot and the Index_Map. Never
+  edit the map by hand: hand edits bypass the carrier escaping and break acceptance hashes.
+- **The manuscript is never changed** and no passage is invented. Every anchor is a verbatim quote
+  the validator proves occurs exactly once in the snapshot (I2).
+- **Decisions come only from the author's explicit replies.** Accept a heading only when the author
+  names its id, or names a review group (`--kind`) they were shown. Bulk actions may only drop. A
+  heading the author never decides stays `proposed` and is never printed. The validator cannot prove
+  a human decided; this rule is the process guarantee.
+
+## Procedure — `/book-index map`
+
+1. **Read the text** the author supplies, and the project's `Argument_State.md` if it has an
+   `argument_spine.v1` block. Its `key_terms` (text before ` = `, or the whole term) and `subclaims`
+   (with the `Cn:` prefix stripped) are discovery candidates only: their wording and loci never become
+   anchors. A missing block or field changes nothing.
+2. **Propose headings** as a JSON array of `apodictic.index_heading.v1` objects in a scratch file
+   (outside the run folder). Every heading carries all of `schema` (`"apodictic.index_heading.v1"`),
+   `id`, `heading`, `kind`, `variants`, `status` (`"proposed"`), `weight`, `anchors`, `subheadings`,
+   `see` and `see_also`, with empty lists where nothing applies. Every anchor carries `id`, `quote`,
+   `role` and `end_quote` (`null` when there is none). For each heading:
+   - `heading`: the preferred form as it will print ("Carnegie, Andrew"; "reading rooms").
+     `kind`: `name` / `place` / `work` / `concept` / `term`. `variants`: other forms the text uses.
+   - `anchors`: verbatim single-line quotes, copied exactly from the text with its Markdown markup
+     (`_italics_`, `**bold**`, link brackets), long enough to occur only once. Add `context` (`{"before": ..., "after": ...}`) only when a quote cannot be made unique on
+     its own. `end_quote` closes an extended discussion that will become a range.
+   - `role`: `substantive` when the passage discusses the topic; `passing` for a mention. Passing
+     anchors never become locators. When in doubt, mark it passing; the author can promote it. Every
+     heading except a See-only one needs a substantive anchor, its own or a subheading's, so a name
+     or work the text only mentions in passing gets no heading. Leave it out rather than call the mention substantive.
+   - `subheadings` (one level deep) break down a big topic. Avoid a lone subheading, a subheading
+     that repeats its parent's passages, and more than twelve under one heading. A heading or
+     subheading with more than six substantive anchors should be broken down.
+   - `see` makes a See-only heading ("quiet, *see* silence"): no anchors, no subheadings, no See also.
+     `see_also` links related headings; reciprocal links are normal.
+   - `weight` in [0, 1]: how likely a reader is to look this up. It orders the review list and, later,
+     the cut candidates. It is never printed.
+   - Ids: `IX-001`, `IX-001.a1`, `IX-001.s1`, `IX-001.s1.a1`. `init` sets every status to `proposed`.
+3. **Write the snapshot and map:**
+   `python scripts/book_index.py init <text.md> <run_folder> <Project> <runlabel> <proposals.json> [--chapter-level N]`.
+   `chapter_level` is the heading level that starts a chapter (1 for `#`, 2 for `##` under a `#` book
+   title). The command forces every heading to `proposed`, refuses to overwrite an existing snapshot
+   or map, and refuses proposals that fail I1 to I3, printing why. Fix the proposals and rerun.
+4. **Show the review list:** `python scripts/book_index.py review <map>`. It groups headings by kind,
+   sorts them by weight, and shows each heading's variants, chapter spread, See links and every anchor
+   in context. Present it to the author as written, a group at a time for a long list.
+5. **Record the author's decisions**, only as they state them:
+   - accept: `book_index.py accept <map> IX-004 IX-009` or `accept <map> --kind name`
+   - drop: `book_index.py drop <map> IX-012 IX-013`
+   - rename: `book_index.py rename <map> IX-004 "Arendt, Hannah"` (back to proposed; re-accept)
+   - merge: `book_index.py merge <map> <source> <target>`: the source's anchors, subheadings, heading
+     text and variants move to the target; references to the source repoint to the target; the
+     target and every heading it rewrote return to proposed for the author to look at again.
+   - anything else (promote a passing anchor, fix a quote, add a heading): write the changed headings
+     to a proposals file and run `book_index.py update <map> <proposals.json>`. A heading whose
+     content changed returns to proposed; an unchanged one keeps its acceptance.
+   An accept refuses a heading with validator errors. There is no hand-edit path.
+6. **Gate:** `python scripts/validate.py book-index <run_folder> --strict`.
+
+## Procedure: `/book-index locate`
+
+Only published headings take part: accepted, with no validator error. Passing anchors never get a
+locator. The model never writes or edits a locator or the formatted index; `locate` and `format` are
+their only writers.
+
+1. **Choose a scheme with the author.**
+   - `paragraph` gives chapter.paragraph locators (`3.12`, `3.12–14`). It numbers chapters in book
+     order and body paragraphs within each; front matter and headings are excluded. It needs chapter
+     headings at the map's `chapter_level`.
+   - `page` gives printed folios from the typeset proof PDF. It needs `pypdf`
+     (`pip install pypdf`); without it the scheme refuses and says so.
+   - `line` gives line numbers from a line-numbered edition supplied as plain text, one printed line
+     per file line (`--source <file>`).
+   - `ebook` gives ebook locations from a table the author exports, one `location<TAB>text` row per
+     location in reading order (`--source <file>`). Kindle locations are computed by Amazon from the
+     published file, so this tool reads them and never calculates them.
+2. **Run it:** `python scripts/book_index.py locate <map> --scheme paragraph`, or
+   `--scheme page --pdf <proof.pdf> --body-start N --body-end N`.
+   - **Folios** come from the PDF's own page labels. Without labels, ask the author which PDF page is
+     folio 1 and pass `--folio-start N`. The command never guesses folios, so front matter can be
+     searched (`--include-front`) only when the PDF carries its own labels.
+   - **Body pages** are the only pages searched by default, because front matter, notes and other
+     back matter can repeat body sentences. Ask the author for the first and last PDF pages of the body
+     (PDF page numbers, not folios) and pass `--body-start N --body-end N`; with `--folio-start`, the
+     body starts there unless `--body-start` says otherwise. `--include-front` and `--include-back` add
+     the pages before and after. A match on a page whose label is blank, or a range across two pages
+     with the same label, goes to the unresolved list.
+   - **Running heads and folio lines** are dropped when, digits masked, they repeat on five or more
+     pages.
+   - **Matching** folds both sides first: inline markdown, escapes, entities, quote styles,
+     ligatures, line-break and soft hyphenation, whitespace and case. A hyphen between letters folds
+     away, and a dash loses the spaces or line break beside it. A footnote marker such as `[^12]`
+     matches the printed note number at that spot, as raised digits or superscripts. A quote must
+     match exactly once, counting overlapping matches.
+   - **The order check** then keeps a matched passage only if it lies on every longest in-order
+     sequence of matches. Others are unresolved as `out_of_order` or `ambiguous_order`; usually a
+     copyedited sentence whose old wording survives elsewhere.
+   - **Output:** `[Project]_Index_Locators_[runlabel].json`.
+3. **Format:** `python scripts/book_index.py format <map> --locators <that json>`, with the press's
+   style:
+   - `--layout indented|run-in`
+   - `--sort word|letter` (word-by-word or letter-by-letter)
+   - `--ranges chicago|full` (`101–8` or `101–108`)
+   - `--see-also end|after-heading`
+   - `--docx` for Word, or `--cindex` for tab-delimited records to import into Cindex or SKY Index:
+     UTF-8 with a byte-order mark, always three fields (heading, subheading, locator, empty where
+     absent), ranges as full endpoints joined by an ASCII hyphen (`101-107`), with See and See also in
+     the locator field
+   - `--max-lines N` to list the lowest-weight headings as cut candidates for the press's length
+     allowance. None is cut; the author drops any they agree with.
+
+   Without `--locators`, it writes the locator-free topic map. A report beside the index lists every
+   unresolved anchor with its reason and position, every See or See also dropped because its target
+   isn't published, and every heading left out. If a heading changed since `locate`, `format`
+   refuses: run `locate` again.
+4. **Show the author** the index and the report. Resolve unresolved anchors by updating their
+   quotes (`update`), then run `locate` again. Repagination or a new edition costs one rerun of
+   `locate`.
+
+## Re-snapshot after late corrections
+
+When the text changes, run
+`python scripts/book_index.py resnapshot <map> <new_text.md> <new_runlabel>`. It writes a new snapshot
+beside the old one (which stays), points the map at it, and re-checks every anchor. An accepted
+heading stays accepted when its anchors only moved and their paragraphs (across the whole range, for
+a range anchor) and chapter are unchanged. It returns to `proposed` when a quote vanished or became
+ambiguous, or when the passage around a quote changed: the author judged the old passage, not the new
+one. The command lists broken quotes separately from changed passages. Fix broken quotes with
+`update`; show changed passages to the author for re-acceptance.
+
+## The `book-index` gate
+
+`validate.py book-index <run_folder|index_map.md> [--strict]`. Exit 0 clean or WARN-only, 1 ERROR
+(or WARN under `--strict`), 2 usage. I1 covers every heading; I2, I3 and W1 to W3 skip dropped ones.
+
+| Check | What it catches |
+|---|---|
+| I1 schema | field rules, closed keys, nested anchor and subheading rules, the See-only shape, a heading with no substantive anchor |
+| I2 provenance | a quote or end quote that is missing or occurs more than once, an end quote before its quote, a missing snapshot |
+| I3 cross-references | a See or See also to a missing, dropped or See-only heading; a See cycle |
+| I4 acceptance | an accepted heading changed after acceptance |
+| W1 coverage | a chapter with no substantive anchor (possible under-indexing) |
+| W2 locator strings | more than six substantive anchors on one heading or subheading |
+| W3 subheadings | a lone subheading, a subheading repeating its parent's or a sibling's passages, more than twelve subheadings |
+
+**Honest limit.** I2 proves a passage is real, not that it is about its heading. I4 proves an accepted
+heading is unchanged since acceptance was recorded, not that a human made the decision.
+
+## Evaluation, 2026-10-30
+
+Run on Henry B. Wheatley, *What Is an Index?* (1878, Project Gutenberg), against the book's own index
+of 283 main entries. One agent drafted the map from the text and this module alone, without seeing
+the printed index: 405 proposed headings and 164 subheadings, clean under `book-index --strict`.
+Each printed entry was then judged by hand against the proposals.
+
+- **Heading recall: 232 of 283 (82%).** The proposals have a heading for the entry's person, work or
+  topic.
+- **Found under a related heading: 31 more (11%),** for 263 of 283 (93%) in all. Most are Wheatley's
+  one-entry-per-word headings ("Da," "De," "Du"; "Summary," "Syllabus" as synonyms of index), which
+  the draft gathers under one heading with subheadings ("prefixes in names"; "index (the word):
+  synonyms of").
+- **Missed: 20 (7%).** Mostly single remarks: the three indexers paid thousands of pounds,
+  Greenhill's support for an Index Society, the red hats Jews wore in Italy. Two were wrong matches: "North, Sir Thomas"
+  for Roger North's *Lives of the Norths*, and "alphabetical arrangement" for bad arrangement.
+
+The draft has more headings than the printed index (405 against 283), and recall does not measure
+whether the extra ones are useful. The page-locator spot-check was not done, since the Gutenberg text
+has no typeset proof. None of this is a gate, and it does not show parity with a professional index.

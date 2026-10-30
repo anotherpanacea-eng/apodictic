@@ -14,7 +14,7 @@ Each live goal below has a stable goal ID (`AP-G1` to `AP-G12`, under its headin
 |---|-----|------------|
 | 1 | **Hosting exit.** Retire the Cloud Run site in favor of the desktop app (maintainer-private cutover checklist). | Engine tag, cutover go, user email |
 | 2 | **Desktop app installable by strangers.** In-app updater, clean-machine install test on Windows and Mac. | Updater signing key |
-| 3 | **Directory listing as the front door.** Install docs lead with the Claude plugin directory. | — |
+| 3 | ~~**Directory listing as the front door.**~~ Shipped: the README install table leads with the Claude plugin directory. | — |
 | 4 | **Trim before adding.** Keep this file to open work; cut CI gates that no longer protect a behavior. | — |
 | 5 | **One piece of external validation.** A blind sample ([V3](#v3--blind-demonstration)) before the editor panel. | A permissioned manuscript |
 | 6 | **Feature work, chosen by directory-user demand.** Candidates: [Multi-Party Intake](#multi-party-intake), [Genre & Audit Expansion](#genre--audit-expansion), [Coaching Deepening](#coaching-deepening). | Items 1–5 |
@@ -569,6 +569,8 @@ Bigger lifts, still philosophy-compatible.
 
 13. **Standalone Worldbuilding-Bible Coherence Tool. — Built (M1), 2026-06-21.** SFF-Worldbuilding audits a *manuscript*; a standalone bible-coherence checker (rules consistency, magic-system cost accounting, geography/timeline contradiction) is usable before or alongside drafting, in the pre-writing pathway's spirit. **Built:** the `apodictic.world_fact.v1` schema, the `worldbuilding-bible.md` extraction module, `scripts/world_bible.py` + `validate.sh world-bible` (W1 schema + bespoke closed-key check, WD unique ids, WB-R1 closed-set rule consistency, WB-C1/WB-C2 cost accounting, WB-G1 distance within a commensurable unit class — spatial vs travel-time axes kept separate — WB-G2 chronology cycle + Day-anchor drift, and the WF surface-don't-resolve firewall scan), the `/world-bible` command (routed like `/legal-risk`, not a manuscript-pass audit), and the canonical `example-worldbuilding-bible.md` (an epic-fantasy bible with two staged + overridden contradictions) wired into `--check-all` under `--strict`. It checks a *bible* (not a manuscript) and ports the genre module's consistency kernel to bible scope, pre-draft — distinct from the manuscript-facing SFF Worldbuilding Integration audit and a sibling to the post-draft Continuity Bible. Contradictions are surfaced (both values, paired in a ledger), never resolved. Validators 50 → 51. *Effort: medium.* Spec: [`docs/worldbuilding-bible.md`](docs/worldbuilding-bible.md).
 
+20. **Manuscript Index Builder (back-of-book index). Increments 1–3 built, 2026-10-30 (not the embedded LaTeX/Word tags or EPUB-direct locations); the pre-release evaluation next.** Authors hate self-indexing, so the tool takes the painful parts. It drafts a quote-anchored topic map (headings, variants, subheadings, See/See also) from the manuscript, and the author approves headings on a short review sheet. Locators are optional and pluggable: chapter and paragraph numbers, printed pages from the proof PDF, line numbers, ebook locations or embedded tags, each resolved mechanically from the anchor quotes, never by a model. A `book-index` validator proves every anchor exists, re-opens any accepted heading that changes, gates output on author acceptance, and checks cross-references. Nonfiction only. *Effort: medium–large.* Spec: [`docs/manuscript-indexing.md`](docs/manuscript-indexing.md).
+
 ### Reconsidered from the boundary
 
 Two capacities first scanned as boundary-pushing are, on reflection, **closer to buildable** than the non-viable set below — each has prior art in the framework and a firewall-safe diagnostic form.
@@ -595,7 +597,7 @@ These three were surfaced by the same scan but **collide with a load-bearing com
 
 - **Live project dashboard** — separate product, not a plugin feature
 - **Prose execution mode** — violates the Firewall; explicitly out of scope
-- **Line editing / copyediting** — different discipline, different tooling
+- **Line editing** — different discipline, different tooling. (Copyediting was reopened by the owner on 2026-10-29, to be specced on its own as voice- and register-aware work; not yet written.)
 - **Commercial viability guarantees** — the plugin diagnoses structure, not market outcomes
 
 ---

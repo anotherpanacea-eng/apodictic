@@ -1,0 +1,22 @@
+{
+  "$id": "apodictic.index_heading.v1",
+  "$comment": "One proposed or decided index heading in a Manuscript Index Builder Index_Map. The heading is a proposal until the author accepts it; `accepted_hash` binds the acceptance to the heading's content (sha256 of the canonical JSON of the heading minus status, accepted_hash and weight), so any later change re-opens it. `anchors` are verbatim single-line quotes proven to occur exactly once in the map's snapshot; `role` passing never becomes a locator. `subheadings` are one level deep. `see` and `see_also` hold heading ids. The subset engine checks the top-level fields; scripts/book_index.py checks the nested anchor and subheading rules, the See-only shape, provenance (I2), cross-references (I3) and acceptance (I4). See docs/manuscript-indexing.md.",
+  "title": "APODICTIC index heading (apodictic.index_heading.v1)",
+  "type": "object",
+  "required": ["schema", "id", "heading", "kind", "variants", "status", "weight", "anchors", "subheadings", "see", "see_also"],
+  "properties": {
+    "schema": {"const": "apodictic.index_heading.v1"},
+    "id": {"type": "string", "pattern": "^IX-[0-9]{3,}$"},
+    "heading": {"type": "string"},
+    "kind": {"enum": ["name", "place", "work", "concept", "term"]},
+    "variants": {"type": "array", "items": {"type": "string"}},
+    "status": {"enum": ["proposed", "accepted", "dropped"]},
+    "accepted_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "weight": {"type": "number"},
+    "anchors": {"type": "array"},
+    "subheadings": {"type": "array"},
+    "see": {"type": "array", "items": {"type": "string"}},
+    "see_also": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": false
+}

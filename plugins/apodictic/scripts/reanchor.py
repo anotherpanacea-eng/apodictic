@@ -156,6 +156,23 @@ def _fid(value):
     return value if value is None or isinstance(value, str) else str(value)
 
 
+def classify_quote(q, val, n1_snapshot):
+    """-> (klass, new_value_or_None, evidence) for a verbatim quote last seen at offset span `val`
+    ("start-end"). Shared with book_index.py's re-snapshot. new_value is set only for held/moved."""
+    if not isinstance(q, str) or not q:
+        return "ambiguous", None, "malformed quote anchor"
+    n = n1_snapshot.count(q)
+    if n == 0:
+        return "vanished", None, "quote absent in N+1"
+    if n > 1:
+        return "ambiguous", None, "quote occurs %d times in N+1" % n
+    start = n1_snapshot.find(q)
+    new_val = "%d-%d" % (start, start + len(q))
+    if new_val == val:
+        return "held", new_val, "quote held at %s" % new_val
+    return "moved", new_val, "quote moved %s -> %s" % (val, new_val)
+
+
 def reclassify(annotation, n1_snapshot, chap_n, sec_n):
     """-> (klass, new_anchor_or_None, evidence). new_anchor is set only for held/moved (the carried set)."""
     if not isinstance(annotation, dict):
@@ -165,19 +182,10 @@ def reclassify(annotation, n1_snapshot, chap_n, sec_n):
     kind, val = anc.get("kind"), anc.get("value")
     if kind == "quote":
         q = anc.get("quote")
-        if not isinstance(q, str) or not q:
-            return "ambiguous", None, "malformed quote anchor"
-        n = n1_snapshot.count(q)
-        if n == 0:
-            return "vanished", None, "quote absent in N+1"
-        if n > 1:
-            return "ambiguous", None, "quote occurs %d times in N+1" % n
-        start = n1_snapshot.find(q)
-        new_val = "%d-%d" % (start, start + len(q))
-        new_anchor = {"kind": "quote", "value": new_val, "quote": q}
-        if new_val == val:
-            return "held", new_anchor, "quote held at %s" % new_val
-        return "moved", new_anchor, "quote moved %s -> %s" % (val, new_val)
+        klass, new_val, evidence = classify_quote(q, val, n1_snapshot)
+        if new_val is None:
+            return klass, None, evidence
+        return klass, {"kind": "quote", "value": new_val, "quote": q}, evidence
     if kind == "chapter":
         # chap_n is a real dict; a non-string value (JSON list/dict survives parse_manifest as-is)
         # is unhashable and would crash `chap_n.get(val, 0)`. The section branch is already safe

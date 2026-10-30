@@ -646,8 +646,14 @@ def _docx_body(snapshot, spans):
             # close in reverse-open order (latest-opened first): sort by (start offset, id) DESCENDING so
             # co-located/co-terminating ranges nest instead of cross (Codex #111).
             for wid in sorted(ends.get(o, []), key=lambda w: (start_of[w], w), reverse=True):
-                inner.append('<w:commentRangeEnd w:id="%d"/><w:r><w:commentReference w:id="%d"/></w:r>' % (wid, wid))
-            for wid in sorted(starts.get(o, [])):
+                if start_of[wid] != o:
+                    inner.append('<w:commentRangeEnd w:id="%d"/><w:r><w:commentReference w:id="%d"/></w:r>' % (wid, wid))
+            # a zero-length range (an anchor on a blank line) opens and closes here as one unit, between the
+            # closes and the opens, so it never ends before it starts and never crosses a neighbor
+            for wid in sorted(w for w in starts.get(o, []) if w in ends.get(o, [])):
+                inner.append('<w:commentRangeStart w:id="%d"/><w:commentRangeEnd w:id="%d"/>'
+                             '<w:r><w:commentReference w:id="%d"/></w:r>' % (wid, wid, wid))
+            for wid in sorted(w for w in starts.get(o, []) if w not in ends.get(o, [])):
                 inner.append('<w:commentRangeStart w:id="%d"/>' % wid)
             prev = o
         if le > prev:
@@ -1951,6 +1957,14 @@ def run_self_test():
     _crossing = ('<w:commentRangeEnd w:id="1"/><w:r><w:commentReference w:id="1"/></w:r>'
                  '<w:commentRangeEnd w:id="2"/>') in docxml
     chk("docx_colocated_ranges_nest_not_cross", _nested and not _crossing)
+    # A document anchor on a manuscript whose line 1 is blank is a zero-length span: it must open before it
+    # closes (it used to emit End, Reference, then Start, which check_docx did not catch).
+    _blank_obj = dict(obj, annotations=[a for a in obj["annotations"] if a["anchor"]["kind"] == "document"][:1])
+    _blank_xml = zipfile.ZipFile(io.BytesIO(build_docx(_blank_obj, "\n" + snap)[0])).read("word/document.xml").decode()
+    _wid = re.search(r'<w:commentRangeStart w:id="(\d+)"/>', _blank_xml).group(1)
+    chk("docx_zero_length_range_opens_first",
+        _blank_xml.index('<w:commentRangeStart w:id="%s"/>' % _wid)
+        < _blank_xml.index('<w:commentRangeEnd w:id="%s"/>' % _wid))
     # Comment w:date is the run's OWN date (manifest runlabel) at noon UTC — deterministic (not wall-clock)
     # and no timezone day-rollback. The main obj's runlabel "r" has no date -> fixed fallback; a YYYY-MM-DD
     # runlabel -> that date at noon.
