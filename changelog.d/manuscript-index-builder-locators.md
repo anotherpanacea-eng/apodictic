@@ -10,9 +10,10 @@ with a reason. Two schemes:
 The page scheme takes folios from the PDF's page labels or from `--folio-start`; it never guesses.
 It searches only the body, between the author's `--body-start` and `--body-end` PDF pages; page
 labels are locator values, never page selectors.
-It strips running heads and folios, matches quotes on a folded form (markdown, footnote markers,
-dashes, quote styles, ligatures, line-break hyphenation and case), and keeps a match only if it lies
-on every longest in-order sequence of matches.
+It strips running heads and folios, matches quotes on a folded form (markdown, entities, dashes,
+quote styles, ligatures, Unicode composition, line-break and soft hyphenation, and case), matches a
+footnote marker such as `[^12]` to the printed note number at that spot, and keeps a match only if it
+is unique and lies on every longest in-order sequence of matches.
 
 `book_index.py format` writes the index as plain text or a byte-stable .docx, or the locator-free
 topic map. Options set indented or run-in layout, word- or letter-by-letter sorting, Chicago or

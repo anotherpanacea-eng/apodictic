@@ -899,7 +899,7 @@ def resnapshot(map_path, new_source, runlabel):
 
 _DASHES = dict.fromkeys(map(ord, "\u2012\u2013\u2014\u2015\u2212"), "\u2014")  # punctuation dashes -> one dash
 _DASHES.update(dict.fromkeys(map(ord, "\u2010\u2011"), "-"))                    # hyphens -> "-"
-_NOTE = "\x01"  # a footnote marker in a quote: matches up to four digits at that point in the proof
+_NOTE = "\x01"  # a footnote marker in a quote: matches the printed note number (1-4 digits) there
 _NOTE_RE = re.compile(r"\[\^[^\]\s]*\]")
 _QUOTES = {ord(c): "'" for c in "‘’‚‛′"}
 _QUOTES.update({ord(c): '"' for c in "“”„‟″"})
@@ -908,8 +908,7 @@ _MD_DROP_RE = re.compile(
     r"|\]\((?:[^()\s]|\((?:[^()\s]|\((?:[^()\s]|\([^()\s]*\))*\))*\))*"  # link destination, nested parens,
     r"(?:\s+(?:\"[^\"]*\"|'[^']*'|\([^()]*\)))?\)"           # and an optional title
     r"|\\(?=[\\`*_{}\[\]()#+\-.!&<>])"                   # the backslash of an escaped punctuation mark
-    r"|[*_`\[]"                                             # emphasis, code and link-open marks
-    r"|[\u00b9\u00b2\u00b3\u2070-\u2079]+")                  # printed superscript note numbers
+    r"|[*_`\[]")                                            # emphasis, code and link-open marks
 _ENTITY_RE = re.compile(r"&(?:#[0-9]{1,7}|#[xX][0-9a-fA-F]{1,6}|[A-Za-z][A-Za-z0-9]{1,31});")
 
 
@@ -1018,12 +1017,13 @@ def _quote_key(anchor):
 def _search(proof, key, start=0):
     """-> (count up to 2, index_map) for `key` in `proof` from `start`, counting overlapping matches.
     index_map(i) gives the proof index of key index i (len(key) maps to the match end). A _NOTE in
-    the key matches zero to four digits there: printed note numbers are often plain raised digits."""
+    the key matches the printed note number there: one to four digits (superscripts fold to digits),
+    with the one space PDF extraction often puts before a raised number."""
     if _NOTE not in key:
         at = proof.find(key, start)
         return _occurrences(proof, key, start), (lambda i: at + i)
     pieces = key.split(_NOTE)
-    rx = re.compile("(?=" + r"(\d{0,4})".join("(%s)" % re.escape(piece) for piece in pieces) + ")")
+    rx = re.compile("(?=" + r"( ?\d{1,4})".join("(%s)" % re.escape(piece) for piece in pieces) + ")")
     found = []
     for m in rx.finditer(proof, start):
         found.append(m)
@@ -1883,7 +1883,9 @@ def _phase_b_self_test(chk, head, anc, header):
 
     # Folding and ordering, as pure functions.
     chk("fold_normalizes", _fold_key("*Its* \ufb01ne\u2014\u201cso\u201d[^12] it-\n  self") == 'its fine\u2014"so" itself'
-        and _fold_key("The policy[^12] held.") == _fold_key("The policy\u00b9\u00b2 held.")
+        and all(_search(fold(proof_text)[0], _quote_key({"quote": "The policy[^12] held."})[0])[0] == 1
+                for proof_text in ("The policy\u00b9\u00b2 held.", "The policy12 held.", "The policy 12 held."))
+        and _search(fold("The policy held.")[0], _quote_key({"quote": "The policy[^12] held."})[0])[0] == 0
         and all(_fold_key(a) == _fold_key(b) for a, b in (
             ("See [policy](url 'title').", "See policy."), ("See [policy](a_(b_(c))).", "See policy."),
             ("A &#38; B", "A & B"), ("A &eacute;", "A \u00e9"), ("\uac01", "\u1100\u1161\u11a8"),
@@ -2076,11 +2078,12 @@ def _phase_b_self_test(chk, head, anc, header):
                 head("IX-001", [anc("IX-001.a1", "The policy[^12] held throughout.")], status="accepted")]))
             npdf = os.path.join(pd, "notes.pdf")
             with open(npdf, "wb") as fh2:
-                fh2.write(_tiny_pdf([["The policy12 held throughout.", "Vitamin B12 helps."]], labels="0 << /S /D >>"))
-            locate_index(nm, "page", pdf=npdf, body_start=1, body_end=1)
+                fh2.write(_tiny_pdf([["The policy 12 held throughout.", "Vitamin B12 helps."],
+                                 ["The policy held throughout."]], labels="0 << /S /D >>"))
+            locate_index(nm, "page", pdf=npdf, body_start=1, body_end=2)
             nrec = json.loads(_read(os.path.join(pd, "N_Index_Locators_r1.json")))
-            chk("page_note_marker_matches_printed_digits", [q["anchor"] for q in nrec["placed"]] == ["IX-001.a1"]
-                and _search("vitamin b12 helps", "vitamin b helps")[0] == 0)
+            chk("page_note_marker_matches_printed_digits", [(q["anchor"], q["start"]["label"]) for q in nrec["placed"]]
+                == [("IX-001.a1", "1")] and _search("vitamin b12 helps", "vitamin b helps")[0] == 0)
             chk("page_folio_start_map", locate_index(m, "page", pdf=unlabeled, folio_start=2, body_end=7)[0] == 0
                 and {p["anchor"]: p["start"]["label"] for p in json.loads(_read(loc))["placed"]}.get("IX-004.a1") == "4")
 
