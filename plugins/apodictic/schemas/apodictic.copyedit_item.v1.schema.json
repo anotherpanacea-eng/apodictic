@@ -1,0 +1,21 @@
+{
+  "$id": "apodictic.copyedit_item.v1",
+  "$comment": "One Voice-Aware Copyedit item in a [Project]_Copyedit_Queries_[runlabel].md file. Increment 1 is queries only: `disposition` is always query and `replacement` is absent or null. `instances` hold {start_byte, end_byte, original}: UTF-8 byte offsets into the run's Manuscript_Snapshot, proven by copyedit.py E2. The id's P<paragraph> is the paragraph of the first instance. `ledger_refs` names voice-ledger entries the item touches (the possible-voice label); `style_ref` (string or null) points at a house-style rule. The subset engine checks top-level fields; copyedit.py checks instance shape, provenance (E2), the ledger guard (E3) and never-flag reasons (W1). See docs/voice-aware-copyediting.md.",
+  "title": "APODICTIC copyedit item (apodictic.copyedit_item.v1)",
+  "type": "object",
+  "required": ["schema", "id", "instances", "kind", "disposition", "level", "zone", "ledger_refs", "reason"],
+  "properties": {
+    "schema": {"const": "apodictic.copyedit_item.v1"},
+    "id": {"type": "string", "pattern": "^P[0-9]+\\.[0-9]+$"},
+    "instances": {"type": "array", "minItems": 1, "items": {"type": "object"}},
+    "kind": {"enum": ["spelling", "consistency", "capitalization", "punctuation", "hyphenation", "numbers", "usage", "agreement", "reference"]},
+    "disposition": {"const": "query"},
+    "level": {"enum": [1, 2]},
+    "zone": {"enum": ["narration", "dialogue", "quotation", "verse", "declared"]},
+    "ledger_refs": {"type": "array", "items": {"type": "string"}},
+    "style_ref": {},
+    "reason": {"type": "string", "pattern": "\\S"},
+    "replacement": {}
+  },
+  "additionalProperties": false
+}
