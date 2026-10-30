@@ -338,6 +338,14 @@ def _voice_world_state(references):
         _line(f'ERROR: {references}/example-book-index not found')
         failed = 1
     _line('')
+    _line('== canonical Copyedit Queries (copyedit: schema E1 + byte provenance E2 + voice-ledger guard E3 + never-flag reasons W1, directory fixture, under --strict) ==')
+    if (references / 'example-copyedit').is_dir():
+        result = run_validator('copyedit', references / 'example-copyedit', '--strict')
+        failed |= _relay(result)
+    else:
+        _line(f'ERROR: {references}/example-copyedit not found')
+        failed = 1
+    _line('')
     _line('== canonical State Card (state-card-diff: cross-round coherence; self-diff + round-2 diff) ==')
     if (references / 'example-state-card.md').is_file():
         result = run_validator('state-card-diff', references / 'example-state-card.md')
