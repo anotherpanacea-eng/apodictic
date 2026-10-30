@@ -959,6 +959,9 @@ def fold(text, notes=False):
     while i < n:
         c = text[i]
         if i in note_end:
+            if out and out[-1] == " ":  # "policy [^12]": the marker's match already allows that space
+                out.pop()
+                origins.pop()
             out.append(_NOTE)
             origins.append(i)
             i = note_end[i]
@@ -1886,6 +1889,10 @@ def _phase_b_self_test(chk, head, anc, header):
         and all(_search(fold(proof_text)[0], _quote_key({"quote": "The policy[^12] held."})[0])[0] == 1
                 for proof_text in ("The policy\u00b9\u00b2 held.", "The policy12 held.", "The policy 12 held."))
         and _search(fold("The policy held.")[0], _quote_key({"quote": "The policy[^12] held."})[0])[0] == 0
+        and all(_search(fold(proof_text)[0], _quote_key({"quote": "The policy [^12] held."})[0])[0] == 1
+                for proof_text in ("The policy12 held.", "The policy 12 held."))
+        and _search(fold("The policy12 held. The policy 13 held.")[0],
+                    _quote_key({"quote": "The policy [^12] held."})[0])[0] == 2
         and all(_fold_key(a) == _fold_key(b) for a, b in (
             ("See [policy](url 'title').", "See policy."), ("See [policy](a_(b_(c))).", "See policy."),
             ("A &#38; B", "A & B"), ("A &eacute;", "A \u00e9"), ("\uac01", "\u1100\u1161\u11a8"),
