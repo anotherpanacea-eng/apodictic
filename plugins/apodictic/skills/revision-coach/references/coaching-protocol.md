@@ -157,7 +157,7 @@ If neither `Diagnostic_State.md` nor `Argument_State.md` exists:
 - Do not improvise findings
 - Do not attempt diagnosis
 - Do not offer coaching based on impressions of the manuscript
-- Route the writer to `/start`, with two exceptions that read no diagnosis: Learning Mode (`/coach learn`), and a state-less Stuck-Point run the writer has accepted (`SKILL.md` §2). Both are conversational only.
+- Route the writer to `/start`, with two exceptions that read no diagnosis: Learning Mode (`/coach learn`), which still keeps `Syllabus_Progress.md` (`references/syllabus.md`), and a state-less Stuck-Point run the writer has accepted (`SKILL.md` §2), which is conversational only and writes nothing.
 
 An argument-track project with only `Argument_State.md` is coached from that file.
 
