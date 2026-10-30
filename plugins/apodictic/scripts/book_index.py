@@ -66,6 +66,7 @@ Exit: 0 clean / WARN-only, 1 ERROR (or WARN under --strict, or a refused write),
 See docs/manuscript-indexing.md.
 """
 import bisect
+import html
 import copy
 import glob
 import hashlib
@@ -79,7 +80,6 @@ import annotation_export as ax
 import annotation_manifest as am
 import apodictic_artifacts as art
 import reanchor
-from override_marker import strip_code_spans
 
 MAP_SCHEMA = "apodictic.index_map.v1"
 HEADING_SCHEMA = "apodictic.index_heading.v1"
@@ -173,9 +173,22 @@ def _snapshot_path(map_path, header):
 # ---------------------------------------------------------------- snapshot structure
 
 def _live_heading_lines(snapshot):
-    """1-based numbers of the ATX heading lines outside fenced code blocks."""
-    return {i + 1 for i, line in enumerate(strip_code_spans(snapshot).split("\n"))
-            if re.match(r"\s*#{1,6}\s", line)}
+    """1-based numbers of the ATX heading lines outside fenced code blocks. A line-preserving fence
+    scan: override_marker.strip_code_spans also folds multiline inline code spans into one line, which
+    would shift every later line number."""
+    live, fence = set(), None
+    for i, line in enumerate(snapshot.split("\n"), start=1):
+        t = line.lstrip(" ")
+        mark = t[:1] if t[:1] in ("`", "~") else ""
+        run = len(t) - len(t.lstrip(mark)) if mark else 0
+        if fence is None:
+            if run >= 3 and not (mark == "`" and "`" in t[run:]):
+                fence = (mark, run)
+            elif re.match(r"\s*#{1,6}\s", line):
+                live.add(i)
+        elif mark == fence[0] and run >= fence[1] and not t[run:].strip():
+            fence = None
+    return live
 
 
 def chapters(snapshot, level):
@@ -889,11 +902,16 @@ _QUOTES = {ord(c): "'" for c in "‘’‚‛′"}
 _QUOTES.update({ord(c): '"' for c in "“”„‟″"})
 _MD_DROP_RE = re.compile(
     r"\[\^[^\]\s]*\]"                                        # footnote marker [^n]
-    r"|\]\((?:[^()\s]|\([^()\s]*\))*(?:\s+\"[^\"]*\")?\)"  # link destination, nested parens, title
+    r"|\]\((?:[^()\s]|\((?:[^()\s]|\((?:[^()\s]|\([^()\s]*\))*\))*\))*"  # link destination, nested parens,
+    r"(?:\s+(?:\"[^\"]*\"|'[^']*'|\([^()]*\)))?\)"           # and an optional title
     r"|\\(?=[\\`*_{}\[\]()#+\-.!&<>])"                   # the backslash of an escaped punctuation mark
     r"|[*_`\[]"                                             # emphasis, code and link-open marks
     r"|[\u00b9\u00b2\u00b3\u2070-\u2079]+")                  # printed superscript note numbers
-_ENTITIES = {"&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"', "&#39;": "'", "&apos;": "'", "&nbsp;": " "}
+_ENTITY_RE = re.compile(r"&(?:#[0-9]{1,7}|#[xX][0-9a-fA-F]{1,6}|[A-Za-z][A-Za-z0-9]{1,31});")
+
+
+def _nfkc(text):
+    return unicodedata.normalize("NFKC", text)
 
 
 def fold(text):
@@ -936,10 +954,10 @@ def fold(text):
         if drop[i]:
             i += 1
             continue
-        entity = next((e for e in _ENTITIES if text.startswith(e, i)), None)
-        if entity:
-            emit(_ENTITIES[entity], i)
-            i += len(entity)
+        entity = _ENTITY_RE.match(text, i) if c == "&" else None
+        if entity and html.unescape(entity.group()) != entity.group():
+            emit(html.unescape(entity.group()), i)
+            i = entity.end()
             continue
         if c in "-\u2010\u00ad" and out and out[-1].isalpha():
             k = wrapped(i + 1)
@@ -950,8 +968,9 @@ def fold(text):
             i += 1
             continue
         j = i + 1
-        while j < n and unicodedata.combining(text[j]) and not drop[j]:
-            j += 1
+        while j < n and not drop[j] and ord(text[j]) > 0x7f and (
+                unicodedata.combining(text[j]) or _nfkc(text[i:j + 1]) != _nfkc(text[i:j]) + _nfkc(text[j])):
+            j += 1  # extend while the next character composes with the cluster (marks, Hangul jamo, ...)
         cluster = text[i:j].translate(_QUOTES).translate(_DASHES)
         emit(unicodedata.normalize("NFKC", cluster).translate(_QUOTES).translate(_DASHES).casefold(), i)
         i = j
@@ -1154,6 +1173,10 @@ def _page_locators(pdf_path, placements, folio_start=None, body_end=None, includ
             raw.append(text)
             page_at.extend([p] * (len(text) + 1))
     proof, origins = fold("\n".join(raw))
+    repeated = {}
+    for p in pages:
+        if p["body"]:  # a label on two searched pages can't tell a reader which one is meant
+            repeated[p["label"]] = repeated.get(p["label"], 0) + 1
 
     def page_of(folded_index):
         return page_at[origins[folded_index]]
@@ -1209,7 +1232,7 @@ def _page_locators(pdf_path, placements, folio_start=None, body_end=None, includ
         if not (start or "").strip() or not (end or "").strip():
             out.append(dict(p, reason="blank_folio", positions=[p["proof_pos"]]))
             continue
-        if last_page is not first and end == start:
+        if repeated.get(start, 0) > 1 or repeated.get(end, 0) > 1:
             out.append(dict(p, reason="duplicate_folio", positions=[p["proof_pos"]]))
             continue
         out.append(dict(p, start={"label": start, "sort": [p["proof_pos"]]},
@@ -1804,6 +1827,8 @@ def _phase_b_self_test(chk, head, anc, header):
     chk("fold_normalizes", _fold_key("*Its* \ufb01ne\u2014\u201cso\u201d[^12] it-\n  self") == 'its fine-"so" itself'
         and _fold_key("The policy[^12] held.") == _fold_key("The policy\u00b9\u00b2 held.")
         and all(_fold_key(a) == _fold_key(b) for a, b in (
+            ("See [policy](url 'title').", "See policy."), ("See [policy](a_(b_(c))).", "See policy."),
+            ("A &#38; B", "A & B"), ("A &eacute;", "A \u00e9"), ("\uac01", "\u1100\u1161\u11a8"),
             ('See [policy](https://x.org "title").', "See policy."), ("See [policy](https://x.org/a_(b)).", "See policy."),
             ("A &amp; B", "A & B"), ("A \\*star\\* B", "A star B"), ("caf\u00e9", "cafe\u0301"),
             ("Stra\u00dfe", "STRASSE"), ("5\u2033", '5"'), ("people", "peo\u00ad\nple"), ("people", "peo-\r\nple"))))
@@ -1891,6 +1916,13 @@ def _phase_b_self_test(chk, head, anc, header):
         hh = [head("IX-001", [anc("IX-001.a1", "Beta.")], status="accepted")]
         _write(os.path.join(fenced, "H_Index_Map_r1.md"), render_map(dict(header, snapshot_path="H_Manuscript_Snapshot_r1.md"), hh))
         locate_index(os.path.join(fenced, "H_Index_Map_r1.md"), "paragraph")
+        _write(os.path.join(fenced, "H_Manuscript_Snapshot_r1.md"),
+               "# One\n\nA `line\ncode` here.\n\n# Two\n\nBeta.\n")
+        locate_index(os.path.join(fenced, "H_Index_Map_r1.md"), "paragraph")
+        chk("multiline_inline_code_keeps_chapters", json.loads(_read(os.path.join(fenced, "H_Index_Locators_r1.json")))[
+            "placed"][0]["start"]["label"] == "2.1")
+        _write(os.path.join(fenced, "H_Manuscript_Snapshot_r1.md"), "# C\n\n```\n# code\n```\n\nBeta.\n")
+        locate_index(os.path.join(fenced, "H_Index_Map_r1.md"), "paragraph")
         chk("fenced_heading_is_not_a_chapter", json.loads(_read(os.path.join(fenced, "H_Index_Locators_r1.json")))[
             "placed"][0]["start"]["label"] == "1.2")
         chk("paragraph_refuses_without_chapters", locate_index(os.path.join(flat, "F_Index_Map_r1.md"), "paragraph")[0] == 1)
@@ -1947,6 +1979,10 @@ def _phase_b_self_test(chk, head, anc, header):
             why_, _got = page_case([["Alpha starts."], ["Omega ends."]], "0 << /S /D >> 1 << /S /D /St 1 >>",
                                    body_start=1, body_end=2)
             chk("page_duplicate_folio_unresolved", why_.get("IX-002.a1") == "duplicate_folio")
+            why_, _got = page_case([["x very very y."], ["Alpha starts. Omega ends."]], "0 << /S /D >> 1 << /S /D /St 1 >>",
+                                   body_start=1, body_end=2)
+            chk("page_repeated_label_point_locators_unresolved",
+                why_.get("IX-001.a1") == why_.get("IX-002.a1") == "duplicate_folio")
             why_, _got = page_case([["Alpha starts."], ["Omega ends."]], "0 << /P () >>", body_start=1, body_end=2)
             chk("page_blank_folio_unresolved", why_.get("IX-002.a1") == "blank_folio")
             why_, got_ = page_case([["Alpha starts."], ["x very very y"], ["Alpha starts. Omega ends."]],
