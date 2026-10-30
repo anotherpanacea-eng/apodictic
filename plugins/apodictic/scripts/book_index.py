@@ -36,15 +36,18 @@ command runs them from the author's explicit replies; acceptance is per heading 
   merge       fold a source heading into a target (spec §Author decisions)
   resnapshot  re-anchor the map on a corrected text and re-open headings whose passages changed
 
-Phase B (Increment 2). `locate` and `format` are the only writers of the finished index.
+Phase B (Increments 2 and 3). `locate` and `format` are the only writers of the finished index.
   locate      resolve each substantive anchor of each published (accepted, I1-I4 clean) heading to a
               locator under a scheme, or to the unresolved list with a reason: `paragraph` (chapter.
-              paragraph, from the snapshot) or `page` (printed folios from the proof PDF, by folded
-              quote match, with the order check). Writes `[Project]_Index_Locators_[runlabel].json`.
+              paragraph, from the snapshot), `page` (printed folios from the proof PDF), `line` (a
+              line-numbered text) or `ebook` (a location table the author exports). Page, line and
+              ebook match folded quotes and run the order check. Writes
+              `[Project]_Index_Locators_[runlabel].json`.
   format      write the index (.txt or .docx) under a style (indented or run-in, word- or
               letter-by-letter, Chicago or full ranges, See also at the end or after the heading),
-              or with no locators file the locator-free topic map, plus a report of everything left
-              out and, with --max-lines, the lowest-weight cut candidates.
+              or as tab-delimited records for Cindex or SKY Index import, or with no locators file
+              the locator-free topic map, plus a report of everything left out and, with
+              --max-lines, the lowest-weight cut candidates.
 
   book_index.py book-index <run_folder|index_map.md> [--strict]
   book_index.py init <source_text> <run_folder> <project> <runlabel> <proposals.json> [--chapter-level N]
@@ -55,11 +58,12 @@ Phase B (Increment 2). `locate` and `format` are the only writers of the finishe
   book_index.py rename <index_map.md> <IX-id> <new heading>
   book_index.py merge <index_map.md> <source IX-id> <target IX-id>
   book_index.py resnapshot <index_map.md> <new_source_text> <runlabel>
-  book_index.py locate <index_map.md> --scheme paragraph|page [--pdf <proof.pdf> --body-start N
-                --body-end N] [--folio-start N] [--include-front] [--include-back]
+  book_index.py locate <index_map.md> --scheme paragraph|page|line|ebook [--pdf <proof.pdf>
+                --body-start N --body-end N] [--folio-start N] [--include-front] [--include-back]
+                [--source <text or table>]
   book_index.py format <index_map.md> [--locators <file.json>] [--layout indented|run-in]
-                [--sort word|letter] [--ranges chicago|full] [--see-also end|after-heading] [--docx]
-                [--max-lines N]
+                [--sort word|letter] [--ranges chicago|full] [--see-also end|after-heading]
+                [--docx | --cindex] [--max-lines N]
   book_index.py --self-test
 
 Exit: 0 clean / WARN-only, 1 ERROR (or WARN under --strict, or a refused write), 2 usage.
@@ -1216,28 +1220,11 @@ def _occurrences(hay, needle, start=0, limit=2):
     return count
 
 
-def _page_locators(pdf_path, placements, folio_start=None, body_end=None, include_front=False,
-                   include_back=False, body_start=None):
-    """Page scheme: find each anchor's folded quote in the folded text of the searched pages, assign
-    folios, then run the order check over distinct snapshot spans."""
-    pages, why = _proof_pages(pdf_path, folio_start, body_start, body_end, include_front, include_back)
-    if pages is None:
-        return None, why
-    texts = _strip_running_heads(pages)
-    raw, page_at = [], []
-    for p, text in zip(pages, texts):
-        if p["body"]:  # searched pages are always one contiguous run: front, body, back
-            raw.append(text)
-            page_at.extend([p] * (len(text) + 1))
-    proof, origins = fold("\n".join(raw))
-    repeated = {}
-    for p in pages:
-        if p["body"]:  # a label on two searched pages can't tell a reader which one is meant
-            repeated[p["label"]] = repeated.get(p["label"], 0) + 1
-
-    def page_of(folded_index):
-        return page_at[origins[folded_index]]
-
+def _find_and_order(proof, placements):
+    """Find each anchor's folded quote (with context) in the folded `proof`, exactly once (overlapping
+    matches count), and its end quote after it; then keep a match only if its snapshot span lies on
+    every longest in-order sequence of matches. -> placements with `proof_pos`, `proof_qend`,
+    `proof_end` (folded indexes), or with a `reason`."""
     found = []
     for p in placements:
         a = p["anchor"]
@@ -1267,7 +1254,7 @@ def _page_locators(pdf_path, placements, folio_start=None, body_end=None, includ
                           "end_quote_before_start" if before else "end_quote_not_found")
                 found.append(dict(p, reason=reason, positions=[q0]))
                 continue
-        found.append(dict(p, proof_pos=q0, proof_end=end_pos))
+        found.append(dict(p, proof_pos=q0, proof_qend=q_end, proof_end=end_pos))
 
     placed = [p for p in found if "proof_pos" in p]
     where = {}
@@ -1280,16 +1267,31 @@ def _page_locators(pdf_path, placements, folio_start=None, body_end=None, includ
     verdict.update({sp: "conflicting_matches" for sp in conflicting})
     out = []
     for p in found:
-        if "proof_pos" not in p:
+        v = verdict[tuple(p["span"])] if "proof_pos" in p else None
+        out.append(dict(p, reason=v, positions=[p["proof_pos"]]) if v not in (None, "kept") else p)
+    return out
+
+
+def _segment_locators(segments, placements):
+    """Locators from labelled text segments in reading order ([(label, text)]): pages, lines or ebook
+    locations. A match that crosses segments takes the segment where it starts. A locator whose label
+    is blank, or appears on more than one segment, is unresolved."""
+    raw, unit_of = [], []
+    for k, (_label, text) in enumerate(segments):
+        raw.append(text)
+        unit_of.extend([k] * (len(text) + 1))
+    proof, origins = fold("\n".join(raw))
+    repeated = {}
+    for label, _text in segments:  # a label on two segments can't tell a reader which one is meant
+        repeated[label] = repeated.get(label, 0) + 1
+    out = []
+    for p in _find_and_order(proof, placements):
+        if "reason" in p:
             out.append(p)
             continue
-        v = verdict[tuple(p["span"])]
-        if v != "kept":
-            out.append(dict(p, reason=v, positions=[p["proof_pos"]]))
-            continue
-        first = page_of(p["proof_pos"])
-        last_page = page_of(p["proof_end"]) if p["proof_end"] is not None else first
-        start, end = first["label"], last_page["label"]
+        first = unit_of[origins[p["proof_pos"]]]
+        last = unit_of[origins[p["proof_end"]]] if p["proof_end"] is not None else first
+        start, end = segments[first][0], segments[last][0]
         if not (start or "").strip() or not (end or "").strip():
             out.append(dict(p, reason="blank_folio", positions=[p["proof_pos"]]))
             continue
@@ -1297,8 +1299,47 @@ def _page_locators(pdf_path, placements, folio_start=None, body_end=None, includ
             out.append(dict(p, reason="duplicate_folio", positions=[p["proof_pos"]]))
             continue
         out.append(dict(p, start={"label": start, "sort": [p["proof_pos"]]},
-                        end={"label": end, "sort": [p["proof_end"]]} if last_page is not first else None))
-    return out, None
+                        end={"label": end, "sort": [p["proof_end"]]} if last != first else None))
+    return out
+
+
+def _page_locators(pdf_path, placements, folio_start=None, body_end=None, include_front=False,
+                   include_back=False, body_start=None):
+    """Page scheme: the searched pages of the proof (always one contiguous run: front, body, back),
+    running heads stripped, as labelled segments."""
+    pages, why = _proof_pages(pdf_path, folio_start, body_start, body_end, include_front, include_back)
+    if pages is None:
+        return None, why
+    texts = _strip_running_heads(pages)
+    return _segment_locators([(p["label"], t) for p, t in zip(pages, texts) if p["body"]], placements), None
+
+
+def _line_locators(text_path, placements):
+    """Line scheme: a line-numbered edition as plain text, one printed line per file line; the locator
+    is the file's 1-based line number."""
+    text = _read(text_path)
+    if text is None:
+        return None, "cannot read the line-numbered text %s" % text_path
+    return _segment_locators([(str(i), ln) for i, ln in enumerate(text.split("\n"), start=1)], placements), None
+
+
+def _ebook_locators(table_path, placements):
+    """Ebook scheme: a location table the author exports (Kindle locations are Amazon's to compute), as
+    UTF-8 text with one `location<TAB>text` row per location, in reading order."""
+    text = _read(table_path)
+    if text is None:
+        return None, "cannot read the location table %s" % table_path
+    rows = []
+    for n, line in enumerate(text.lstrip("\ufeff").splitlines(), start=1):  # a UTF-8 byte-order mark is not a label
+        if not line.strip():
+            continue
+        label, sep, body = line.partition("\t")
+        if not sep or not label.strip():
+            return None, "location table line %d is not `location<TAB>text`" % n
+        rows.append((label.strip(), body))
+    if not rows:
+        return None, "the location table is empty"
+    return _segment_locators(rows, placements), None
 
 
 def _published(header, headings, snapshot):
@@ -1317,8 +1358,13 @@ def _side_path(map_path, kind, ext):
     return os.path.join(os.path.dirname(os.path.abspath(map_path)), stem + ext)
 
 
+def _placements(published, spans):
+    return [{"heading": h["id"], "owner": owner, "anchor": a, "span": spans[a["id"]]}
+            for h in published for owner, a in _all_anchors(h) if a["role"] == "substantive"]
+
+
 def locate_index(map_path, scheme, pdf=None, folio_start=None, body_end=None, include_front=False,
-                 include_back=False, body_start=None):
+                 include_back=False, body_start=None, source=None):
     """Resolve every substantive anchor of every published heading to a locator under `scheme`, or to
     the unresolved list with a reason. Writes `[Project]_Index_Locators_[runlabel].json`."""
     text, header, headings, parse_errs, snapshot = load(map_path)
@@ -1327,11 +1373,7 @@ def locate_index(map_path, scheme, pdf=None, folio_start=None, body_end=None, in
     published, spans, errs = _published(header, headings, snapshot)
     if published is None:
         return 1, ["book-index locate: refused; the map has errors:"] + ["  ERROR: %s" % e for e in errs]
-    placements = []
-    for h in published:
-        for owner, a in _all_anchors(h):
-            if a["role"] == "substantive":
-                placements.append({"heading": h["id"], "owner": owner, "anchor": a, "span": spans[a["id"]]})
+    placements = _placements(published, spans)
     if scheme == "paragraph":
         results, why = _paragraph_locators(snapshot, header.get("chapter_level", 1), placements)
     elif scheme == "page":
@@ -1339,16 +1381,21 @@ def locate_index(map_path, scheme, pdf=None, folio_start=None, body_end=None, in
             return 2, ["book-index locate: the page scheme needs --pdf <proof.pdf>"]
         results, why = _page_locators(pdf, placements, folio_start, body_end, include_front, include_back,
                                       body_start)
+    elif scheme in ("line", "ebook"):
+        if not source:
+            return 2, ["book-index locate: the %s scheme needs --source <%s>" % (
+                scheme, "line-numbered text" if scheme == "line" else "location table")]
+        results, why = (_line_locators if scheme == "line" else _ebook_locators)(source, placements)
     else:
-        return 2, ["book-index locate: scheme must be paragraph or page (line, ebook and embedded are "
-                   "Increment 3)"]
+        return 2, ["book-index locate: scheme must be paragraph, page, line or ebook (embedded tags are "
+                   "not built)"]
     if results is None:
         return 1, ["book-index locate: refused: %s" % why]
     record = {
-        "schema": "book-index locators (Increment 2)", "scheme": scheme,
+        "schema": "book-index locators", "scheme": scheme,
         "map": os.path.basename(map_path), "snapshot_sha256": hashlib.sha256(snapshot.encode("utf-8")).hexdigest(),
         "chapter_level": header.get("chapter_level", 1),
-        "pdf_sha256": hashlib.sha256(open(pdf, "rb").read()).hexdigest() if pdf else None,
+        "source_sha256": hashlib.sha256(open(pdf or source, "rb").read()).hexdigest() if (pdf or source) else None,
         "accepted": {h["id"]: h["accepted_hash"] for h in published},
         "placed": [{"anchor": r["anchor"]["id"], "heading": r["heading"], "owner": r["owner"],
                     "start": r["start"], "end": r["end"]} for r in results if "start" in r],
@@ -1387,6 +1434,8 @@ def _locator_text(loc, ranges, scheme=None):
     start, end = loc["start"]["label"], (loc["end"] or {}).get("label")
     if not end:
         return start
+    if ranges == "import":
+        return "%s-%s" % (start, end)  # Cindex and SKY import: full endpoints and an ASCII hyphen
     if ranges == "chicago":
         dotted = re.fullmatch(r"\d+\.\d+", start) and re.fullmatch(r"\d+\.\d+", end)
         if scheme == "paragraph" and dotted and start.split(".")[0] == end.split(".")[0]:
@@ -1441,12 +1490,13 @@ def format_index(map_path, locators=None, layout="indented", sort="word", ranges
     printable = {h["id"] for h in published if not h["see"] and (
         not locators or placed.get(h["id"]) or any(placed.get(s["id"]) for s in h["subheadings"]))}
     printable |= {h["id"] for h in published if h["see"] and any(t in printable for t in h["see"])}
+    loc_style = "import" if output == "cindex" else ranges
     report, entries = [], []
     for h in published:
-        own = _merged(placed.get(h["id"], []), ranges, scheme) if locators else []
+        own = _merged(placed.get(h["id"], []), loc_style, scheme) if locators else []
         subs = []
         for s in h["subheadings"]:
-            locs = _merged(placed.get(s["id"], []), ranges, scheme) if locators else []
+            locs = _merged(placed.get(s["id"], []), loc_style, scheme) if locators else []
             if locators and not locs:
                 report.append("subheading %s (%s) left out: no placed locators" % (s["id"], s["label"]))
                 continue
@@ -1509,9 +1559,12 @@ def format_index(map_path, locators=None, layout="indented", sort="word", ranges
             cut.append("%s (%s, weight %.2f, %d line(s))" % (e["id"], e["heading"], e["weight"], len(render(e))))
             over -= len(render(e))
     kind = "Index" if locators else "Index_Topics"
-    out = _side_path(map_path, kind, "." + output)
+    out = _side_path(map_path, kind + ("_Cindex" if output == "cindex" else ""),
+                     ".txt" if output == "cindex" else "." + output)
     if output == "docx":
         _write_bytes(out, _index_docx(lines))
+    elif output == "cindex":
+        _write(out, _cindex_records(entries))
     else:
         _write(out, "".join("    " * lvl + t + "\n" for lvl, t in lines))
     rep = ["# Index report", "", "Output: %s (%d lines, layout %s, sort %s-by-%s, ranges %s)"
@@ -1532,6 +1585,27 @@ def format_index(map_path, locators=None, layout="indented", sort="word", ranges
     return 0, ["book-index format: wrote %s and its report (%d entries, %d unresolved, %d left out%s)"
                % (os.path.basename(out), len(entries), len(unresolved), len(report),
                   ", %d cut candidate(s)" % len(cut) if cut else "")]
+
+
+def _cindex_records(entries):
+    """Tab-delimited records for import into Cindex or SKY Index, UTF-8 with a byte-order mark (Mac
+    Cindex reads unmarked files as Mac Roman): one record per locator, always three fields, heading,
+    subheading (may be empty) and locator (may be empty); a cross-reference is a record whose locator
+    field is `See X` or `See also X`. Tabs and line breaks inside fields become spaces."""
+    def clean(t):
+        return re.sub(r"[\t\r\n]+", " ", t)
+
+    rows = []
+    for e in entries:
+        h = clean(e["heading"])
+        rows += [[h, "", clean(loc)] for loc in e["own"]]
+        rows += [[h, clean(lbl), clean(loc)] for lbl, locs in e["subs"] for loc in locs]
+        rows += [[h, clean(lbl), ""] for lbl, locs in e["subs"] if not locs]
+        rows += [[h, "", "See " + clean(t)] for t in e["see"]]
+        rows += [[h, "", "See also " + clean(t)] for t in e["see_also"]]
+        if not (e["own"] or e["subs"] or e["see"] or e["see_also"]):
+            rows.append([h, "", ""])
+    return "\ufeff" + "".join("\t".join(r) + "\n" for r in rows)
 
 
 def _write_bytes(path, data):
@@ -1856,6 +1930,10 @@ def _phase_b_self_test(chk, head, anc, header):
     chk("chicago_ranges", [_chicago_range(a, b) for a, b in (("45", "52"), ("101", "108"), ("321", "328"),
                                                                ("1496", "1500"), ("100", "104"), ("ix", "xi"))]
         == ["45\u201352", "101\u20138", "321\u201328", "1496\u20131500", "100\u2013104", "ix\u2013xi"])
+    chk("end_quote_that_folds_away_is_unresolved", _find_and_order("start end", [
+        {"heading": "IX-001", "owner": "IX-001", "span": (0, 5),
+         "anchor": {"id": "IX-001.a1", "quote": "end", "role": "substantive", "end_quote": "](x)"}}])[0].get("reason")
+        == "end_quote_folds_away")
     chk("dotted_and_plain_folio_range", _locator_text({"start": {"label": "1.1"}, "end": {"label": "1"}}, "chicago")
         == "1.1\u20131" and _locator_text({"start": {"label": "3.12"}, "end": {"label": "3.14"}}, "chicago", "paragraph")
         == "3.12\u201314" and _locator_text({"start": {"label": "1.1"}, "end": {"label": "1.2"}}, "chicago", "page")
@@ -2074,6 +2152,49 @@ def _phase_b_self_test(chk, head, anc, header):
         printed = _read(os.path.join(refs_dir, "R_Index_r1.txt"))
         chk("references_to_unprinted_headings_dropped", printed == "heading IX-003, 1.2\n"
             and "IX-001 dropped" in _read(os.path.join(refs_dir, "R_Index_Report_r1.md")))
+
+        # Increment 3: line and ebook schemes, the Cindex/SKY export.
+        e3 = os.path.join(d, "inc3")
+        os.makedirs(e3)
+        _write(os.path.join(e3, "E_Manuscript_Snapshot_r1.md"), snap)
+        e3h = [head("IX-001", [anc("IX-001.a1", "Alpha passage opens")], see_also=["IX-002"], status="accepted"),
+               head("IX-002", subs=[{"id": "IX-002.s1", "label": "and ranges!",
+                                     "anchors": [anc("IX-002.s1.a1", "Xray passage starts", end_quote="Yankee passage ends")]},
+                                    {"id": "IX-002.s2", "label": "long",
+                                     "anchors": [anc("IX-002.s2.a1", "Delta passage runs long")]}], status="accepted"),
+               head("IX-003", see=["IX-001"], status="accepted")]
+        em = os.path.join(e3, "E_Index_Map_r1.md")
+        _write(em, render_map(dict(header, snapshot_path="E_Manuscript_Snapshot_r1.md"), e3h))
+        eloc = os.path.join(e3, "E_Index_Locators_r1.json")
+        lines_txt = os.path.join(e3, "lines.txt")
+        _write(lines_txt, "Alpha passage\nopens the chapter here. Delta pas-\nsage runs long. Xray passage\n"
+               "starts a range. Then\nYankee passage ends it.\n")
+        locate_index(em, "line", source=lines_txt)
+        got = {p["anchor"]: (p["start"]["label"], (p["end"] or {}).get("label")) for p in json.loads(_read(eloc))["placed"]}
+        chk("line_scheme_numbers_and_ranges", got == {"IX-001.a1": ("1", None), "IX-002.s2.a1": ("2", None),
+                                                       "IX-002.s1.a1": ("3", "5")})
+        table = os.path.join(e3, "locations.tsv")
+        _write(table, "loc 10\tAlpha passage opens the chapter.\nloc 20\tDelta passage runs long.\n"
+               "loc 30\tXray passage starts a range.\nloc 40\tYankee passage ends it.\n")
+        locate_index(em, "ebook", source=table)
+        got = {p["anchor"]: p["start"]["label"] for p in json.loads(_read(eloc))["placed"]}
+        chk("ebook_table_locations", got == {"IX-001.a1": "loc 10", "IX-002.s2.a1": "loc 20", "IX-002.s1.a1": "loc 30"})
+        _write(table, "\ufeffloc 10\tAlpha passage opens the chapter.\nloc 10\tDelta passage runs long.\n")
+        locate_index(em, "ebook", source=table)
+        why = {u["anchor"]: u["reason"] for u in json.loads(_read(eloc))["unresolved"]}
+        chk("ebook_table_bom_then_repeated_label", why.get("IX-001.a1") == why.get("IX-002.s2.a1") == "duplicate_folio")
+        _write(table, "\ufeff\tAlpha passage opens the chapter.\n")
+        chk("ebook_table_bom_blank_label_refused", locate_index(em, "ebook", source=table)[0] == 1)
+        _write(table, "no tab on this line\n")
+        chk("ebook_table_malformed_refused", locate_index(em, "ebook", source=table)[0] == 1)
+        locate_index(em, "line", source=lines_txt)
+        format_index(em, eloc, output="cindex")  # the default Chicago display style must not reach the export
+        cindex = _read(os.path.join(e3, "E_Index_Cindex_r1.txt"))
+        chk("cindex_records", cindex.startswith("\ufeff") and "heading IX-001\t\t1\n" in cindex
+            and "heading IX-002\tand ranges!\t3-5\n" in cindex and "heading IX-003\t\tSee heading IX-001\n" in cindex
+            and "heading IX-001\t\tSee also heading IX-002\n" in cindex
+            and all(line.count("\t") == 2 for line in cindex.lstrip("\ufeff").splitlines())
+            and _locator_text({"start": {"label": "101"}, "end": {"label": "107"}}, "import") == "101-107")
     finally:
         shutil.rmtree(d, ignore_errors=True)
 
@@ -2093,8 +2214,9 @@ def _phase_b_cli(cmd, rest):
     ap = argparse.ArgumentParser(prog="book_index.py " + cmd)
     ap.add_argument("map")
     if cmd == "locate":
-        ap.add_argument("--scheme", required=True, choices=("paragraph", "page"))
+        ap.add_argument("--scheme", required=True, choices=("paragraph", "page", "line", "ebook"))
         ap.add_argument("--pdf")
+        ap.add_argument("--source")
         ap.add_argument("--folio-start", type=int)
         ap.add_argument("--body-start", type=int)
         ap.add_argument("--body-end", type=int)
@@ -2106,7 +2228,9 @@ def _phase_b_cli(cmd, rest):
         ap.add_argument("--sort", default="word", choices=("word", "letter"))
         ap.add_argument("--ranges", default="chicago", choices=("chicago", "full"))
         ap.add_argument("--see-also", default="end", choices=("end", "after-heading"))
-        ap.add_argument("--docx", action="store_true")
+        out_kind = ap.add_mutually_exclusive_group()
+        out_kind.add_argument("--docx", action="store_true")
+        out_kind.add_argument("--cindex", action="store_true")
         ap.add_argument("--max-lines", type=int)
     try:
         a = ap.parse_args(rest)
@@ -2114,10 +2238,10 @@ def _phase_b_cli(cmd, rest):
         return 2
     if cmd == "locate":
         code, lines = locate_index(a.map, a.scheme, a.pdf, a.folio_start, a.body_end, a.include_front,
-                                   a.include_back, a.body_start)
+                                   a.include_back, a.body_start, a.source)
     else:
         code, lines = format_index(a.map, a.locators, a.layout, a.sort, a.ranges, a.see_also,
-                                   "docx" if a.docx else "txt", a.max_lines)
+                                   "docx" if a.docx else "cindex" if a.cindex else "txt", a.max_lines)
     for ln in lines:
         print(ln)
     return code

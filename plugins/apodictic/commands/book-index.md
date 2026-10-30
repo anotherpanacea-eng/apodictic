@@ -7,7 +7,7 @@ Manuscript Index Builder. For a nonfiction author who has to produce an index: t
 
 Load `../skills/core-editor/SKILL.md` and follow `../skills/core-editor/references/manuscript-indexing.md`.
 
-**Mode.** `map` (the default) builds and reviews the topic map. `locate` resolves locators under the `paragraph` or `page` scheme and formats the index (procedure in the module's §Procedure: `/book-index locate`). The `line`, `ebook` and `embedded` schemes are not built yet; say so.
+**Mode.** `map` (the default) builds and reviews the topic map. `locate` resolves locators under the `paragraph`, `page`, `line` or `ebook` scheme and formats the index (procedure in the module's §Procedure: `/book-index locate`). The `embedded` scheme (LaTeX `\index` or Word XE tags) and ebook locations read straight from an EPUB are not built; say so and offer the `page` scheme on the proof.
 
 **Firewall.** `scripts/book_index.py` is the only writer of the snapshot and the Index_Map: never write or edit either by hand, and never write locators or a formatted index yourself. Record a decision only from the author's explicit reply, per heading id or per review group they were shown; bulk actions may only drop. A heading the author does not decide stays proposed and is never printed. Present the result as the author's draft index for review, never as publication-ready.
 

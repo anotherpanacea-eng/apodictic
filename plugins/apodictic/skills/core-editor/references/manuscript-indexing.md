@@ -30,7 +30,13 @@ plainly. APODICTIC is not bound by ASI guidance, and the docs do not present it 
   and the `book-index` gate.
 - **Increment 2, locators and output:** `locate` under the `paragraph` and `page` schemes, then
   `format` to a plain-text or .docx index, or to the locator-free topic map.
-- **Not built:** the `line`, `ebook` and `embedded` schemes and the Cindex/SKY export (Increment 3).
+- **Increment 3, more schemes and exports:** the `line` and `ebook` schemes, and the tab-delimited
+  export for Cindex and SKY Index (`format --cindex`).
+- **Not built:**
+  - **The `embedded` scheme**, LaTeX `\index` and Word XE tags. Tagging a source safely needs a real
+    lexer (escapes, verbatim, reference keys, TeX and makeindex escaping), so it waits for its own
+    design. Use the `page` scheme on the typeset proof instead.
+  - **Ebook locations read straight from an EPUB.** The author exports a location table instead.
 
 ## The firewall for this module
 
@@ -99,6 +105,11 @@ their only writers.
      headings at the map's `chapter_level`.
    - `page` gives printed folios from the typeset proof PDF. It needs `pypdf`
      (`pip install pypdf`); without it the scheme refuses and says so.
+   - `line` gives line numbers from a line-numbered edition supplied as plain text, one printed line
+     per file line (`--source <file>`).
+   - `ebook` gives ebook locations from a table the author exports, one `location<TAB>text` row per
+     location in reading order (`--source <file>`). Kindle locations are computed by Amazon from the
+     published file, so this tool reads them and never calculates them.
 2. **Run it:** `python scripts/book_index.py locate <map> --scheme paragraph`, or
    `--scheme page --pdf <proof.pdf> --body-start N --body-end N`.
    - **Folios** come from the PDF's own page labels. Without labels, ask the author which PDF page is
@@ -127,7 +138,10 @@ their only writers.
    - `--sort word|letter` (word-by-word or letter-by-letter)
    - `--ranges chicago|full` (`101–8` or `101–108`)
    - `--see-also end|after-heading`
-   - `--docx` for Word
+   - `--docx` for Word, or `--cindex` for tab-delimited records to import into Cindex or SKY Index:
+     UTF-8 with a byte-order mark, always three fields (heading, subheading, locator, empty where
+     absent), ranges as full endpoints joined by an ASCII hyphen (`101-107`), with See and See also in
+     the locator field
    - `--max-lines N` to list the lowest-weight headings as cut candidates for the press's length
      allowance. None is cut; the author drops any they agree with.
 
