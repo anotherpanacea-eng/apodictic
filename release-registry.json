@@ -89,6 +89,7 @@
       "legal-risk": "core-editor",
       "world-bible": "core-editor",
       "book-index": "core-editor",
+      "copyedit": "core-editor",
       "triage-feedback": "revision-coach",
       "reader-questions": "revision-coach"
     },
@@ -128,6 +129,7 @@
       "legal-risk": "core-editor",
       "world-bible": "core-editor",
       "book-index": "core-editor",
+      "copyedit": "core-editor",
       "triage-feedback": "revision-coach",
       "reader-questions": "revision-coach"
     }
@@ -295,6 +297,14 @@
       "routerEquivalent": null,
       "writerQuestion": "Draft a back-of-book index for my nonfiction book that I only have to approve.",
       "description": "Draft a quote-anchored topic map for an index; the author accepts, renames, merges or drops each heading."
+    },
+    {
+      "command": "/copyedit",
+      "category": "focused",
+      "status": "first_class_shortcut",
+      "routerEquivalent": null,
+      "writerQuestion": "Copyedit my manuscript without flattening my voice.",
+      "description": "Build a style sheet and voice ledger, then raise copyedit queries only; the author keeps every voiced form."
     },
     {
       "command": "/triage-feedback",
