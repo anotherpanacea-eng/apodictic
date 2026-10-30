@@ -24,12 +24,13 @@ mechanically (anchors exist, passing mentions never become locators, W1 to W3); 
 really about its heading, and which words a reader will look up, rest on the author's review. Say so
 plainly. APODICTIC is not bound by ASI guidance, and the docs do not present it as a rule.
 
-## What is built (Increment 1)
+## What is built
 
-The topic map: snapshot, proposals, the review list, author decisions, re-snapshot and the
-`book-index` gate. **Locators are not built yet.** Page, paragraph, line and ebook locators and the
-formatted index arrive in Increment 2 (`/book-index locate`). Until then, offer the accepted topic map
-as the deliverable: a topic guide, or a head start for a professional indexer.
+- **Increment 1, the topic map:** snapshot, proposals, the review list, author decisions, re-snapshot
+  and the `book-index` gate.
+- **Increment 2, locators and output:** `locate` under the `paragraph` and `page` schemes, then
+  `format` to a plain-text or .docx index, or to the locator-free topic map.
+- **Not built:** the `line`, `ebook` and `embedded` schemes and the Cindex/SKY export (Increment 3).
 
 ## The firewall for this module
 
@@ -85,6 +86,58 @@ as the deliverable: a topic guide, or a head start for a professional indexer.
      content changed returns to proposed; an unchanged one keeps its acceptance.
    An accept refuses a heading with validator errors. There is no hand-edit path.
 6. **Gate:** `python scripts/validate.py book-index <run_folder> --strict`.
+
+## Procedure: `/book-index locate`
+
+Only published headings take part: accepted, with no validator error. Passing anchors never get a
+locator. The model never writes or edits a locator or the formatted index; `locate` and `format` are
+their only writers.
+
+1. **Choose a scheme with the author.**
+   - `paragraph` gives chapter.paragraph locators (`3.12`, `3.12–14`). It numbers chapters in book
+     order and body paragraphs within each; front matter and headings are excluded. It needs chapter
+     headings at the map's `chapter_level`.
+   - `page` gives printed folios from the typeset proof PDF. It needs `pypdf`
+     (`pip install pypdf`); without it the scheme refuses and says so.
+2. **Run it:** `python scripts/book_index.py locate <map> --scheme paragraph`, or
+   `--scheme page --pdf <proof.pdf> --body-start N --body-end N`.
+   - **Folios** come from the PDF's own page labels. Without labels, ask the author which PDF page is
+     folio 1 and pass `--folio-start N`. The command never guesses folios, so front matter can be
+     searched (`--include-front`) only when the PDF carries its own labels.
+   - **Body pages** are the only pages searched by default, because front matter, notes and other
+     back matter can repeat body sentences. Ask the author for the first and last PDF pages of the body
+     (PDF page numbers, not folios) and pass `--body-start N --body-end N`; with `--folio-start`, the
+     body starts there unless `--body-start` says otherwise. `--include-front` and `--include-back` add
+     the pages before and after. A match on a page whose label is blank, or a range across two pages
+     with the same label, goes to the unresolved list.
+   - **Running heads and folio lines** are dropped when, digits masked, they repeat on five or more
+     pages.
+   - **Matching** folds both sides first: inline markdown, escapes, entities, quote styles,
+     ligatures, line-break and soft hyphenation, whitespace and case. A hyphen between letters folds
+     away, and a dash loses the spaces or line break beside it. A footnote marker such as `[^12]`
+     matches the printed note number at that spot, as raised digits or superscripts. A quote must
+     match exactly once, counting overlapping matches.
+   - **The order check** then keeps a matched passage only if it lies on every longest in-order
+     sequence of matches. Others are unresolved as `out_of_order` or `ambiguous_order`; usually a
+     copyedited sentence whose old wording survives elsewhere.
+   - **Output:** `[Project]_Index_Locators_[runlabel].json`.
+3. **Format:** `python scripts/book_index.py format <map> --locators <that json>`, with the press's
+   style:
+   - `--layout indented|run-in`
+   - `--sort word|letter` (word-by-word or letter-by-letter)
+   - `--ranges chicago|full` (`101–8` or `101–108`)
+   - `--see-also end|after-heading`
+   - `--docx` for Word
+   - `--max-lines N` to list the lowest-weight headings as cut candidates for the press's length
+     allowance. None is cut; the author drops any they agree with.
+
+   Without `--locators`, it writes the locator-free topic map. A report beside the index lists every
+   unresolved anchor with its reason and position, every See or See also dropped because its target
+   isn't published, and every heading left out. If a heading changed since `locate`, `format`
+   refuses: run `locate` again.
+4. **Show the author** the index and the report. Resolve unresolved anchors by updating their
+   quotes (`update`), then run `locate` again. Repagination or a new edition costs one rerun of
+   `locate`.
 
 ## Re-snapshot after late corrections
 

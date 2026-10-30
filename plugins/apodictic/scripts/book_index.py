@@ -36,6 +36,16 @@ command runs them from the author's explicit replies; acceptance is per heading 
   merge       fold a source heading into a target (spec §Author decisions)
   resnapshot  re-anchor the map on a corrected text and re-open headings whose passages changed
 
+Phase B (Increment 2). `locate` and `format` are the only writers of the finished index.
+  locate      resolve each substantive anchor of each published (accepted, I1-I4 clean) heading to a
+              locator under a scheme, or to the unresolved list with a reason: `paragraph` (chapter.
+              paragraph, from the snapshot) or `page` (printed folios from the proof PDF, by folded
+              quote match, with the order check). Writes `[Project]_Index_Locators_[runlabel].json`.
+  format      write the index (.txt or .docx) under a style (indented or run-in, word- or
+              letter-by-letter, Chicago or full ranges, See also at the end or after the heading),
+              or with no locators file the locator-free topic map, plus a report of everything left
+              out and, with --max-lines, the lowest-weight cut candidates.
+
   book_index.py book-index <run_folder|index_map.md> [--strict]
   book_index.py init <source_text> <run_folder> <project> <runlabel> <proposals.json> [--chapter-level N]
   book_index.py update <index_map.md> <proposals.json>
@@ -45,12 +55,18 @@ command runs them from the author's explicit replies; acceptance is per heading 
   book_index.py rename <index_map.md> <IX-id> <new heading>
   book_index.py merge <index_map.md> <source IX-id> <target IX-id>
   book_index.py resnapshot <index_map.md> <new_source_text> <runlabel>
+  book_index.py locate <index_map.md> --scheme paragraph|page [--pdf <proof.pdf> --body-start N
+                --body-end N] [--folio-start N] [--include-front] [--include-back]
+  book_index.py format <index_map.md> [--locators <file.json>] [--layout indented|run-in]
+                [--sort word|letter] [--ranges chicago|full] [--see-also end|after-heading] [--docx]
+                [--max-lines N]
   book_index.py --self-test
 
 Exit: 0 clean / WARN-only, 1 ERROR (or WARN under --strict, or a refused write), 2 usage.
 See docs/manuscript-indexing.md.
 """
 import bisect
+import html
 import copy
 import glob
 import hashlib
@@ -58,7 +74,9 @@ import json
 import os
 import re
 import sys
+import unicodedata
 
+import annotation_export as ax
 import annotation_manifest as am
 import apodictic_artifacts as art
 import reanchor
@@ -154,6 +172,25 @@ def _snapshot_path(map_path, header):
 
 # ---------------------------------------------------------------- snapshot structure
 
+def _live_heading_lines(snapshot):
+    """1-based numbers of the ATX heading lines outside fenced code blocks. A line-preserving fence
+    scan: override_marker.strip_code_spans also folds multiline inline code spans into one line, which
+    would shift every later line number."""
+    live, fence = set(), None
+    for i, line in enumerate(snapshot.splitlines(), start=1):  # the same line numbering as atx_headings
+        t = line.lstrip(" ")
+        mark = t[:1] if t[:1] in ("`", "~") else ""
+        run = len(t) - len(t.lstrip(mark)) if mark else 0
+        if fence is None:
+            if run >= 3 and not (mark == "`" and "`" in t[run:]):
+                fence = (mark, run)
+            elif re.match(r"\s*#{1,6}\s", line):
+                live.add(i)
+        elif mark == fence[0] and run >= fence[1] and not t[run:].strip():
+            fence = None
+    return live
+
+
 def chapters(snapshot, level):
     """[(label, start, end)] char spans. A chapter starts at each ATX heading of `level` and runs to
     the next heading of that level or higher. Text before the first chapter is front matter."""
@@ -162,8 +199,11 @@ def chapters(snapshot, level):
     for line in snapshot.splitlines(keepends=True):
         line_starts.append(pos)
         pos += len(line)
+    live = _live_heading_lines(snapshot)
     heads = []
     for lineno, raw, _norm in am.atx_headings(snapshot):
+        if lineno not in live:
+            continue  # a "#" line inside a fenced code block is content, not a heading
         start = line_starts[lineno - 1]
         depth = re.match(r"#+", snapshot[start:]).end()
         heads.append((depth, raw.strip(), start))
@@ -855,6 +895,683 @@ def resnapshot(map_path, new_source, runlabel):
     return 0, lines
 
 
+# ---------------------------------------------------------------- Phase B: locators
+
+_DASHES = dict.fromkeys(map(ord, "\u2012\u2013\u2014\u2015\u2212"), "\u2014")  # punctuation dashes -> one dash
+_DASHES.update(dict.fromkeys(map(ord, "\u2010\u2011"), "-"))                    # hyphens -> "-"
+_NOTE = "\x01"  # a footnote marker in a quote: matches the printed note number (1-4 digits) there
+_NOTE_RE = re.compile(r"\[\^[^\]\s]*\]")
+_QUOTES = {ord(c): "'" for c in "‘’‚‛′"}
+_QUOTES.update({ord(c): '"' for c in "“”„‟″"})
+_MD_DROP_RE = re.compile(
+    r"\[\^[^\]\s]*\]"                                        # footnote marker [^n]
+    r"|\]\((?:[^()\s]|\((?:[^()\s]|\((?:[^()\s]|\([^()\s]*\))*\))*\))*"  # link destination, nested parens,
+    r"(?:\s+(?:\"[^\"]*\"|'[^']*'|\([^()]*\)))?\)"           # and an optional title
+    r"|\\(?=[\\`*_{}\[\]()#+\-.!&<>])"                   # the backslash of an escaped punctuation mark
+    r"|[*_`\[]")                                            # emphasis, code and link-open marks
+_ENTITY_RE = re.compile(r"&(?:#[0-9]{1,7}|#[xX][0-9a-fA-F]{1,6}|[A-Za-z][A-Za-z0-9]{1,31});")
+
+
+def _nfkc(text):
+    return unicodedata.normalize("NFKC", text)
+
+
+def fold(text, notes=False):
+    """-> (folded, origins): the Phase B match form of `text` and, per folded character, the index of
+    the raw character it came from. Inline markdown, escapes, entities and footnote markers are
+    dropped or decoded (with `notes`, a footnote marker becomes _NOTE instead); quote styles,
+    compatibility forms (NFKC over whole grapheme clusters), soft and line-break hyphenation, line
+    endings and whitespace are folded; a hyphen between letters folds away and a punctuation dash
+    loses the spaces around it; case is casefolded."""
+    drop = [False] * len(text)
+    for m in _MD_DROP_RE.finditer(text):
+        for k in range(m.start(), m.end()):
+            drop[k] = True
+    note_end = {m.start(): m.end() for m in _NOTE_RE.finditer(text)} if notes else {}
+    out, origins = [], []
+    i, n = 0, len(text)
+
+    def emit(chars, at):
+        for ch in chars:
+            if ch.isspace():
+                if out and out[-1] != " ":
+                    out.append(" ")
+                    origins.append(at)
+            elif ch == "-" and out and out[-1] in "-\u2014":  # "--" and "---" are one dash
+                out[-1] = "\u2014"
+            else:
+                out.append(ch)
+                origins.append(at)
+
+    def wrapped(j):
+        """Index of the next word character if `j` starts a line break (CR, LF or CRLF, with spaces),
+        else None."""
+        while j < n and text[j] in " \t":
+            j += 1
+        if j < n and text[j] in "\r\n":
+            k = j + 1
+            while k < n and text[k].isspace():
+                k += 1
+            if k < n and text[k].isalpha():
+                return k
+        return None
+
+    while i < n:
+        c = text[i]
+        if i in note_end:
+            if out and out[-1] == " ":  # "policy [^12]": the marker's match already allows that space
+                out.pop()
+                origins.pop()
+            out.append(_NOTE)
+            origins.append(i)
+            i = note_end[i]
+            continue
+        if drop[i]:
+            i += 1
+            continue
+        entity = _ENTITY_RE.match(text, i) if c == "&" else None
+        if entity and html.unescape(entity.group()) != entity.group():
+            decoded = html.unescape(entity.group()).replace("\u00ad", "").translate(_QUOTES).translate(_DASHES)
+            emit(_nfkc(decoded).translate(_QUOTES).translate(_DASHES).casefold(), i)
+            i = entity.end()
+            continue
+        if c in "-\u2010\u00ad" and out and out[-1].isalpha():
+            k = wrapped(i + 1)
+            if k is not None:  # "peo-\nple" and a soft-hyphen break join
+                i = k
+                continue
+        if c == "\u00ad":
+            i += 1
+            continue
+        j = i + 1
+        while j < n and not drop[j] and ord(text[j]) > 0x7f and (
+                unicodedata.combining(text[j]) or _nfkc(text[i:j + 1]) != _nfkc(text[i:j]) + _nfkc(text[j])):
+            j += 1  # extend while the next character composes with the cluster (marks, Hangul jamo, ...)
+        cluster = text[i:j].translate(_QUOTES).translate(_DASHES)
+        emit(unicodedata.normalize("NFKC", cluster).translate(_QUOTES).translate(_DASHES).casefold(), i)
+        i = j
+    # A hyphen between two letters folds away on both sides, so "self-governing", a proof that wraps
+    # it as "self-/governing" and one that drops the hyphen at the break all match.
+    keep = [not ((ch == "-" and 0 < k < len(out) - 1 and out[k - 1].isalpha() and out[k + 1].isalpha())
+                 or (ch == " " and ((k > 0 and out[k - 1] == "\u2014") or (k + 1 < len(out) and out[k + 1] == "\u2014"))))
+            for k, ch in enumerate(out)]
+    return "".join(c for c, ok in zip(out, keep) if ok), [o for o, ok in zip(origins, keep) if ok]
+
+
+def _fold_key(text):
+    return fold(text)[0].strip()
+
+
+def _quote_key(anchor):
+    """-> (key, qs, qe): the folded match key for an anchor (with its context) and the quote's own
+    span inside the key, from the fold's origin map; None when the quote folds away entirely."""
+    ctx = anchor.get("context") or {}
+    before, quote = ctx.get("before", ""), anchor["quote"]
+    folded, origins = fold(before + quote + ctx.get("after", ""), notes=True)
+    lead = len(folded) - len(folded.lstrip())
+    key = folded.strip()
+    inside = [i for i, o in enumerate(origins) if len(before) <= o < len(before) + len(quote)
+              and lead <= i < lead + len(key) and folded[i] != " "]
+    if not key or not inside:
+        return None
+    return key, inside[0] - lead, inside[-1] + 1 - lead
+
+
+def _search(proof, key, start=0):
+    """-> (count up to 2, index_map) for `key` in `proof` from `start`, counting overlapping matches.
+    index_map(i) gives the proof index of key index i (len(key) maps to the match end). A _NOTE in
+    the key matches the printed note number there: one to four digits (superscripts fold to digits),
+    with the space PDF extraction often puts before or after a raised number."""
+    if _NOTE not in key:
+        at = proof.find(key, start)
+        return _occurrences(proof, key, start), (lambda i: at + i)
+    pieces = key.split(_NOTE)
+    rx = re.compile("(?=" + r"( ?\d{1,4} ?)".join("(%s)" % re.escape(piece) for piece in pieces) + ")")
+    found = []
+    for m in rx.finditer(proof, start):
+        found.append(m)
+        if len(found) == 2:
+            break
+    if not found:
+        return 0, None
+    m, starts, at = found[0], [], 0
+    for piece in pieces:
+        starts.append(at)
+        at += len(piece) + 1
+
+    def index_map(i):
+        for k, piece in enumerate(pieces):
+            if i < starts[k] + len(piece):
+                return m.start(2 * k + 1) + (i - starts[k])
+            if i == starts[k] + len(piece):
+                return m.end(2 * k + 1) if k == len(pieces) - 1 else m.start(2 * k + 2)
+        return m.end(2 * len(pieces) - 1)
+
+    return len(found), index_map
+
+
+def _ascii_number(label):
+    return re.fullmatch(r"[0-9]+", label or "") is not None
+
+
+def order_verdicts(positions):
+    """`positions`: proof positions of distinct snapshot spans, in snapshot order. -> one verdict per
+    span: "kept" when the span is in every longest non-decreasing subsequence, "ambiguous_order" when
+    it is in some, "out_of_order" when it is in none."""
+    n = len(positions)
+    f, g = [1] * n, [1] * n
+    for i in range(n):
+        for j in range(i):
+            if positions[j] <= positions[i]:
+                f[i] = max(f[i], f[j] + 1)
+    for i in reversed(range(n)):
+        for j in range(i + 1, n):
+            if positions[i] <= positions[j]:
+                g[i] = max(g[i], g[j] + 1)
+    best = max(f, default=0)
+    on_some = [f[i] + g[i] - 1 == best for i in range(n)]
+    per_level = {}
+    for i in range(n):
+        if on_some[i]:
+            per_level[f[i]] = per_level.get(f[i], 0) + 1
+    return ["out_of_order" if not on_some[i] else "kept" if per_level[f[i]] == 1 else "ambiguous_order"
+            for i in range(n)]
+
+
+def _paragraph_index(snapshot, level):
+    """[(start, end, chapter_no, paragraph_no)] for body paragraphs, chapters numbered from 1. ATX
+    heading lines and front matter are excluded; body text after a heading counts whether or not a
+    blank line separates them."""
+    chaps = chapters(snapshot, level)
+    live = _live_heading_lines(snapshot)
+    line_starts, pos = [], 0
+    for line in snapshot.splitlines(keepends=True):
+        line_starts.append(pos)
+        pos += len(line)
+    heading_starts = {line_starts[n - 1] for n in live if n - 1 < len(line_starts)}
+    segments = []
+    for s, e in _paragraph_spans(snapshot):
+        run_start, pos = None, s
+        for line in snapshot[s:e].splitlines(keepends=True):
+            if pos in heading_starts:
+                if run_start is not None:
+                    segments.append((run_start, pos))
+                run_start = None
+            elif run_start is None and line.strip():
+                run_start = pos
+            pos += len(line)
+        if run_start is not None:
+            segments.append((run_start, e))
+    out = []
+    for ch_no, (_label, cstart, cend) in enumerate(chaps, start=1):
+        para = 0
+        for s, e in segments:
+            if cstart <= s < cend and snapshot[s:e].strip():
+                para += 1
+                out.append((s, e, ch_no, para))
+    return out
+
+
+def _paragraph_locators(snapshot, level, placements):
+    """Paragraph scheme: each placement {anchor, span} -> locator or unresolved reason."""
+    index = _paragraph_index(snapshot, level)
+    if not index:
+        return None, "no chapter headings at level %s: the paragraph scheme needs chapters" % level
+    starts = [s for s, _e, _c, _p in index]
+
+    def at(pos):
+        i = bisect.bisect_right(starts, pos) - 1
+        if i >= 0 and index[i][0] <= pos < index[i][1]:
+            return index[i][2], index[i][3]
+        return None
+
+    out = []
+    for p in placements:
+        s, e = p["span"]
+        a, b = at(s), at(max(e - 1, s))
+        if a is None or b is None:
+            out.append(dict(p, reason="outside_body_paragraphs"))
+        else:
+            out.append(dict(p, start={"label": "%d.%d" % a, "sort": list(a)},
+                            end={"label": "%d.%d" % b, "sort": list(b)} if b != a else None))
+    return out, None
+
+
+def _load_pypdf():
+    try:
+        import pypdf
+    except ImportError:
+        return None
+    return pypdf
+
+
+def _proof_pages(pdf_path, folio_start, body_start, body_end, include_front, include_back):
+    """-> (pages, None) with pages [{label, text, body, index}] or (None, reason). The body is the
+    physical page range body_start..body_end (1-based); page labels are only locator values."""
+    pypdf = _load_pypdf()
+    if pypdf is None:
+        return None, "the page scheme needs pypdf (pip install pypdf)"
+    try:
+        reader = pypdf.PdfReader(pdf_path)
+        texts = [page.extract_text() or "" for page in reader.pages]
+        has_labels = "/PageLabels" in reader.trailer["/Root"]
+        pdf_labels = list(reader.page_labels) if has_labels else None
+    except Exception as exc:  # pypdf raises many types on damaged files
+        return None, "cannot read the proof PDF: %s" % exc
+    if not any(t.strip() for t in texts):
+        return None, "the proof has no extractable text (a scanned image?)"
+    if pdf_labels is None and folio_start is None:
+        return None, ("the proof has no page labels: give --folio-start <PDF page that is folio 1> "
+                      "(this tool never guesses folios)")
+    body_start = body_start if body_start is not None else folio_start
+    if body_start is None or body_end is None:
+        return None, ("give --body-start and --body-end, the first and last PDF pages of the body text: "
+                      "front matter, notes and other back matter can repeat body sentences")
+    n = len(texts)
+    if not (1 <= body_start <= body_end <= n) or (folio_start is not None and not 1 <= folio_start <= n):
+        return None, "page numbers must be PDF pages 1 to %d, with --body-start <= --body-end" % n
+    if include_front and pdf_labels is None:
+        return None, ("--include-front needs the PDF's own page labels: front-matter folios are never "
+                      "inferred from --folio-start")
+    pages = []
+    for i, text in enumerate(texts):
+        if pdf_labels is not None:
+            label = pdf_labels[i]
+        else:
+            label = str(i + 2 - folio_start) if i + 1 >= folio_start else None
+        body = (body_start <= i + 1 <= body_end or (include_front and i + 1 < body_start)
+                or (include_back and i + 1 > body_end))
+        pages.append({"label": label, "text": text, "body": body, "index": i})
+    return pages, None
+
+
+def _strip_running_heads(pages):
+    """Drop a body page's first and last line when, digits masked, it repeats on at least five pages."""
+    def mask(line):
+        return re.sub(r"\d+", "#", line.strip())
+
+    split = [[ln for ln in p["text"].split("\n") if ln.strip()] for p in pages]
+    counts = {}
+    for p, lines in zip(pages, split):
+        if p["body"] and lines:
+            for ln in {mask(lines[0]), mask(lines[-1])}:
+                counts[ln] = counts.get(ln, 0) + 1
+    out = []
+    for p, lines in zip(pages, split):
+        if p["body"]:
+            if lines and counts.get(mask(lines[0]), 0) >= 5:
+                lines = lines[1:]
+            if lines and counts.get(mask(lines[-1]), 0) >= 5:
+                lines = lines[:-1]
+        out.append("\n".join(lines))
+    return out
+
+
+def _occurrences(hay, needle, start=0, limit=2):
+    """Matches of `needle` in `hay` from `start`, counting overlapping ones, up to `limit`."""
+    count, at = 0, hay.find(needle, start)
+    while at != -1 and count < limit:
+        count += 1
+        at = hay.find(needle, at + 1)
+    return count
+
+
+def _page_locators(pdf_path, placements, folio_start=None, body_end=None, include_front=False,
+                   include_back=False, body_start=None):
+    """Page scheme: find each anchor's folded quote in the folded text of the searched pages, assign
+    folios, then run the order check over distinct snapshot spans."""
+    pages, why = _proof_pages(pdf_path, folio_start, body_start, body_end, include_front, include_back)
+    if pages is None:
+        return None, why
+    texts = _strip_running_heads(pages)
+    raw, page_at = [], []
+    for p, text in zip(pages, texts):
+        if p["body"]:  # searched pages are always one contiguous run: front, body, back
+            raw.append(text)
+            page_at.extend([p] * (len(text) + 1))
+    proof, origins = fold("\n".join(raw))
+    repeated = {}
+    for p in pages:
+        if p["body"]:  # a label on two searched pages can't tell a reader which one is meant
+            repeated[p["label"]] = repeated.get(p["label"], 0) + 1
+
+    def page_of(folded_index):
+        return page_at[origins[folded_index]]
+
+    found = []
+    for p in placements:
+        a = p["anchor"]
+        bounds = _quote_key(a)
+        if bounds is None:
+            found.append(dict(p, reason="quote_folds_away", positions=[]))
+            continue
+        key, qs, qe = bounds
+        n, at = _search(proof, key)
+        if n != 1:
+            found.append(dict(p, reason="not_found" if n == 0 else "ambiguous_match", positions=[]))
+            continue
+        q0, q_end = at(qs), at(qe)
+        end_pos = None
+        if a.get("end_quote") is not None:
+            ekey = fold(a["end_quote"], notes=True)[0].strip()
+            if not ekey.strip(_NOTE + " "):
+                found.append(dict(p, reason="end_quote_folds_away", positions=[q0]))
+                continue
+            after, eat = _search(proof, ekey, q_end)
+            if after == 1:
+                end_pos = eat(len(ekey)) - 1
+            else:
+                first, fat = _search(proof, ekey)
+                before = first > 0 and fat(0) < q0
+                reason = ("end_quote_ambiguous" if after > 1 else
+                          "end_quote_before_start" if before else "end_quote_not_found")
+                found.append(dict(p, reason=reason, positions=[q0]))
+                continue
+        found.append(dict(p, proof_pos=q0, proof_end=end_pos))
+
+    placed = [p for p in found if "proof_pos" in p]
+    where = {}
+    for p in placed:  # anchors on one snapshot passage must agree on where it is in the proof
+        where.setdefault(tuple(p["span"]), set()).add((p["proof_pos"], p["proof_end"]))
+    conflicting = {sp for sp, found_at in where.items() if len(found_at) > 1}
+    spans = sorted(sp for sp in where if sp not in conflicting)
+    pos_of = {sp: min(where[sp])[0] for sp in spans}
+    verdict = dict(zip(spans, order_verdicts([pos_of[sp] for sp in spans])))
+    verdict.update({sp: "conflicting_matches" for sp in conflicting})
+    out = []
+    for p in found:
+        if "proof_pos" not in p:
+            out.append(p)
+            continue
+        v = verdict[tuple(p["span"])]
+        if v != "kept":
+            out.append(dict(p, reason=v, positions=[p["proof_pos"]]))
+            continue
+        first = page_of(p["proof_pos"])
+        last_page = page_of(p["proof_end"]) if p["proof_end"] is not None else first
+        start, end = first["label"], last_page["label"]
+        if not (start or "").strip() or not (end or "").strip():
+            out.append(dict(p, reason="blank_folio", positions=[p["proof_pos"]]))
+            continue
+        if repeated.get(start, 0) > 1 or repeated.get(end, 0) > 1:
+            out.append(dict(p, reason="duplicate_folio", positions=[p["proof_pos"]]))
+            continue
+        out.append(dict(p, start={"label": start, "sort": [p["proof_pos"]]},
+                        end={"label": end, "sort": [p["proof_end"]]} if last_page is not first else None))
+    return out, None
+
+
+def _published(header, headings, snapshot):
+    """Headings that may reach an index: accepted, with no validator error of their own (so I1-I4 hold)."""
+    errors, _w, _n, spans = check(header, headings, snapshot)
+    if any(hid is None for hid, _m in errors):
+        return None, spans, [m for hid, m in errors if hid is None]
+    bad = {hid for hid, _m in errors}
+    return [h for h in headings if isinstance(h, dict) and h.get("status") == "accepted"
+            and h.get("id") not in bad], spans, []
+
+
+def _side_path(map_path, kind, ext):
+    m = re.match(r"^(.+)_Index_Map_(.+)\.md$", os.path.basename(map_path))
+    stem = "%s_%s_%s" % (m.group(1), kind, m.group(2)) if m else "Index_" + kind
+    return os.path.join(os.path.dirname(os.path.abspath(map_path)), stem + ext)
+
+
+def locate_index(map_path, scheme, pdf=None, folio_start=None, body_end=None, include_front=False,
+                 include_back=False, body_start=None):
+    """Resolve every substantive anchor of every published heading to a locator under `scheme`, or to
+    the unresolved list with a reason. Writes `[Project]_Index_Locators_[runlabel].json`."""
+    text, header, headings, parse_errs, snapshot = load(map_path)
+    if text is None or header is None or parse_errs or snapshot is None:
+        return 1, ["book-index locate: the map or its snapshot cannot be read; run the validator"]
+    published, spans, errs = _published(header, headings, snapshot)
+    if published is None:
+        return 1, ["book-index locate: refused; the map has errors:"] + ["  ERROR: %s" % e for e in errs]
+    placements = []
+    for h in published:
+        for owner, a in _all_anchors(h):
+            if a["role"] == "substantive":
+                placements.append({"heading": h["id"], "owner": owner, "anchor": a, "span": spans[a["id"]]})
+    if scheme == "paragraph":
+        results, why = _paragraph_locators(snapshot, header.get("chapter_level", 1), placements)
+    elif scheme == "page":
+        if not pdf:
+            return 2, ["book-index locate: the page scheme needs --pdf <proof.pdf>"]
+        results, why = _page_locators(pdf, placements, folio_start, body_end, include_front, include_back,
+                                      body_start)
+    else:
+        return 2, ["book-index locate: scheme must be paragraph or page (line, ebook and embedded are "
+                   "Increment 3)"]
+    if results is None:
+        return 1, ["book-index locate: refused: %s" % why]
+    record = {
+        "schema": "book-index locators (Increment 2)", "scheme": scheme,
+        "map": os.path.basename(map_path), "snapshot_sha256": hashlib.sha256(snapshot.encode("utf-8")).hexdigest(),
+        "chapter_level": header.get("chapter_level", 1),
+        "pdf_sha256": hashlib.sha256(open(pdf, "rb").read()).hexdigest() if pdf else None,
+        "accepted": {h["id"]: h["accepted_hash"] for h in published},
+        "placed": [{"anchor": r["anchor"]["id"], "heading": r["heading"], "owner": r["owner"],
+                    "start": r["start"], "end": r["end"]} for r in results if "start" in r],
+        "unresolved": [{"anchor": r["anchor"]["id"], "heading": r["heading"], "reason": r["reason"],
+                        "positions": r.get("positions", [])} for r in results if "reason" in r],
+    }
+    out = _side_path(map_path, "Index_Locators", ".json")
+    _write(out, json.dumps(record, indent=1, ensure_ascii=False) + "\n")
+    return 0, ["book-index locate (%s): %d placed, %d unresolved -> %s"
+               % (scheme, len(record["placed"]), len(record["unresolved"]), os.path.basename(out))]
+
+
+# ---------------------------------------------------------------- Phase B: the formatted index
+
+def _sort_key(text, letter_by_letter):
+    t = unicodedata.normalize("NFKD", text).casefold()
+    t = "".join(c for c in t if not unicodedata.combining(c))
+    t = re.sub(r"[^\w\s]", "", t).strip()
+    return re.sub(r"\s+", "" if letter_by_letter else " ", t)
+
+
+def _chicago_range(a, b):
+    """Chicago inclusive-number style for arabic folios (45-52, 101-8, 321-28, 1496-1500)."""
+    if not (_ascii_number(a) and _ascii_number(b)) or len(a) != len(b) or int(a) < 100 or int(a) % 100 == 0:
+        return "%s–%s" % (a, b)
+    keep = 1 if int(a) % 100 < 10 else 2
+    i = 0
+    while i < len(a) - keep and a[i] == b[i]:
+        i += 1
+    if len(a) == 4 and len(a) - i == 3:
+        i = 0  # three of four digits change: give them all (1496-1500)
+    return "%s–%s" % (a, b[i:])
+
+
+def _locator_text(loc, ranges, scheme=None):
+    start, end = loc["start"]["label"], (loc["end"] or {}).get("label")
+    if not end:
+        return start
+    if ranges == "chicago":
+        dotted = re.fullmatch(r"\d+\.\d+", start) and re.fullmatch(r"\d+\.\d+", end)
+        if scheme == "paragraph" and dotted and start.split(".")[0] == end.split(".")[0]:
+            return "%s–%s" % (start, end.split(".", 1)[1])
+        return _chicago_range(start, end)
+    return "%s–%s" % (start, end)
+
+
+def _merged(locs, ranges, scheme=None):
+    """Distinct locators (by start and end label) in document order, as printed text."""
+    seen, out = set(), []
+    for loc in sorted(locs, key=lambda x: x["start"]["sort"]):
+        ident = (loc["start"]["label"], (loc["end"] or {}).get("label"))
+        if ident not in seen:
+            seen.add(ident)
+            out.append(_locator_text(loc, ranges, scheme))
+    return out
+
+
+def format_index(map_path, locators=None, layout="indented", sort="word", ranges="chicago",
+                 see_also="end", output="txt", max_lines=None):
+    """Write the formatted index (or, with no locators file, the locator-free topic map) and a report of
+    everything left out. Only published headings are printed."""
+    text, header, headings, parse_errs, snapshot = load(map_path)
+    if text is None or header is None or parse_errs or snapshot is None:
+        return 1, ["book-index format: the map or its snapshot cannot be read; run the validator"]
+    published, _spans, errs = _published(header, headings, snapshot)
+    if published is None:
+        return 1, ["book-index format: refused; the map has errors:"] + ["  ERROR: %s" % e for e in errs]
+    by_id = {h["id"]: h for h in published}
+    placed, unresolved, scheme = {}, [], None
+    if locators:
+        # The locators file is written only by `locate`; anything unreadable means: run locate again.
+        try:
+            rec = json.loads(_read(locators) or "")
+            current = (rec["snapshot_sha256"] == hashlib.sha256(snapshot.encode("utf-8")).hexdigest()
+                       and rec["chapter_level"] == header.get("chapter_level", 1))
+            accepted_then, scheme, unresolved = rec["accepted"], rec["scheme"], rec["unresolved"]
+            for p in rec["placed"]:
+                placed.setdefault(p["owner"], []).append(p)
+        except (ValueError, KeyError, TypeError, AttributeError):
+            return 1, ["book-index format: the locators file can't be read; run locate again"]
+        if not current:
+            return 1, ["book-index format: the locators were made against another snapshot or chapter level; "
+                       "run locate again"]
+        stale = sorted(hid for hid, hsh in accepted_then.items() if hid not in by_id or by_id[hid]["accepted_hash"] != hsh)
+        stale += sorted(hid for hid in by_id if hid not in accepted_then)
+        if stale:
+            return 1, ["book-index format: the locators are stale for %s; run locate again" % ", ".join(stale)]
+    # Which headings print: See-only headings point only at printable non-See-only headings (I3), so
+    # one pass settles the others and a second settles the See-only ones.
+    printable = {h["id"] for h in published if not h["see"] and (
+        not locators or placed.get(h["id"]) or any(placed.get(s["id"]) for s in h["subheadings"]))}
+    printable |= {h["id"] for h in published if h["see"] and any(t in printable for t in h["see"])}
+    report, entries = [], []
+    for h in published:
+        own = _merged(placed.get(h["id"], []), ranges, scheme) if locators else []
+        subs = []
+        for s in h["subheadings"]:
+            locs = _merged(placed.get(s["id"], []), ranges, scheme) if locators else []
+            if locators and not locs:
+                report.append("subheading %s (%s) left out: no placed locators" % (s["id"], s["label"]))
+                continue
+            subs.append((s["label"], locs))
+        refs = {}
+        for field in ("see", "see_also"):
+            keep = []
+            for t in h[field]:
+                if t in printable:
+                    keep.append(by_id[t]["heading"])
+                else:
+                    report.append("%s: %s %s dropped (target not printed)" % (h["id"], field, t))
+            refs[field] = sorted(keep, key=lambda x: _sort_key(x, sort == "letter"))
+        if h["see"] and not refs["see"]:
+            report.append("heading %s (%s) left out: none of its See targets is printed" % (h["id"], h["heading"]))
+            continue
+        if locators and not h["see"] and not own and not subs:
+            report.append("heading %s (%s) left out: no placed locators" % (h["id"], h["heading"]))
+            continue
+        subs.sort(key=lambda x: _sort_key(x[0], sort == "letter"))
+        entries.append({"id": h["id"], "heading": h["heading"], "weight": h["weight"], "own": own,
+                        "subs": subs, "see": refs["see"], "see_also": refs["see_also"]})
+    entries.sort(key=lambda e: (_sort_key(e["heading"], sort == "letter"), e["heading"], e["id"]))
+
+    def render(entry):
+        """-> [(indent_level, text)] for one entry."""
+        head = entry["heading"] + ("".join(", " + loc for loc in entry["own"]))
+        if entry["see"]:
+            return [(0, "%s. See %s" % (entry["heading"], "; ".join(entry["see"])))]
+        also = "See also " + "; ".join(entry["see_also"]) if entry["see_also"] else None
+        if layout == "run-in":
+            parts = [head] + ["%s%s" % (lbl, "".join(", " + x for x in locs)) for lbl, locs in entry["subs"]]
+            lead = ": " if not entry["own"] else "; "  # Chicago run-in: "heading: sub, 3" when no own locators
+            line = head + lead + "; ".join(parts[1:]) if entry["subs"] else head
+            if also and see_also == "after-heading" and entry["subs"]:
+                line = "%s. %s; %s" % (head, also, "; ".join(parts[1:]))
+            elif also:
+                line += ". " + also
+            return [(0, line)]
+        lines = [(0, head + (". " + also if also and (see_also == "after-heading" or not entry["subs"]) else ""))]
+        lines += [(1, "%s%s" % (lbl, "".join(", " + x for x in locs))) for lbl, locs in entry["subs"]]
+        if also and see_also == "end" and entry["subs"]:
+            lines.append((1, also))
+        return lines
+
+    blocks, letter = [], None
+    for e in entries:
+        first = (_sort_key(e["heading"], False)[:1] or "#").upper()
+        if letter is not None and first != letter:
+            blocks.append([(0, "")])
+        letter = first
+        blocks.append(render(e))
+    lines = [ln for block in blocks for ln in block]
+    cut = []
+    if max_lines is not None and len(lines) > max_lines:
+        over = len(lines) - max_lines
+        for e in sorted(entries, key=lambda e: (e["weight"], e["id"])):
+            if over <= 0:
+                break
+            cut.append("%s (%s, weight %.2f, %d line(s))" % (e["id"], e["heading"], e["weight"], len(render(e))))
+            over -= len(render(e))
+    kind = "Index" if locators else "Index_Topics"
+    out = _side_path(map_path, kind, "." + output)
+    if output == "docx":
+        _write_bytes(out, _index_docx(lines))
+    else:
+        _write(out, "".join("    " * lvl + t + "\n" for lvl, t in lines))
+    rep = ["# Index report", "", "Output: %s (%d lines, layout %s, sort %s-by-%s, ranges %s)"
+           % (os.path.basename(out), len(lines), layout, sort, sort == "letter" and "letter" or "word", ranges), ""]
+    if unresolved:
+        rep += ["## Unresolved anchors (%d)" % len(unresolved), ""]
+        rep += ["- %s (%s): %s%s" % (u["anchor"], u["heading"], u["reason"],
+                                     " at proof position %s" % u["positions"] if u["positions"] else "")
+                for u in unresolved]
+        rep.append("")
+    if report:
+        rep += ["## Left out", ""] + ["- " + r for r in report] + [""]
+    if max_lines is not None:
+        rep += ["## Length allowance (%d lines)" % max_lines, ""]
+        rep += (["Cut candidates, lowest weight first (none applied):", ""] + ["- " + c for c in cut]
+                if cut else ["Within the allowance."]) + [""]
+    _write(_side_path(map_path, kind + "_Report", ".md"), "\n".join(rep))
+    return 0, ["book-index format: wrote %s and its report (%d entries, %d unresolved, %d left out%s)"
+               % (os.path.basename(out), len(entries), len(unresolved), len(report),
+                  ", %d cut candidate(s)" % len(cut) if cut else "")]
+
+
+def _write_bytes(path, data):
+    tmp = path + ".tmp"
+    with open(tmp, "wb") as fh:
+        fh.write(data)
+    os.replace(tmp, path)
+
+
+_INDEX_DOCX_CT = (
+    ax._XMLDECL +
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+    '<Default Extension="xml" ContentType="application/xml"/>'
+    '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+    '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>'
+    '<Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>'
+    '</Types>')
+_INDEX_DOCX_RELS = (
+    ax._XMLDECL +
+    '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+    '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/settings" Target="settings.xml"/>'
+    '</Relationships>')
+
+
+def _index_docx(lines):
+    """The formatted index as a byte-stable .docx, through annotation_export's deterministic zip and
+    OOXML parts: one paragraph per line, subentries indented, a hanging indent for turnover lines."""
+    paras = "".join(
+        '<w:p><w:pPr><w:ind w:left="%d" w:hanging="360"/></w:pPr>%s</w:p>'
+        % (360 * (lvl + 1), '<w:r><w:t xml:space="preserve">%s</w:t></w:r>' % ax._html_escape(t) if t else "")
+        for lvl, t in lines)
+    document = '%s<w:document xmlns:w="%s"><w:body>%s</w:body></w:document>' % (ax._XMLDECL, ax._W_NS, paras)
+    return ax._deterministic_zip([("[Content_Types].xml", _INDEX_DOCX_CT), ("_rels/.rels", ax._DOCX_ROOT_RELS),
+                                  ("word/document.xml", document), ("word/styles.xml", ax._DOCX_STYLES),
+                                  ("word/settings.xml", ax._DOCX_SETTINGS),
+                                  ("word/_rels/document.xml.rels", _INDEX_DOCX_RELS)])
+
+
 # ---------------------------------------------------------------- self-test
 
 def run_self_test():
@@ -1067,8 +1784,298 @@ def run_self_test():
     finally:
         shutil.rmtree(d, ignore_errors=True)
 
+    _phase_b_self_test(chk, head, anc, header)
+
     print("Self-test: PASS" if rc["v"] == 0 else "Self-test: FAIL")
     return rc["v"]
+
+
+def _tiny_pdf(pages, labels=None):
+    """A minimal text PDF for the page-scheme tests: each page is a list of lines (Helvetica, WinAnsi).
+    `labels` is the body of a /PageLabels /Nums array, or None for a PDF without labels."""
+    win = {"\u2018": "\\221", "\u2019": "\\222", "\u201c": "\\223", "\u201d": "\\224",
+           "\u2013": "\\226", "\u2014": "\\227"}
+
+    def esc(t):
+        return "".join(win.get(c, c) for c in t.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)"))
+
+    n = len(pages)
+    objs = ["<< /Type /Catalog /Pages 2 0 R%s >>" % (" /PageLabels << /Nums [%s] >>" % labels if labels else ""),
+            "<< /Type /Pages /Kids [%s] /Count %d >>" % (" ".join("%d 0 R" % (3 + 2 * i) for i in range(n)), n)]
+    for i, lines in enumerate(pages):
+        body = "BT /F1 11 Tf 72 720 Td 14 TL " + " ".join("(%s) Tj T*" % esc(ln) for ln in lines) + " ET"
+        objs.append("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 %d 0 R >> >> "
+                    "/Contents %d 0 R >>" % (3 + 2 * n, 4 + 2 * i))
+        objs.append("<< /Length %d >>\nstream\n%s\nendstream" % (len(body.encode("latin-1")), body))
+    objs.append("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>")
+    out, offs = b"%PDF-1.4\n", []
+    for i, o in enumerate(objs):
+        offs.append(len(out))
+        out += ("%d 0 obj\n%s\nendobj\n" % (i + 1, o)).encode("latin-1")
+    xref = len(out)
+    out += ("xref\n0 %d\n0000000000 65535 f \n" % (len(objs) + 1)).encode()
+    out += "".join("%010d 00000 n \n" % o for o in offs).encode()
+    out += ("trailer << /Size %d /Root 1 0 R >>\nstartxref\n%d\n%%%%EOF\n" % (len(objs) + 1, xref)).encode()
+    return out
+
+
+def _phase_b_self_test(chk, head, anc, header):
+    import shutil
+    import tempfile
+    import zipfile
+
+    # Folding and ordering, as pure functions.
+    chk("fold_normalizes", _fold_key("*Its* \ufb01ne\u2014\u201cso\u201d[^12] it-\n  self") == 'its fine\u2014"so" itself'
+        and all(_search(fold(proof_text)[0], _quote_key({"quote": "The policy[^12] held."})[0])[0] == 1
+                for proof_text in ("The policy\u00b9\u00b2 held.", "The policy12 held.", "The policy 12 held."))
+        and _search(fold("The policy held.")[0], _quote_key({"quote": "The policy[^12] held."})[0])[0] == 0
+        and all(_search(fold(proof_text)[0], _quote_key({"quote": "The policy [^12] held."})[0])[0] == 1
+                for proof_text in ("The policy12 held.", "The policy 12 held."))
+        and _search(fold("The policy (as Jones argues\n12\n) held.")[0],
+                    _quote_key({"quote": "The policy (as Jones argues[^12]) held."})[0])[0] == 1
+        and _search(fold("The policy12 held. The policy 13 held.")[0],
+                    _quote_key({"quote": "The policy [^12] held."})[0])[0] == 2
+        and all(_fold_key(a) == _fold_key(b) for a, b in (
+            ("See [policy](url 'title').", "See policy."), ("See [policy](a_(b_(c))).", "See policy."),
+            ("A &#38; B", "A & B"), ("A &eacute;", "A \u00e9"), ("\uac01", "\u1100\u1161\u11a8"),
+            ("policy&mdash;rather", "policy\u2014rather"), ("&ldquo;so&rdquo;", "\u201cso\u201d"), ("&#65;B", "ab"),
+            ("A self-governing council", "A self-\ngoverning council"), ("A self-governing council", "A self\u2010governing council"),
+            ("policy&shy;making", "policymaking"), ("policy&#173;making", "policymaking"),
+            ("The choice\u2014not the rule", "The choice\u2014\nnot the rule"), ("The choice\u2014not", "The choice \u2014 not"),
+            ("The choice--not", "The choice\u2014not"),
+            ('See [policy](https://x.org "title").', "See policy."), ("See [policy](https://x.org/a_(b)).", "See policy."),
+            ("A &amp; B", "A & B"), ("A \\*star\\* B", "A star B"), ("caf\u00e9", "cafe\u0301"),
+            ("Stra\u00dfe", "STRASSE"), ("5\u2033", '5"'), ("people", "peo\u00ad\nple"), ("people", "peo-\r\nple"))))
+    chk("overlapping_matches_counted", _occurrences("banana", "ana") == 2)
+    chk("merge_dedupes_by_locator_not_text", _merged([
+        {"start": {"label": "1.1", "sort": [1]}, "end": {"label": "1.2", "sort": [2]}},
+        {"start": {"label": "1.1", "sort": [3]}, "end": {"label": "2", "sort": [4]}}], "chicago", "page")
+        == ["1.1\u20131.2", "1.1\u20132"])
+    chk("order_abc_case", order_verdicts([20, 10, 30]) == ["ambiguous_order", "ambiguous_order", "kept"])
+    chk("order_early_wrong_match", order_verdicts([10, 20, 5, 40]) == ["kept", "kept", "out_of_order", "kept"])
+    chk("chicago_ranges", [_chicago_range(a, b) for a, b in (("45", "52"), ("101", "108"), ("321", "328"),
+                                                               ("1496", "1500"), ("100", "104"), ("ix", "xi"))]
+        == ["45\u201352", "101\u20138", "321\u201328", "1496\u20131500", "100\u2013104", "ix\u2013xi"])
+    chk("dotted_and_plain_folio_range", _locator_text({"start": {"label": "1.1"}, "end": {"label": "1"}}, "chicago")
+        == "1.1\u20131" and _locator_text({"start": {"label": "3.12"}, "end": {"label": "3.14"}}, "chicago", "paragraph")
+        == "3.12\u201314" and _locator_text({"start": {"label": "1.1"}, "end": {"label": "1.2"}}, "chicago", "page")
+        == "1.1\u20131.2")
+    chk("chicago_unicode_digits_kept_whole", _chicago_range("\u00b2", "\u00b3") == "\u00b2\u2013\u00b3")
+    chk("quote_bounds_from_origins", _quote_key({"quote": "policy", "context": {
+        "before": "See [", "after": "](https://example.org)."}})[0][4:10] == "policy"
+        and _quote_key({"quote": "example.org", "context": {"before": "See [policy](https://", "after": ")."}}) is None)
+    chk("word_vs_letter_sort", sorted(["Newark", "New York"], key=lambda t: _sort_key(t, False)) == ["New York", "Newark"]
+        and sorted(["New York", "Newark"], key=lambda t: _sort_key(t, True)) == ["Newark", "New York"])
+
+    para = ["Alpha passage opens the chapter here.", "Bravo passage follows it closely.",
+            "Charlie passage comes third in the book.", "Delta passage runs long across a sentence break.",
+            "Xray passage starts a range. Yankee passage ends the range.", "Golf start quote tail."]
+    snap = am.normalize_snapshot("Front matter.\n\n# Chapter One\n\n" + "\n\n".join(para) + "\n")
+    d = tempfile.mkdtemp()
+    try:
+        src = os.path.join(d, "book.md")
+        _write(src, snap)
+        heads = [head("IX-001", [anc("IX-001.a1", "Alpha passage opens")]),
+                 head("IX-002", [anc("IX-002.a1", "Bravo passage follows")]),
+                 head("IX-003", [anc("IX-003.a1", "Charlie passage comes"), anc("IX-003.a2", "third in the book")]),
+                 head("IX-004", [anc("IX-004.a1", "across a sentence break")]),
+                 head("IX-005", [anc("IX-005.a1", "Alpha passage opens")]),
+                 head("IX-006", [anc("IX-006.a1", "Xray passage starts", end_quote="Yankee passage ends")]),
+                 head("IX-007", [anc("IX-007.a1", "Delta passage runs")]),
+                 head("IX-008", [anc("IX-008.a1", "Golf start", end_quote="tail",
+                                     context={"before": "", "after": " quote tail"})])]
+        props = os.path.join(d, "p.json")
+        _write(props, json.dumps(heads))
+        run_dir = os.path.join(d, "run")
+        init(src, run_dir, "T", "r1", props)
+        m = os.path.join(run_dir, "T_Index_Map_r1.md")
+        accept(m, ["IX-001", "IX-002", "IX-003", "IX-004", "IX-005", "IX-006", "IX-008"])
+        loc = os.path.join(run_dir, "T_Index_Locators_r1.json")
+
+        code, _l = locate_index(m, "paragraph")
+        rec = json.loads(_read(loc))
+        chk("only_published_headings_located", code == 0 and {p["heading"] for p in rec["placed"]} == {
+            "IX-001", "IX-002", "IX-003", "IX-004", "IX-005", "IX-006", "IX-008"})
+        chk("every_anchor_placed_or_unresolved", len(rec["placed"]) + len(rec["unresolved"]) == 8)
+        format_index(m, loc)
+        out = _read(os.path.join(run_dir, "T_Index_r1.txt"))
+        chk("duplicate_locators_merged", "heading IX-003, 1.3\n" in out)
+        tampered = os.path.join(d, "tampered")
+        shutil.copytree(run_dir, tampered)
+        tm = os.path.join(tampered, "T_Index_Map_r1.md")
+        _write(tm, _read(tm).replace('"heading IX-002"', '"heading IX-002, edited"'))
+        locate_index(tm, "paragraph")
+        chk("i4_failing_heading_not_located", "IX-002" not in {p["heading"] for p in json.loads(
+            _read(os.path.join(tampered, "T_Index_Locators_r1.json")))["placed"]})
+        chk("proposed_heading_not_printed", "IX-007" not in out)
+        chk("paragraph_range", "heading IX-006, 1.5\n" in out)
+
+        flat = os.path.join(d, "flat")
+        os.makedirs(flat)
+        _write(os.path.join(flat, "F_Manuscript_Snapshot_r1.md"), "No chapters. Alpha passage opens here.\n")
+        fh = head("IX-001", [anc("IX-001.a1", "Alpha passage opens")], status="accepted")
+        _write(os.path.join(flat, "F_Index_Map_r1.md"), render_map(dict(header, snapshot_path="F_Manuscript_Snapshot_r1.md"), [fh]))
+        tight = os.path.join(d, "tight")
+        os.makedirs(tight)
+        _write(os.path.join(tight, "G_Manuscript_Snapshot_r1.md"), "# Chapter One\nAlpha passage.\n\nBravo passage.\n")
+        gh = [head("IX-001", [anc("IX-001.a1", "Alpha passage.")], status="accepted"),
+              head("IX-002", [anc("IX-002.a1", "Bravo passage.")], status="accepted")]
+        _write(os.path.join(tight, "G_Index_Map_r1.md"), render_map(dict(header, snapshot_path="G_Manuscript_Snapshot_r1.md"), gh))
+        locate_index(os.path.join(tight, "G_Index_Map_r1.md"), "paragraph")
+        chk("paragraph_after_heading_without_blank_line", {p["anchor"]: p["start"]["label"] for p in json.loads(
+            _read(os.path.join(tight, "G_Index_Locators_r1.json")))["placed"]} == {"IX-001.a1": "1.1", "IX-002.a1": "1.2"})
+        fenced = os.path.join(d, "fenced")
+        os.makedirs(fenced)
+        _write(os.path.join(fenced, "H_Manuscript_Snapshot_r1.md"), "# C\n\n```\n# code\n```\n\nBeta.\n")
+        hh = [head("IX-001", [anc("IX-001.a1", "Beta.")], status="accepted")]
+        _write(os.path.join(fenced, "H_Index_Map_r1.md"), render_map(dict(header, snapshot_path="H_Manuscript_Snapshot_r1.md"), hh))
+        locate_index(os.path.join(fenced, "H_Index_Map_r1.md"), "paragraph")
+        _write(os.path.join(fenced, "H_Manuscript_Snapshot_r1.md"),
+               "# One\n\nA `line\ncode` here.\n\n# Two\n\nBeta.\n")
+        locate_index(os.path.join(fenced, "H_Index_Map_r1.md"), "paragraph")
+        chk("multiline_inline_code_keeps_chapters", json.loads(_read(os.path.join(fenced, "H_Index_Locators_r1.json")))[
+            "placed"][0]["start"]["label"] == "2.1")
+        _write(os.path.join(fenced, "H_Manuscript_Snapshot_r1.md"), "# One\n\nAlpha\u2028tail.\n\n# Two\n\nBeta.\n")
+        locate_index(os.path.join(fenced, "H_Index_Map_r1.md"), "paragraph")
+        chk("line_separator_keeps_chapters", json.loads(_read(os.path.join(fenced, "H_Index_Locators_r1.json")))[
+            "placed"][0]["start"]["label"] == "2.1")
+        _write(os.path.join(fenced, "H_Manuscript_Snapshot_r1.md"), "# C\n\n```\n# code\n```\n\nBeta.\n")
+        locate_index(os.path.join(fenced, "H_Index_Map_r1.md"), "paragraph")
+        chk("fenced_heading_is_not_a_chapter", json.loads(_read(os.path.join(fenced, "H_Index_Locators_r1.json")))[
+            "placed"][0]["start"]["label"] == "1.2")
+        chk("paragraph_refuses_without_chapters", locate_index(os.path.join(flat, "F_Index_Map_r1.md"), "paragraph")[0] == 1)
+
+        if _load_pypdf() is None:
+            print("  page_scheme_tests: SKIPPED (pypdf not installed)")
+        else:
+            rh, body = "THE TEST BOOK", [
+                ["Bravo passage follows it closely."], ["Alpha passage opens the chapter here."],
+                ["Charlie passage comes third in the book."], ["Delta passage runs long across a sen-"],
+                ["tence break.", "Yankee passage ends the range."], ["Xray passage starts a range.", "Golf start quote tail."]]
+            pages = [["Front matter."]] + [[rh] + lines + [str(i + 1)] for i, lines in enumerate(body)]
+            pdf = os.path.join(d, "proof.pdf")
+            with open(pdf, "wb") as fh_:
+                fh_.write(_tiny_pdf(pages, labels="0 << /S /r >> 1 << /S /D >>"))
+            chk("page_requires_body_end", locate_index(m, "page", pdf=pdf)[0] == 1)
+            code, _l = locate_index(m, "page", pdf=pdf, body_start=2, body_end=7)
+            rec = json.loads(_read(loc))
+            why = {u["anchor"]: u["reason"] for u in rec["unresolved"]}
+            got = {p["anchor"]: p["start"]["label"] for p in rec["placed"]}
+            chk("page_abc_order_check", code == 0 and why.get("IX-001.a1") == why.get("IX-002.a1") == "ambiguous_order"
+                and got.get("IX-003.a1") == "3")
+            chk("page_abc_with_second_heading", why.get("IX-005.a1") == "ambiguous_order")
+            chk("page_break_with_running_head", got.get("IX-004.a1") == "4")
+            chk("page_end_quote_before_start", why.get("IX-006.a1") == "end_quote_before_start")
+            chk("page_end_quote_searched_from_quote_end", got.get("IX-008.a1") == "6" and "IX-008.a1" not in why)
+            unlabeled = os.path.join(d, "nolabels.pdf")
+            with open(unlabeled, "wb") as fh_:
+                fh_.write(_tiny_pdf(pages))
+            chk("page_refuses_without_folios", locate_index(m, "page", pdf=unlabeled, body_end=7)[0] == 1)
+            chk("page_front_matter_needs_pdf_labels",
+                locate_index(m, "page", pdf=unlabeled, folio_start=2, body_end=7, include_front=True)[0] == 1)
+            # Round-5 cases: overlapping matches, duplicate and blank folios, body chosen by page number.
+            pd = os.path.join(d, "pdfcases")
+            os.makedirs(pd)
+            _write(os.path.join(pd, "P_Manuscript_Snapshot_r1.md"), "# One\n\nx very very y.\n\nAlpha starts. Omega ends.\n")
+            ph = [head("IX-001", [anc("IX-001.a1", "very very")], status="accepted"),
+                  head("IX-002", [anc("IX-002.a1", "Alpha starts", end_quote="Omega ends")], status="accepted")]
+            pm = os.path.join(pd, "P_Index_Map_r1.md")
+            _write(pm, render_map(dict(header, snapshot_path="P_Manuscript_Snapshot_r1.md"), ph))
+            ploc = os.path.join(pd, "P_Index_Locators_r1.json")
+
+            def page_case(pages_, labels_, **kw):
+                path = os.path.join(pd, "case.pdf")
+                with open(path, "wb") as fh2:
+                    fh2.write(_tiny_pdf(pages_, labels=labels_))
+                locate_index(pm, "page", pdf=path, **kw)
+                rec_ = json.loads(_read(ploc))
+                return ({u["anchor"]: u["reason"] for u in rec_["unresolved"]},
+                        {q["anchor"]: q["start"]["label"] for q in rec_["placed"]})
+
+            why_, _got = page_case([["very"], ["very"], ["very"]], "0 << /S /D >>", body_start=1, body_end=3)
+            chk("page_overlapping_match_is_ambiguous", why_.get("IX-001.a1") == "ambiguous_match")
+            why_, _got = page_case([["Alpha starts."], ["Omega ends."]], "0 << /S /D >> 1 << /S /D /St 1 >>",
+                                   body_start=1, body_end=2)
+            chk("page_duplicate_folio_unresolved", why_.get("IX-002.a1") == "duplicate_folio")
+            why_, _got = page_case([["x very very y."], ["Alpha starts. Omega ends."]], "0 << /S /D >> 1 << /S /D /St 1 >>",
+                                   body_start=1, body_end=2)
+            chk("page_repeated_label_point_locators_unresolved",
+                why_.get("IX-001.a1") == why_.get("IX-002.a1") == "duplicate_folio")
+            why_, _got = page_case([["Alpha starts."], ["Omega ends."]], "0 << /P () >>", body_start=1, body_end=2)
+            chk("page_blank_folio_unresolved", why_.get("IX-002.a1") == "blank_folio")
+            why_, got_ = page_case([["Alpha starts."], ["x very very y"], ["Alpha starts. Omega ends."]],
+                                   "0 << /S /r >> 1 << /P (1.) /S /D >>", body_start=2, body_end=3)
+            chk("page_body_chosen_by_page_number", got_.get("IX-001.a1") == "1.1" and got_.get("IX-002.a1") == "1.2")
+            cm = os.path.join(pd, "C_Index_Map_r1.md")
+            _write(os.path.join(pd, "C_Manuscript_Snapshot_r1.md"), "# One\n\nleft shared passage right.\n")
+            _write(cm, render_map(dict(header, snapshot_path="C_Manuscript_Snapshot_r1.md"), [
+                head("IX-001", [anc("IX-001.a1", "shared passage", context={"before": "left ", "after": ""})],
+                     status="accepted"),
+                head("IX-002", [anc("IX-002.a1", "shared passage", context={"before": "", "after": " right"})],
+                     status="accepted")]))
+            cpdf = os.path.join(pd, "conflict.pdf")
+            with open(cpdf, "wb") as fh2:
+                fh2.write(_tiny_pdf([["left shared passage wrong."], ["middle marker."], ["other shared passage right."]],
+                                    labels="0 << /S /D >>"))
+            locate_index(cm, "page", pdf=cpdf, body_start=1, body_end=3)
+            why_ = {u["anchor"]: u["reason"] for u in json.loads(_read(os.path.join(pd, "C_Index_Locators_r1.json")))["unresolved"]}
+            chk("page_conflicting_matches_for_one_passage",
+                why_.get("IX-001.a1") == why_.get("IX-002.a1") == "conflicting_matches")
+            nm = os.path.join(pd, "N_Index_Map_r1.md")
+            _write(os.path.join(pd, "N_Manuscript_Snapshot_r1.md"), "# One\n\nThe policy[^12] held throughout. Vitamin B12 helps.\n")
+            _write(nm, render_map(dict(header, snapshot_path="N_Manuscript_Snapshot_r1.md"), [
+                head("IX-001", [anc("IX-001.a1", "The policy[^12] held throughout.")], status="accepted")]))
+            npdf = os.path.join(pd, "notes.pdf")
+            with open(npdf, "wb") as fh2:
+                fh2.write(_tiny_pdf([["The policy 12 held throughout.", "Vitamin B12 helps."],
+                                 ["The policy held throughout."]], labels="0 << /S /D >>"))
+            locate_index(nm, "page", pdf=npdf, body_start=1, body_end=2)
+            nrec = json.loads(_read(os.path.join(pd, "N_Index_Locators_r1.json")))
+            chk("page_note_marker_matches_printed_digits", [(q["anchor"], q["start"]["label"]) for q in nrec["placed"]]
+                == [("IX-001.a1", "1")] and _search("vitamin b12 helps", "vitamin b helps")[0] == 0)
+            chk("page_folio_start_map", locate_index(m, "page", pdf=unlabeled, folio_start=2, body_end=7)[0] == 0
+                and {p["anchor"]: p["start"]["label"] for p in json.loads(_read(loc))["placed"]}.get("IX-004.a1") == "4")
+
+        locate_index(m, "paragraph")
+        format_index(m, loc, output="docx")
+        docx = os.path.join(run_dir, "T_Index_r1.docx")
+        first = open(docx, "rb").read()
+        format_index(m, loc, output="docx")
+        with zipfile.ZipFile(docx) as z:
+            xml = z.read("word/document.xml").decode("utf-8")
+        chk("docx_deterministic_and_complete", first == open(docx, "rb").read() and "heading IX-003, 1.3" in xml)
+        moved = os.path.join(d, "moved")
+        shutil.copytree(run_dir, moved)
+        mm = os.path.join(moved, "T_Index_Map_r1.md")
+        edited = os.path.join(d, "edited.md")
+        _write(edited, snap.replace("# Chapter One\n\n", "# Chapter One\n\nA new first paragraph.\n\n"))
+        resnapshot(mm, edited, "r2")
+        chk("format_refuses_locators_from_older_snapshot",
+            format_index(mm, os.path.join(moved, "T_Index_Locators_r1.json"))[0] == 1)
+        for bad in ("[]", "{}"):
+            _write(os.path.join(d, "bad.json"), bad)
+            chk("format_refuses_unreadable_locators %s" % bad, format_index(m, os.path.join(d, "bad.json"))[0] == 1)
+        rename(m, "IX-003", "renamed heading")
+        accept(m, ["IX-003"])
+        chk("format_refuses_stale_locators", format_index(m, loc)[0] == 1)
+
+        # References are checked against what prints: a heading whose only anchor is unresolved drops
+        # out, and so do the See and See also references to it.
+        refs_dir = os.path.join(d, "refs")
+        os.makedirs(refs_dir)
+        _write(os.path.join(refs_dir, "R_Manuscript_Snapshot_r1.md"), snap)
+        rh_ = [head("IX-001", [anc("IX-001.a1", "Front matter.")], status="accepted"),
+               head("IX-002", see=["IX-001"], status="accepted"),
+               head("IX-003", [anc("IX-003.a1", "Bravo passage follows")], see_also=["IX-001"], status="accepted")]
+        rmap = os.path.join(refs_dir, "R_Index_Map_r1.md")
+        _write(rmap, render_map(dict(header, snapshot_path="R_Manuscript_Snapshot_r1.md"), rh_))
+        locate_index(rmap, "paragraph")
+        format_index(rmap, os.path.join(refs_dir, "R_Index_Locators_r1.json"))
+        printed = _read(os.path.join(refs_dir, "R_Index_r1.txt"))
+        chk("references_to_unprinted_headings_dropped", printed == "heading IX-003, 1.2\n"
+            and "IX-001 dropped" in _read(os.path.join(refs_dir, "R_Index_Report_r1.md")))
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
 
 
 # ---------------------------------------------------------------- CLI
@@ -1081,6 +2088,41 @@ def _usage():
     return 2
 
 
+def _phase_b_cli(cmd, rest):
+    import argparse
+    ap = argparse.ArgumentParser(prog="book_index.py " + cmd)
+    ap.add_argument("map")
+    if cmd == "locate":
+        ap.add_argument("--scheme", required=True, choices=("paragraph", "page"))
+        ap.add_argument("--pdf")
+        ap.add_argument("--folio-start", type=int)
+        ap.add_argument("--body-start", type=int)
+        ap.add_argument("--body-end", type=int)
+        ap.add_argument("--include-front", action="store_true")
+        ap.add_argument("--include-back", action="store_true")
+    else:
+        ap.add_argument("--locators")
+        ap.add_argument("--layout", default="indented", choices=("indented", "run-in"))
+        ap.add_argument("--sort", default="word", choices=("word", "letter"))
+        ap.add_argument("--ranges", default="chicago", choices=("chicago", "full"))
+        ap.add_argument("--see-also", default="end", choices=("end", "after-heading"))
+        ap.add_argument("--docx", action="store_true")
+        ap.add_argument("--max-lines", type=int)
+    try:
+        a = ap.parse_args(rest)
+    except SystemExit:
+        return 2
+    if cmd == "locate":
+        code, lines = locate_index(a.map, a.scheme, a.pdf, a.folio_start, a.body_end, a.include_front,
+                                   a.include_back, a.body_start)
+    else:
+        code, lines = format_index(a.map, a.locators, a.layout, a.sort, a.ranges, a.see_also,
+                                   "docx" if a.docx else "txt", a.max_lines)
+    for ln in lines:
+        print(ln)
+    return code
+
+
 def main(argv):
     if "--self-test" in argv:
         return run_self_test()
@@ -1088,6 +2130,8 @@ def main(argv):
     if not args:
         return _usage()
     cmd, rest = args[0], args[1:]
+    if cmd in ("locate", "format"):
+        return _phase_b_cli(cmd, rest)
     flags = [a for a in rest if a.startswith("--")]
     pos = [a for a in rest if not a.startswith("--")]
     if cmd == "book-index" and len(pos) == 1 and set(flags) <= {"--strict"}:
