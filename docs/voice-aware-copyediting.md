@@ -1,6 +1,6 @@
 # Voice-Aware Copyedit: a copyeditor that knows what to leave alone
 
-**Status:** **Admitted spec (fleet card AP-CE), 2026-10-30. Unbuilt.** Owner ruled on replacement text 2026-10-29 (D2) and accepted the D1 and D3–D5 recommendations on 2026-10-30 (§Design calls). Fleet spec review 2026-10-30 (apodictic #407) found one P1, fixed here (§The voice ledger, enforceable scopes). Roadmap: Horizon Capacities Tier 2. Proposed implementation surface: `plugins/apodictic/scripts/copyedit.py`, `validate.sh copyedit`, a `core-editor/references/voice-aware-copyediting.md` module and a `/copyedit` command.
+**Status:** **Increment 1 built (fleet card AP-CE), 2026-10-30: style sheet, voice ledger, queries only.** Increments 2 and 3 unbuilt. Owner ruled on replacement text 2026-10-29 (D2) and accepted the D1 and D3–D5 recommendations on 2026-10-30 (§Design calls). Fleet spec review 2026-10-30 (apodictic #407) found one P1, fixed here (§The voice ledger, enforceable scopes). Roadmap: Horizon Capacities Tier 2. Proposed implementation surface: `plugins/apodictic/scripts/copyedit.py`, `validate.sh copyedit`, a `core-editor/references/voice-aware-copyediting.md` module and a `/copyedit` command.
 <!-- built-when: plugins/apodictic/scripts/copyedit.py -->
 
 ## Why

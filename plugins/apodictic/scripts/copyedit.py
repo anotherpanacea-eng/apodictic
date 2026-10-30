@@ -17,8 +17,8 @@ and the author's answers build a voice ledger (`apodictic.voice_ledger.v1` block
                   offsets split a code point, or the instance crosses a paragraph break.
   E3 ledger guard an item touches a form under an enforceable author entry (book, chapter,
                   paragraph range, instance), i.e. re-asks a question the author answered; or it
-                  touches an inferred or declared (speaker/zone-scoped) entry without naming it in
-                  `ledger_refs`, which is the possible-voice label.
+                  touches an inferred or declared (speaker/zone-scoped) entry without the possible-voice
+                  label: the entry's id in `ledger_refs`, or for a zone entry, that zone in `zone`.
   W1 never-flag   best-effort: an item whose reason names a never-flag rule (split infinitive,
                   sentence-final preposition, sentence-initial conjunction, singular they, fragment,
                   contraction). The real guard is the list in the pass prompt. ERROR under --strict.
@@ -192,7 +192,7 @@ def check(items_text, snapshot, ledger_text, strict=False):
             if entry["origin"] == "author" and _ENFORCEABLE.match(entry["scope"]):
                 errors.append("E3 %s: touches %r, which the author settled in %s (%s)"
                               % (iid, entry["form"], entry["id"], entry["scope"]))
-            elif entry["id"] not in refs:
+            elif entry["id"] not in refs and entry["scope"] != "zone:%s" % obj["zone"]:
                 errors.append("E3 %s: touches %r (%s, %s %s) without naming it in ledger_refs"
                               % (iid, entry["form"], entry["id"], entry["origin"], entry["scope"]))
         reason = obj.get("reason", "")
@@ -373,6 +373,9 @@ def run_self_test():
     chk("e3_declared_scope_needs_label", any("without naming" in x for x in e))
     e, _ = check(item("P5.1", "god", ledger_refs=["VL-02"]), snap, entry("VL-02", "god", "speaker:Jim"))
     chk("e3_declared_scope_labelled_passes", not e)
+
+    e, _ = check(item("P5.1", "god", zone="dialogue"), snap, entry("VL-04", "god", "zone:dialogue"))
+    chk("e3_zone_entry_labelled_by_zone", not e)
 
     e, _ = check(item("P5.1", "god"), snap, entry("VL-03", "god", "book", "inferred"))
     chk("e3_inferred_needs_label", any("without naming" in x for x in e))

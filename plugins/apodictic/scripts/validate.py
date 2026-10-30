@@ -54,6 +54,7 @@ AGG_VALIDATORS = (
     'setup-payoff',
     'world-bible',
     'book-index',
+    'copyedit',
     'intake-interview',
     'author-fingerprint',
     'content-advisory',
@@ -189,6 +190,7 @@ _ARTIFACT_PLANNING = {
     "setup-payoff": "setup_payoff_checks.py",
     "world-bible": "world_bible.py",
     "book-index": "book_index.py",
+    "copyedit": "copyedit.py",
     "argument-spine": "argument_spine.py",
     "scene-ethics": "scene_ethics.py",
 }
