@@ -1,6 +1,6 @@
 # Voice-Aware Copyedit: a copyeditor that knows what to leave alone
 
-**Status:** **Proposed spec, 2026-10-29. Unbuilt.** Owner ruled on replacement text 2026-10-29 (D2); D1 and D3–D5 stand as recommended unless the owner objects (§Design calls). Awaits owner admission; no build until then. Roadmap: a Horizon Capacities Tier 2 entry is added once the manuscript-indexing spec PR (#406, which holds `ROADMAP.md` and reopens copyediting in §Not Planned) has landed. Proposed implementation surface: `plugins/apodictic/scripts/copyedit.py`, `validate.sh copyedit`, a `core-editor/references/voice-aware-copyediting.md` module and a `/copyedit` command.
+**Status:** **Admitted spec (fleet card AP-CE), 2026-10-30. Unbuilt.** Owner ruled on replacement text 2026-10-29 (D2) and accepted the D1 and D3–D5 recommendations on 2026-10-30 (§Design calls). Fleet spec review 2026-10-30 (apodictic #407) found one P1, fixed here (§The voice ledger, enforceable scopes). Roadmap: Horizon Capacities Tier 2. Proposed implementation surface: `plugins/apodictic/scripts/copyedit.py`, `validate.sh copyedit`, a `core-editor/references/voice-aware-copyediting.md` module and a `/copyedit` command.
 <!-- built-when: plugins/apodictic/scripts/copyedit.py -->
 
 ## Why
@@ -63,7 +63,7 @@ APODICTIC's Firewall says diagnostics identify problems and never rewrite manusc
 - **Nothing is applied without the author's pick.** Review is one suggestion at a time by default. Bulk acceptance ("accept every spelling suggestion", or everything in a chapter, rewrites included) is an option the author turns on, and an author who accepts wholesale does so on their own responsibility. Silence never applies anything.
 - **Picks export to a copy** (CriticMarkup first, DOCX tracked changes later), the way Spec 113's export applies picks.
 
-So the tool's own prose is bounded: typo-scale fixes, and at most one sentence where clarity or a stepped-on move calls for it, each chosen by the author.
+So the tool's own prose is bounded: typo-scale fixes, and at most one sentence where clarity or a stepped-on move calls for it, each chosen by the author. Those one-sentence rewrites are the owner's D2 exception; anything larger is line editing, which stays out of scope.
 
 ## The voice ledger
 
@@ -75,9 +75,18 @@ The heart of the design. The ledger is the "leave alone" half of the style sheet
 | **Consistency harvest** (Phase 1) | `alright` occurs 37 times, `all right` never | Inferred; becomes binding when the author confirms it |
 | **Idiolect preservation list** (SETEC, when a baseline exists) | the bigram `which is to say` | Inferred |
 | **Baseline roughness** (SETEC, when a writer baseline exists) | fragment rate and sentence-initial And/But rate are inside the writer's normal band | Inferred pattern: fragments and initial conjunctions are framed as likely voice |
-| **Zones** | dialogue; quoted and cited material (epigraphs, block quotes, sources); close-POV narration in multi-POV fiction; verse and lyrics | Inferred context: notes here carry a possible-voice label (E3) |
+| **Zones** | dialogue; quoted and cited material (epigraphs, block quotes, sources); close-POV narration in multi-POV fiction; verse and lyrics | Inferred context: notes here carry a possible-voice label (E3). Found mechanically only where the text marks them: quotation-marked dialogue, Markdown block quotes, and lines inside a verse block. Unmarked dialogue and close-POV narration are zones only when the author declares them. |
 
-Entries are stored as `apodictic.voice_ledger.v1` blocks in `[Project]_Style_Sheet.md`, next to the ordinary style decisions. The ledger persists across runs and revisions, so an author's stet holds for the next draft.
+Entries are stored as `apodictic.voice_ledger.v1` blocks in `[Project]_Style_Sheet.md`, next to the ordinary style decisions. The ledger persists across runs and revisions, so an author's stet holds for the next draft. Each entry has:
+
+- `id`;
+- `form`: a literal string, or a closed pattern name (for example `no_quotation_marks`, `lowercase:god`);
+- `scope`: one of `book`, `chapter:<n>`, `paragraphs:<a>-<b>`, `instance:<item id>`, `speaker:<name>` or `zone:<zone>`;
+- `origin`: `author` or `inferred`;
+- `evidence`: the loci, and the counts for harvested entries;
+- `run`: the run label that created it.
+
+**Enforceable and declared scopes.** A validator can resolve `book`, chapter, paragraph-range and instance scopes from the snapshot alone, so an `author` entry with one of these scopes is **enforceable**, and E3 binds it. A validator cannot resolve `speaker` or `zone` scopes: it cannot attribute speech to a character, and it cannot find dialogue that has no quotation marks. An `author` entry with one of those scopes is **declared**. It is recorded, and E3 treats it the way it treats an inferred entry: it labels the notes it touches as possible voice and keeps them out of default bulk acceptance. The first note it labels asks the author whether to narrow it to a chapter or paragraph range, which makes it enforceable.
 
 **Standing never-flag list.** Some "rules" are superstitions that no competent copyeditor enforces on a voice: a sentence opening with a conjunction, a split infinitive, a sentence ending in a preposition, singular *they*, a fragment, contractions in serious prose. The tool raises none of these in any register. They are in the module as a fixed list, so a model's training-data pedantry cannot reintroduce them.
 
@@ -134,23 +143,22 @@ The author sees a numbered list (`P<paragraph>.<n>`, numbering fixed once as in 
 Mechanical checks, ERROR unless marked W. E1, E2, E4 and E7 follow Spec 113 §3 and §4.
 
 - **E1 schema.** The closed record; unique ids; closed enums.
-- **E2 provenance.** `original` equals the snapshot bytes at `span`; the span falls on code-point boundaries and inside one paragraph.
-- **E3 ledger and zone guard.** No item of any disposition may change a form covered by an `author` ledger entry within its scope, and no item may re-raise a question an author stet already answered in that scope. Any item touching an `inferred` entry or a zone must carry the possible-voice label naming it. A `rewrite` must keep every ledger form in its span unchanged unless the item is labelled. This is the check that enforces the author's own decisions mechanically; inferred voice evidence informs the author and never overrides the level they chose.
+- **E2 provenance.** `original` equals the snapshot bytes at `span`; the span falls on code-point boundaries and inside one paragraph. A level-1 or level-2 item checks each entry of `instances` the same way, and each entry carries its own `original`.
+- **E3 ledger and zone guard.** No item of any disposition may change a form covered by an enforceable `author` ledger entry within its scope, and no item may re-raise a question an author stet already answered in that scope. Any item touching an `inferred` entry, a declared `author` entry or a zone must carry the possible-voice label naming it. The label is the item's `ledger_refs` or `zone` field naming that entry or zone. A `rewrite` must keep every ledger form in its span unchanged unless the item is labelled. This is the check that enforces the author's own decisions mechanically; inferred voice evidence informs the author and never overrides the level they chose.
 - **E4 shape.** A replacement differs from its original, contains no line break, and does not leave its paragraph empty.
 - **E5 size cap.** A `suggest` item changes at most a few words (default: three word tokens, one sentence touched); a larger change must be a `rewrite` of a rewrite kind or a query. A `rewrite` touches at most one sentence, or two when it merges or splits them, and only the `clarity` and `stepped_on_move` kinds may use it (D2).
 - **E6 style-sheet agreement.** A `consistency` or `style_sheet` suggestion's replacement equals the form in its `style_ref`. When the choice is confirmed, every suggestion must match it. When it is still proposed, only the single level-3 worked suggestion may use the proposed form; accepting it confirms the choice, and level-4 suggestions for the other instances appear only after that.
 - **E7 combined selection.** The author's picks for a paragraph apply as a set only when no two overlap and the paragraph stays non-empty (Spec 113 §4). Bulk acceptance goes through the same check.
 - **E8 no mutation.** The snapshot's sha256 still matches its binding, and the export is the snapshot plus exactly the picked replacements.
-- **W1 never-flag list.** An item whose reason or kind matches a never-flag rule is withheld and counted.
+- **W1 never-flag list.** Best-effort: an item whose `reason` matches a keyword of a never-flag rule is withheld and counted. The real guard is the list in the pass prompt; W1 catches leaks without claiming completeness.
 - **W2 flattening check** (when SETEC and a baseline are available). After picks are applied to the copy, punctuation cadence and productive roughness are rerun against the snapshot; a feature that moved beyond the writer's band is reported with the picks that moved it.
-- **W3 query load.** Query density per chapter, so the author sees where the pass leaned hardest.
 
-**Honest limit.** E3 binds only what the author has declared. Inferred entries and zones label notes without blocking them, and a voice choice nothing has seen, used once, can still draw a plain suggestion. That gap is why unknown departures default to a `voice_check` query (D3), why labelled items stay out of default bulk acceptance, and why the evaluation measures voice false corrections directly.
+**Honest limit.** E3 binds only enforceable entries the author has declared. Inferred entries and zones label notes without blocking them, and a voice choice nothing has seen, used once, can still draw a plain suggestion. That gap is why unknown departures default to a `voice_check` query (D3), why labelled items stay out of default bulk acceptance, and why the evaluation measures voice false corrections directly.
 
 ## Evaluation before release
 
 - **Hostile fixtures.** Public-domain passages chosen for voice: dialect-heavy dialogue (Twain's *Adventures of Huckleberry Finn*, which opens with an explanatory note that its dialects are deliberate), unmarked or idiosyncratic punctuation, a period essay with long periodic sentences; plus synthetic passages with deliberate fragments and comma splices. Errors are planted into each fixture: typos, inconsistent hyphenation, wrong-word confusions, unbalanced quotation marks.
-- **Measures.** (a) **Voice false-correction rate:** suggestions that would change a voice item, reported separately for ledgered items (must be zero, by E3) and unledgered items (the honest-limit number). (b) **Planted-error recall** by kind. (c) **Query precision:** share of queries a reader judges worth asking. (d) **Rewrite acceptance and voice cost:** share of rewrites a reader would take, and the W2 movement accepted rewrites cause. Fixtures include planted stepped-on moves (a gloss after a closing image, a hedge on an earned claim).
+- **Measures.** (a) **Voice false-correction rate:** suggestions that would change a voice item, reported separately for items under enforceable author entries (must be zero, by E3) and all others, including declared and inferred entries (the honest-limit number). (b) **Planted-error recall** by kind. (c) **Query precision:** share of queries a reader judges worth asking. (d) **Rewrite acceptance and voice cost:** share of rewrites a reader would take, and the W2 movement accepted rewrites cause. Fixtures include planted stepped-on moves (a gloss after a closing image, a hedge on an earned claim).
 - **Baseline arm.** The same fixtures through a plain "copyedit this" prompt with no ledger or register profile, to show what the voice machinery buys. Report the numbers in the module doc and claim nothing beyond them.
 
 ## Where it lives
@@ -159,8 +167,8 @@ A core-editor workflow module (`core-editor/references/voice-aware-copyediting.m
 
 ## Increment plan
 
-1. **Style sheet, ledger and queries only.** `voice_ledger.v1`, the Phase 1 harvest and review, the never-flag list, and a pass that emits only queries. No replacement text ships in this increment, so it stands inside today's Firewall on its own and is already useful: the consistency queries are most of a copyeditor's mechanical value.
-2. **Suggestions and rewrites.** `copyedit_item.v1` with `suggest` and `rewrite`, E1–E8, W1, W3, opt-in bulk acceptance, CriticMarkup export of picks, a canonical worked example in `--check-all`.
+1. **Style sheet, ledger and queries only.** `voice_ledger.v1`, the Phase 1 harvest and review, the never-flag list, and a pass that emits only queries, recorded as `copyedit_item.v1` items with `disposition: query` and checked by E1–E3. No replacement text ships in this increment, so it stands inside today's Firewall on its own and is already useful: the consistency queries are most of a copyeditor's mechanical value.
+2. **Suggestions and rewrites.** `suggest` and `rewrite` dispositions, E4–E8, W1, opt-in bulk acceptance, CriticMarkup export of picks, a canonical worked example in `--check-all`.
 3. **Voice post-check and exports.** The productive-roughness shim, W2, DOCX tracked-changes export, and the fixture evaluation above.
 
 ## Design calls
