@@ -1,6 +1,6 @@
 # Bind a resumed run to its draft — spec (apodictic)
 
-**Status:** **Proposed (unbuilt).** Waiting for the owner to admit it. Do not build until the owner admits it. When built, the build PR flips this line (`AGENTS.md` § Review practices).
+**Status:** **Admitted spec, 2026-10-29 (owner, as written). Unbuilt.** The owner questions below are resolved as this spec proposes. When built, the build PR flips this line (`AGENTS.md` § Review practices).
 **Estimate:** one small prose-only PR to `commands/start.md`. No script, schema or sidecar field.
 **Provenance:** deferred finding 10 of the external Codex framework review of 2026-10-16 (private document; summarized here, not quoted). Burndown card OCA-9. Line references are to `main` after the 2026-10-26 train (#398).
 

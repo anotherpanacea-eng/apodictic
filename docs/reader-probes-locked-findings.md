@@ -1,6 +1,6 @@
 # Reader probes of locked findings — spec (apodictic)
 
-**Status:** **Proposed (unbuilt).** Waiting for the owner to admit it. Do not build until the owner admits it. When built, the build PR flips this line (`AGENTS.md` § Review practices).
+**Status:** **Admitted spec, 2026-10-29 (owner, as written). Unbuilt.** The owner questions below are resolved as this spec proposes. When built, the build PR flips this line (`AGENTS.md` § Review practices).
 **Estimate:** one small PR. The validator change is a net deletion.
 **Provenance:** deferred finding 2 of the external Codex framework review of 2026-10-16 (private document; summarized here, not quoted). Burndown card OCA-9. Line references are to `main` after the 2026-10-26 train (#398).
 
