@@ -1,0 +1,74 @@
+{
+  "id": "apodictic-contract-inference",
+  "title": "APODICTIC: predicting the contract",
+  "alt": "Flowchart. Your manuscript goes in, and APODICTIC predicts its contract from the text alone: genre, reader promise and controlling idea. The book is always measured against that predicted contract, in passes calibrated to its genre. The prediction is also set beside the contract you intended. Where they differ, the mismatch is the signal that the text is not communicating what you think. Both feed the editorial letter, which names classes of solution and never rewrites your prose.",
+  "theme": "paper",
+  "maxWidth": 1200,
+  "mermaid": [
+    "flowchart TD",
+    "  M([Your manuscript])",
+    "  P[Predicted contract, from the text alone: genre, reader promise, controlling idea]:::blue",
+    "  I[Your intended contract: what you meant the book to be]:::gold",
+    "  Y[Measure the book against its contract, with passes calibrated to its genre]:::green",
+    "  C{Do they match?}",
+    "  S[The mismatch is the signal: the text is not saying what you think]:::red",
+    "  L([Editorial letter: what works, what does not, classes of solution])",
+    "  M --> P",
+    "  P --> Y",
+    "  P --> C",
+    "  I --> C",
+    "  C -->|mismatch| S",
+    "  C -->|match| L",
+    "  Y --> L",
+    "  S --> L"
+  ],
+  "steps": [
+    {
+      "caption": "APODICTIC reads your manuscript before it hears your plans.",
+      "draws": [
+        "M"
+      ]
+    },
+    {
+      "caption": "From the text alone it predicts the contract: genre, the promise to readers, and the controlling idea.",
+      "draws": [
+        "M>P",
+        "P"
+      ]
+    },
+    {
+      "caption": "It measures the book against that contract, with passes calibrated to the genre. A slow opening is fine in literary fiction and a defect in a thriller.",
+      "draws": [
+        "P>Y",
+        "Y"
+      ]
+    },
+    {
+      "caption": "It also sets the prediction beside the contract you meant to write.",
+      "draws": [
+        "I",
+        "P>C",
+        "I>C",
+        "C"
+      ]
+    },
+    {
+      "caption": "Where they differ, that mismatch is the diagnosis: the text is not communicating what you think it is.",
+      "draws": [
+        "C>S",
+        "S",
+        "!S"
+      ],
+      "hold": 2.5
+    },
+    {
+      "caption": "Everything feeds the editorial letter, which names classes of solution and never rewrites your prose. Argument pieces get the same check against claim, audience, burden and stakes.",
+      "draws": [
+        "C>L",
+        "Y>L",
+        "S>L",
+        "L"
+      ]
+    }
+  ]
+}
