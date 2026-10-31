@@ -59,7 +59,7 @@ set -uo pipefail
 # --- locate repo + inputs -------------------------------------------------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="${REPO:-$(cd "$SCRIPT_DIR/../../.." && pwd)}"
-SRC="${SRC:-$HOME/Library/CloudStorage/Dropbox/80-89 Projects/81 Software & tools/APODICTIC supporting material/Development Editor/argument-benchmark-sources}"
+SRC="${SRC:-$HOME/Library/CloudStorage/Dropbox/80-89 Projects/81 Software & tools/81.15 APODICTIC supporting material/Development Editor/argument-benchmark-sources}"
 AUDIT="$REPO/plugins/apodictic/skills/argument-audits/references/craft/dialectical-clarity.md"
 SOURCES="$SCRIPT_DIR/SOURCES.md"
 

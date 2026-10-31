@@ -17,7 +17,7 @@ The fiction M2a run also exists only under the default gitignored results policy
 
 ### A. Shared panel packet (Dropbox, not git)
 
-Regenerate the packet at `80-89 Projects/81 Software & tools/APODICTIC supporting material/Development Editor/argument-benchmark-second-editor-packet/current/` and mark every older packet copy stale. The sendable `packet/` contains only:
+Regenerate the packet at `80-89 Projects/81 Software & tools/81.15 APODICTIC supporting material/Development Editor/argument-benchmark-second-editor-packet/current/` and mark every older packet copy stale. The sendable `packet/` contains only:
 
 - neutral source files `A01`–`A05` (argument) and at least four independent
   fiction works `F01`–`F<n>`; the initial packet uses the seven distinct works
