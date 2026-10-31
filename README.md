@@ -20,6 +20,8 @@ flowchart TD
 
 *Every edit starts at `/start`: three plain-language questions — the second's options depend on the first — route you to the right workflow. Nonfiction & argument work is reachable either as an up-front choice or by flagging it at the third question; both land in the Nonfiction Argument Engine. ([Walk the specific routes in the interactive route explorer](https://anotherpanacea-eng.github.io/apodictic/plugins/apodictic/route-explorer.html).)*
 
+*[Watch the route draw itself, step by step →](https://anotherpanacea-eng.github.io/apodictic/docs/assets/drawn/apodictic-start-firewall.html) (click or press Space to advance; a [still image](docs/assets/drawn/apodictic-start-firewall.svg) too).*
+
 ## Why This Exists
 
 Every AI writing tool I tried wanted to rewrite my prose. I didn't need a co-writer. I needed what a good developmental editor does — read my manuscript, figure out what it's trying to be, and tell me where it's working and where it isn't. Structurally. Without touching my sentences.
