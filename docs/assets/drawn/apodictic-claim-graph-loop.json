@@ -1,7 +1,7 @@
 {
   "id": "apodictic-claim-graph-loop",
   "title": "APODICTIC: /adjudicate and /reconstruct",
-  "alt": "Flowchart. Your manuscript and its Argument State are broken into a claim graph of atomic claims, warrants, qualifiers and typed links, each anchored to your text. In /adjudicate you decide every claim and link: approve it, reject it, or revise it in your own words. A revision becomes a new claim that comes back for a decision. Rejections stay excluded, even after later revisions. Only approved claims and links go into the drafting packet. In /reconstruct a fresh, isolated drafter sees only that packet and returns a new draft with a passage map tracing each passage to approved claims. The draft comes back for your review and is never marked cleared.",
+  "alt": "Flowchart. Your manuscript and its Argument State are broken into a claim graph of atomic claims, warrants, qualifiers and typed links, each anchored to your text. In /adjudicate you decide every claim and link: approve it or reject it, and a claim can also be revised in your own words, which makes a new claim that comes back for a decision. Rejections stay excluded, even after later revisions; for now, while any rejection stands, new approvals pause until the semantic exclusion screen is built. Only approved claims and links go into the drafting packet. In /reconstruct a fresh drafter with no tools sees only that packet and returns a new draft with its own passage map, a self-report linking passages to approved claims. The draft comes back for your review and is never marked cleared.",
   "theme": "paper",
   "maxWidth": 1200,
   "mermaid": [
@@ -10,15 +10,15 @@
     "  G[Claim graph: atomic claims, warrants, qualifiers and typed links, each anchored to your text]",
     "  D{\"/adjudicate: you decide every claim and link\"}",
     "  OK[Approved]:::green",
-    "  RV[Revised in your own words]:::gold",
-    "  RJ[Rejected, and it stays excluded]:::red",
+    "  RV[A claim revised in your own words]:::gold",
+    "  RJ[Rejected: stays excluded, and for now pauses new approvals]:::red",
     "  PK[Drafting packet: approved claims and links only]:::green",
     "  DR[\"/reconstruct: a fresh drafter with no tools sees only the packet\"]:::blue",
-    "  RC([New draft and a passage map back to approved claims])",
+    "  RC([New draft and the drafter's own passage map])",
     "  A --> G",
     "  G --> D",
     "  D -->|approve| OK",
-    "  D -->|revise| RV",
+    "  D -->|revise a claim| RV",
     "  D -->|reject| RJ",
     "  RV -.->|a new claim to decide| D",
     "  OK --> PK",
@@ -26,13 +26,66 @@
     "  DR --> RC"
   ],
   "steps": [
-    {"caption": "Start from your manuscript and the Argument State the engine built from it.", "draws": ["A"]},
-    {"caption": "The argument is broken into a claim graph: each claim, warrant, qualifier and link is one record, anchored to your text.", "draws": ["A>G", "G"]},
-    {"caption": "In /adjudicate you decide every record yourself. Nothing is approved for you, and there is no approve-the-rest.", "draws": ["G>D", "D"]},
-    {"caption": "Approve it, or revise it in your own words. A revision is a new claim, so it comes back for a fresh decision.", "draws": ["D>OK", "OK", "D>RV", "RV", "RV>D"]},
-    {"caption": "Reject it, and it stays out: later revisions and re-runs cannot quietly bring it back.", "draws": ["D>RJ", "RJ", "!RJ"], "hold": 2},
-    {"caption": "Only approved claims and links go into the drafting packet.", "draws": ["OK>PK", "PK"]},
-    {"caption": "In /reconstruct a fresh drafter, with no tools and no view of your manuscript, writes from the packet alone.", "draws": ["PK>DR", "DR"]},
-    {"caption": "You get a new draft and a map tracing each passage to approved claims. It comes back for your review, never marked cleared.", "draws": ["DR>RC", "RC"], "hold": 2.5}
+    {
+      "caption": "Start from your manuscript and the Argument State the engine built from it.",
+      "draws": [
+        "A"
+      ]
+    },
+    {
+      "caption": "The argument is broken into a claim graph: each claim, warrant, qualifier and link is one record, anchored to your text.",
+      "draws": [
+        "A>G",
+        "G"
+      ]
+    },
+    {
+      "caption": "In /adjudicate you decide every record yourself. Nothing is approved for you, and there is no approve-the-rest.",
+      "draws": [
+        "G>D",
+        "D"
+      ]
+    },
+    {
+      "caption": "Approve a claim or link. A claim can also be revised in your own words; the revision is a new claim, so it comes back for a fresh decision.",
+      "draws": [
+        "D>OK",
+        "OK",
+        "D>RV",
+        "RV",
+        "RV>D"
+      ]
+    },
+    {
+      "caption": "Reject it, and it stays out: later revisions and re-runs cannot quietly bring it back. For now, while any rejection stands, new approvals pause until the exclusion screen is built.",
+      "draws": [
+        "D>RJ",
+        "RJ",
+        "!RJ"
+      ],
+      "hold": 2
+    },
+    {
+      "caption": "Only approved claims and links go into the drafting packet.",
+      "draws": [
+        "OK>PK",
+        "PK"
+      ]
+    },
+    {
+      "caption": "In /reconstruct a fresh drafter, with no tools and no view of your manuscript, writes from the packet alone.",
+      "draws": [
+        "PK>DR",
+        "DR"
+      ]
+    },
+    {
+      "caption": "You get a new draft and the drafter's passage map, its own report of which approved claims each passage uses. It comes back for your review, never marked cleared.",
+      "draws": [
+        "DR>RC",
+        "RC"
+      ],
+      "hold": 2.5
+    }
   ]
 }
