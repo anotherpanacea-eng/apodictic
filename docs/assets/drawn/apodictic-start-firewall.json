@@ -1,0 +1,33 @@
+{
+  "id": "apodictic-start-firewall",
+  "title": "APODICTIC: /start and the Firewall",
+  "alt": "Flowchart. Typing /start leads to three questions: what do you have, what do you want, and anything that changes how we work. The answers route to one of two lanes: your workflow, which ends in an editorial letter or structural plan, or the Nonfiction Argument Engine, which ends in a Dialectical Clarity letter and a marked-up piece. Dashed arrows from both lanes to 'rewrite your prose' are marked never: the Firewall.",
+  "theme": "paper",
+  "maxWidth": 1200,
+  "mermaid": [
+    "flowchart TD",
+    "  S([Type /start])",
+    "  Q1{1. What do you have?}",
+    "  Q2{2. What do you want?}",
+    "  Q3{3. Anything that changes how we work?}",
+    "  L[Your workflow: editorial letter or structural plan]:::blue",
+    "  N[Nonfiction Argument Engine: Dialectical Clarity letter and marked-up piece]:::green",
+    "  X[/rewrite your prose/]:::red",
+    "  S --> Q1",
+    "  Q1 -->|story, idea or series| Q2",
+    "  Q1 -->|argument piece| Q2",
+    "  Q2 --> Q3",
+    "  Q3 -->|everything else| L",
+    "  Q3 -->|argument work| N",
+    "  L -.->|the Firewall: never| X",
+    "  N -.->|never| X"
+  ],
+  "steps": [
+    {"caption": "Every edit starts at /start. The first question: what do you have?", "draws": ["S", "S>Q1", "Q1"]},
+    {"caption": "The second question's options depend on the first answer.", "draws": ["Q1>Q2", "Q1>Q2#2", "Q2"]},
+    {"caption": "The third asks what changes how we work: a deadline, nonfiction, sensitive content, or editing for someone else.", "draws": ["Q2>Q3", "Q3"]},
+    {"caption": "Fiction, ideas and series land in your workflow, which ends in an editorial letter or a structural plan.", "draws": ["Q3>L", "L"]},
+    {"caption": "Argument-shaped work, chosen up front or flagged at question three, lands in the Nonfiction Argument Engine.", "draws": ["Q3>N", "N"]},
+    {"caption": "The Firewall: neither lane ever rewrites your prose.", "draws": ["X", "L>X", "N>X", "!X"], "hold": 2.5}
+  ]
+}
