@@ -97,8 +97,10 @@
       "target_classification": {
         "confidence": 1.0,
         "primary": "first_person_essay",
+        "refusal_reason": null,
         "secondary": [],
-        "taxonomy": "register_families/v2"
+        "taxonomy": "register_families/v2",
+        "warning": null
       }
     },
     "selected_features": {

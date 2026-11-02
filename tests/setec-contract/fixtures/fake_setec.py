@@ -100,6 +100,14 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     # Pretty + sorted so piping into `python3 -m json.tool` is a no-op and
     # the printed form matches the committed golden byte-for-byte.
+    # Standard CLI pipes must carry the golden's UTF-8 LF bytes even on
+    # Windows. Text-only captures retain the same logical JSON output.
+    try:
+        sys.stdout.reconfigure(
+            encoding="utf-8", errors=sys.stdout.errors, newline="\n",
+        )
+    except (AttributeError, OSError, TypeError, ValueError):
+        pass
     print(json.dumps(envelope, indent=2, sort_keys=True, ensure_ascii=False))
     return 0
 
