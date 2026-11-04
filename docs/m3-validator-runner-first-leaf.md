@@ -71,7 +71,7 @@ The process exits 0 for a clean session, whether leaves pass or fail, and 2 for 
 - a §7 leaf id is missing;
 - a row or the file is malformed.
 
-So any undispositioned registry addition, removal or rename fails the hosted gate. The runtime does not read the inventory. It grants no execution authority, and desktop support stays disabled. At baseline, three ids are `ci-only` (`schema-coverage`, `validator-conventions`, `argument-carve-behavior-preservation`), and every other id, including the eighteen leaves, is `not-yet-supported`. The JSON file is the source of truth for the per-id reasons. The gate compares sets, not counts; both leaf tables must be disjoint and their union must be registered.
+So any undispositioned registry addition, removal or rename fails the hosted gate. The runtime does not read the inventory. It grants no execution authority, and desktop support stays disabled. At baseline, three ids are `ci-only` (`schema-coverage`, `validator-conventions`, `argument-carve-behavior-preservation`), and every other id, including the eighteen leaves, is `not-yet-supported`. The JSON file is the source of truth for the per-id reasons. The gate compares sets, not counts; every `LEAVES` id must be registered.
 
 ## 6. Acceptance evidence
 
@@ -88,7 +88,7 @@ Also run `python plugins/apodictic/scripts/validate.py --check-all`, compile, ch
 
 ## 7. Leaves
 
-The runner admits exactly the keys of the disjoint literal `LEAVES` and `PAIR_LEAVES` tables in `validator_runner.py`. Each row names a fixed module, entrypoint, optional registry key and formatter. To add a leaf, add one row and its parity cases. No request, inventory value or argv selects a module, path, executable or formatter.
+The runner admits exactly the keys of the literal `LEAVES` table in `validator_runner.py`; the `PAIRED` set marks the two leaves that take `validate_pair`. Each row names a fixed module, entrypoint, optional registry key and formatter. To add a leaf, add one row and its parity cases. No request, inventory value or argv selects a module, path, executable or formatter.
 
 | Leaf | Helper result | Inherited behavior preserved for parity |
 | --- | --- | --- |

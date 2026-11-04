@@ -83,11 +83,11 @@ LEAVES = {
     "ledger-consolidation": ("letter_checks", "CHECKS", "ledger-consolidation", four_tuple),
     "audit-signal-propagation": ("letter_checks", "CHECKS", "audit-signal-propagation", four_tuple),
     "underdiagnosis-triggers": ("letter_checks", "CHECKS", "underdiagnosis-triggers", four_tuple),
-}
-PAIR_LEAVES = {
     "timeline-diff": ("timeline_checks", "timeline_diff", None, timeline_tuple),
     "softness-check": ("honesty_check", "softness_check", None, softness_tuple),
 }
+# Leaves that take a (prior, current) or (letter, ledger) pair via validate_pair.
+PAIRED = frozenset(("timeline-diff", "softness-check"))
 WORKER_ERRORS = ("runner_dependency_unavailable", "worker_failed", "output_limit")
 
 
@@ -142,8 +142,7 @@ def check_inventory():
         ok = (set(value) == {"version", "validators"} and value["version"] == 1
               and registry and len(set(registry)) == len(registry)
               and len(set(ids)) == len(ids) and set(ids) == set(registry)
-              and not (LEAVES.keys() & PAIR_LEAVES.keys())
-              and (LEAVES.keys() | PAIR_LEAVES.keys()) <= set(ids)
+              and set(LEAVES) <= set(ids)
               and all(set(row) == {"id", "desktop_disposition", "omitted_capability"}
                       and row["desktop_disposition"] in ("ci-only", "not-yet-supported")
                       and isinstance(row["omitted_capability"], str)
@@ -193,7 +192,7 @@ def worker(leaf):
     """Run one leaf on the coordinator's already bounded, LF-normalized text."""
     try:
         text = json.loads(sys.stdin.buffer.read())
-        module, entrypoint, key, formatter = (LEAVES | PAIR_LEAVES)[leaf]
+        module, entrypoint, key, formatter = LEAVES[leaf]
         sys.path.insert(0, str(HERE))
         try:
             check = getattr(__import__(module), entrypoint)
@@ -202,7 +201,7 @@ def worker(leaf):
         except Exception:
             result = {"error": "runner_dependency_unavailable"}
         else:
-            code, lines = formatter(*(check(*text) if leaf in PAIR_LEAVES else check(text)))
+            code, lines = formatter(*(check(*text) if leaf in PAIRED else check(text)))
             result = {"exit_code": code, "stdout": "".join(line + "\n" for line in lines),
                       "stderr": ""}
         payload = encoded(result)
@@ -349,8 +348,7 @@ class Session:
         paired = request["type"] == "validate_pair"
         raw_texts = request["texts"] if paired else [request["text"]]
         texts = [text.replace("\r\n", "\n").replace("\r", "\n") for text in raw_texts]
-        leaves = PAIR_LEAVES if paired else LEAVES
-        if request["validator"] not in leaves:
+        if request["validator"] not in LEAVES or (request["validator"] in PAIRED) != paired:
             self.emit(unavailable(request, "validator_unavailable"))
         elif (sum(len(text.encode("utf-8")) for text in raw_texts) > TEXT_BYTES
               or any(text.count("\n") >= TEXT_LINES for text in texts)):
@@ -470,7 +468,7 @@ def main():
     args = sys.argv[1:]
     if args == ["--check-inventory"]:
         return check_inventory()
-    if len(args) == 2 and args[0] == "--worker" and args[1] in (LEAVES | PAIR_LEAVES):
+    if len(args) == 2 and args[0] == "--worker" and args[1] in LEAVES:
         return worker(args[1])
     if args:
         sys.stderr.write("Unsupported validator runner usage.\n")
