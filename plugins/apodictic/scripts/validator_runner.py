@@ -47,6 +47,7 @@ def raw(exit_code, lines):
 # The only runnable leaves: validator id -> (fixed helper registry, result formatter).
 # Adding a leaf is one row here; --check-inventory requires its registry id.
 LEAVES = {
+    "calibration-honesty": ("CALIBRATION_SCAN", raw),
     "timeline-arithmetic": ("SINGLE_FILE_CHECKS", timeline_tuple),
     "timeline-anchor-conflict": ("SINGLE_FILE_CHECKS", timeline_tuple),
     "tone-check": ("CHECKS", four_tuple),
@@ -165,6 +166,9 @@ def worker(leaf):
             if registry == "SINGLE_FILE_CHECKS":
                 import timeline_checks
                 check = timeline_checks.SINGLE_FILE_CHECKS[leaf]
+            elif registry == "CALIBRATION_SCAN":
+                import calibration_honesty
+                check = calibration_honesty.scan
             else:
                 import letter_checks
                 check = getattr(letter_checks, registry)[leaf]

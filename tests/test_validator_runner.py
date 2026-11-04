@@ -20,7 +20,7 @@ FIXTURES = ROOT / "tests/fixtures/validators"
 PYTHON = sys.executable
 LEAVES = ("tone-check", "synthesis-sections", "severity-floor", "decision-layer-check",
           "author-facing-lint", "ledger-check", "ledger-consolidation", "audit-signal-propagation",
-          "underdiagnosis-triggers", "timeline-arithmetic", "timeline-anchor-conflict")
+          "underdiagnosis-triggers", "timeline-arithmetic", "timeline-anchor-conflict", "calibration-honesty")
 REFERENCE = Path("skills/core-editor/references/pass-dependencies.md")
 SIGNAL_APPENDIX = "\n## Appendix A\n### Reception Risk Audit\nhard gate at L42\n"
 SIGNAL_SHOULD = "Should-Fix: Reception Risk needs revision.\n" + SIGNAL_APPENDIX
@@ -184,6 +184,31 @@ for leaf, fixture in (("timeline-arithmetic", "silent_arithmetic"),
     CASES[leaf] += [example.replace("Day 1", "Day 1,000").replace("Day 2", "Day 1,001"),
                     example.replace("\n", "\r\n"), example.replace("\n", "\r")]
 
+# Public canonical self-test phrases; these test rendered claim syntax, not a detector.
+CALIBRATION_CLAIMS = [
+    "the manuscript scores in the AI-elevated band",
+    "this is a calibrated band for the work",
+    "the story sits above the threshold",
+    "the aggregate score confirms the draft is AI-patterned",
+]
+CALIBRATION_OVERRIDE = "<!-- override: calibration-honesty -->"
+CALIBRATION_CASES = [(text, 1) for text in CALIBRATION_CLAIMS] + [
+    (text + " — uncalibrated, provenance only", 0) for text in CALIBRATION_CLAIMS
+] + [
+    ("`" + CALIBRATION_CLAIMS[0] + "`", 0),
+    ("~~~\n" + CALIBRATION_CLAIMS[0] + "\n~~~", 0),
+    ("<!-- " + CALIBRATION_CLAIMS[0] + " -->", 0),
+    (CALIBRATION_CLAIMS[0] + "\n" + CALIBRATION_OVERRIDE, 0),
+    (CALIBRATION_CLAIMS[0] + "\n`" + CALIBRATION_OVERRIDE + "`", 1),
+    (CALIBRATION_CLAIMS[0] + "\n" + CALIBRATION_OVERRIDE.replace("honesty", "honesty-suffix"), 1),
+    ("\n\n".join(CALIBRATION_CLAIMS), 4),
+    (CALIBRATION_CLAIMS[0] + "\n\nuncalibrated, provenance only", 1),
+    ("**Verdict:** Excellent Fit for the target market.", 0),
+]
+CALIBRATION_CASES += [(text.replace("\n", "\r\n"), count)
+                      for text, count in list(CALIBRATION_CASES) if "\n" in text]
+CASES["calibration-honesty"] = [text for text, _ in CALIBRATION_CASES]
+
 SHARED = ["", "masterpiece", "雪 😀\r\n" + WEAK + "\rQF-7\n" + LEDGER, "x" * 262144, "\n" * 8191]
 
 
@@ -265,7 +290,7 @@ class RunnerTests(unittest.TestCase):
         self.schemas = self.scripts.parent / "schemas"
         self.scripts.mkdir(parents=True)
         self.schemas.mkdir()
-        for name in ("validator_runner.py", "letter_checks.py", "timeline_checks.py", "override_marker.py", "validate.py"):
+        for name in ("validator_runner.py", "letter_checks.py", "timeline_checks.py", "calibration_honesty.py", "override_marker.py", "validate.py"):
             shutil.copyfile(SCRIPT.parent / name, self.scripts / name)
         self.metadata = self.schemas / "validator-runtime-inventory.json"
         shutil.copyfile(SCRIPT.parent.parent / "schemas/validator-runtime-inventory.json", self.metadata)
@@ -300,6 +325,9 @@ class RunnerTests(unittest.TestCase):
             body + "\nSINGLE_FILE_CHECKS = dict.fromkeys(%r, check)\n" %
             (("timeline-arithmetic", "timeline-anchor-conflict"),))
 
+        (self.scripts / "calibration_honesty.py").write_text(
+            body + "\ndef scan(text):\n r = check(text)\n return int(bool(r[0])), r[1] + [r[2]]\n")
+
     def sleeping(self):
         self.pidfile = self.root / "synthetic-worker.pid"
         self.pidfile.unlink(missing_ok=True)
@@ -331,6 +359,7 @@ class RunnerTests(unittest.TestCase):
         # Foreign cwd, empty PATH and injected PYTHONPATH/site files cannot change a leaf.
         (self.root / "letter_checks.py").write_text("raise RuntimeError('cwd injection')\n")
         (self.root / "timeline_checks.py").write_text("raise RuntimeError('cwd injection')\n")
+        (self.root / "calibration_honesty.py").write_text("raise RuntimeError('cwd injection')\n")
         (self.root / "sitecustomize.py").write_text("raise RuntimeError('site injection')\n")
         c = self.client(cwd=self.root, env=dict(os.environ, PATH="", PYTHONPATH=str(self.root)))
         source = self.root / "invented.txt"
@@ -349,6 +378,12 @@ class RunnerTests(unittest.TestCase):
                     result = got["result"]
                     self.assertEqual((result["exit_code"], result["stdout"].encode(), result["stderr"].encode()),
                                      (oracle.returncode, oracle.stdout, oracle.stderr))
+                    if leaf == "calibration-honesty":
+                        self.assertEqual(result["exit_code"], 0)
+                        expected = dict(CALIBRATION_CASES)
+                        if text in expected:
+                            self.assertEqual(sum(line.startswith("  WARN:") for line in
+                                                 result["stdout"].splitlines()), expected[text])
                     if leaf in TIMELINE_CASES:
                         expected = dict(TIMELINE_CASES[leaf])
                         if text in expected:
@@ -582,6 +617,27 @@ class RunnerTests(unittest.TestCase):
             self.error(c.next(), "validator_unavailable")
             self.assertEqual(c.end(), (0, [], b""))
 
+    def test_calibration_refusals_and_output_ceiling(self):
+        c = self.client()
+        c.send(validation("large", (CALIBRATION_CLAIMS[0] + "\n\n") * 200,
+                          "calibration-honesty"))
+        self.error(c.next(), "output_limit")
+        c.send(dict(validation("strict", CALIBRATION_CLAIMS[0], "calibration-honesty"), strict=True))
+        self.assertEqual(c.next()["error"]["code"], "invalid_request")
+        self.assertEqual(c.end(), (2, [], b""))
+        module = self.scripts / "calibration_honesty.py"
+        for body in (None, "# scan is missing\n"):
+            if body is None:
+                module.unlink()
+            else:
+                module.write_text(body)
+            c = self.client(script=self.script)
+            c.send(validation("bad", "SYNTHETIC_SENTINEL", "calibration-honesty"))
+            got = c.next()
+            self.error(got, "runner_dependency_unavailable")
+            self.assertNotIn("SYNTHETIC_SENTINEL", json.dumps(got))
+            self.assertEqual(c.end(), (0, [], b""))
+
     def test_closed_schemas_and_ids(self):
         cases = []
         for request in (validation(), cancel()):
@@ -660,7 +716,7 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(c.end(), (0, [], b""))
         # Leaves are trusted local text code: no network-capable module is imported.
         network = {"socket", "ssl", "http", "urllib", "ftplib", "smtplib", "asyncio", "requests"}
-        for name in ("validator_runner.py", "letter_checks.py", "timeline_checks.py", "override_marker.py"):
+        for name in ("validator_runner.py", "letter_checks.py", "timeline_checks.py", "calibration_honesty.py", "override_marker.py"):
             tree = ast.parse((SCRIPT.parent / name).read_text())
             imported = {alias.name.split(".")[0] for node in ast.walk(tree)
                         if isinstance(node, ast.Import) for alias in node.names}
