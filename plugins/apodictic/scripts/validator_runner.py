@@ -62,30 +62,32 @@ def raw(exit_code, lines):
     return exit_code, lines
 
 
-# The only runnable leaves: validator id -> (fixed helper registry, result formatter).
-# Adding a leaf is one row here; --check-inventory requires its registry id.
+# The only runnable leaves: validator id -> (module, entrypoint, registry key, formatter).
+# A registry key of None means the entrypoint is the check itself. Adding a leaf
+# is one row here; --check-inventory requires its id. New leaves wait until the
+# desktop shell actually consumes this runner.
 LEAVES = {
-    "fiction-groundtruth-check": ("FICTION_GROUNDTRUTH", four_tuple),
-    "deficit-lock": ("DEFICIT_LOCK", deficit_tuple),
-    "legal-risk": ("LEGAL_REGISTER", raw),
-    "scene-ethics": ("ETHICS_PLAN", raw),
-    "calibration-honesty": ("CALIBRATION_SCAN", raw),
-    "timeline-arithmetic": ("SINGLE_FILE_CHECKS", timeline_tuple),
-    "timeline-anchor-conflict": ("SINGLE_FILE_CHECKS", timeline_tuple),
-    "tone-check": ("CHECKS", four_tuple),
-    "synthesis-sections": ("CHECKS", four_tuple),
-    "severity-floor": ("CHECKS", four_tuple),
-    "decision-layer-check": ("CHECKS", four_tuple),
-    "author-facing-lint": ("CHECKS", four_tuple),
-    "ledger-check": ("RAW_CHECKS", raw),
-    "ledger-consolidation": ("CHECKS", four_tuple),
-    "audit-signal-propagation": ("CHECKS", four_tuple),
-    "underdiagnosis-triggers": ("CHECKS", four_tuple),
+    "fiction-groundtruth-check": ("fiction_groundtruth", "fiction_groundtruth_check", None, four_tuple),
+    "deficit-lock": ("honesty_check", "deficit_lock", None, deficit_tuple),
+    "legal-risk": ("legal_risk", "register", None, raw),
+    "scene-ethics": ("scene_ethics", "plan", None, raw),
+    "calibration-honesty": ("calibration_honesty", "scan", None, raw),
+    "timeline-arithmetic": ("timeline_checks", "SINGLE_FILE_CHECKS", "timeline-arithmetic", timeline_tuple),
+    "timeline-anchor-conflict": ("timeline_checks", "SINGLE_FILE_CHECKS", "timeline-anchor-conflict", timeline_tuple),
+    "tone-check": ("letter_checks", "CHECKS", "tone-check", four_tuple),
+    "synthesis-sections": ("letter_checks", "CHECKS", "synthesis-sections", four_tuple),
+    "severity-floor": ("letter_checks", "CHECKS", "severity-floor", four_tuple),
+    "decision-layer-check": ("letter_checks", "CHECKS", "decision-layer-check", four_tuple),
+    "author-facing-lint": ("letter_checks", "CHECKS", "author-facing-lint", four_tuple),
+    "ledger-check": ("letter_checks", "RAW_CHECKS", "ledger-check", raw),
+    "ledger-consolidation": ("letter_checks", "CHECKS", "ledger-consolidation", four_tuple),
+    "audit-signal-propagation": ("letter_checks", "CHECKS", "audit-signal-propagation", four_tuple),
+    "underdiagnosis-triggers": ("letter_checks", "CHECKS", "underdiagnosis-triggers", four_tuple),
+    "timeline-diff": ("timeline_checks", "timeline_diff", None, timeline_tuple),
+    "softness-check": ("honesty_check", "softness_check", None, softness_tuple),
 }
-PAIR_LEAVES = {
-    "timeline-diff": ("TIMELINE_DIFF", timeline_tuple),
-    "softness-check": ("SOFTNESS_CHECK", softness_tuple),
-}
+# Leaves that take a (prior, current) or (letter, ledger) pair via validate_pair.
+PAIRED = frozenset(("timeline-diff", "softness-check"))
 WORKER_ERRORS = ("runner_dependency_unavailable", "worker_failed", "output_limit")
 
 
@@ -140,8 +142,7 @@ def check_inventory():
         ok = (set(value) == {"version", "validators"} and value["version"] == 1
               and registry and len(set(registry)) == len(registry)
               and len(set(ids)) == len(ids) and set(ids) == set(registry)
-              and not (LEAVES.keys() & PAIR_LEAVES.keys())
-              and (LEAVES.keys() | PAIR_LEAVES.keys()) <= set(ids)
+              and set(LEAVES) <= set(ids)
               and all(set(row) == {"id", "desktop_disposition", "omitted_capability"}
                       and row["desktop_disposition"] in ("ci-only", "not-yet-supported")
                       and isinstance(row["omitted_capability"], str)
@@ -187,68 +188,20 @@ def worker_environment():
     return env
 
 
-def require_schema(art, schema_id):
-    """Admit a fixed installed dependency; never search request-supplied paths."""
-    if art.schema_dir() != (HERE.parent / "schemas").resolve():
-        raise ImportError("canonical schema directory unavailable")
-    schema = art.load_schema(schema_id)
-    if (not isinstance(schema, dict) or schema.get("$id") != schema_id
-            or schema.get("type") != "object"
-            or not isinstance(schema.get("required"), list) or not schema["required"]
-            or not all(isinstance(key, str) for key in schema["required"])
-            or not isinstance(schema.get("properties"), dict) or not schema["properties"]
-            or not all(isinstance(value, dict) for value in schema["properties"].values())
-            or not set(schema["required"]) <= set(schema["properties"])):
-        raise ImportError("installed schema unavailable")
-
-
 def worker(leaf):
     """Run one leaf on the coordinator's already bounded, LF-normalized text."""
     try:
         text = json.loads(sys.stdin.buffer.read())
-        registry, formatter = (LEAVES | PAIR_LEAVES)[leaf]
+        module, entrypoint, key, formatter = LEAVES[leaf]
         sys.path.insert(0, str(HERE))
         try:
-            if registry == "TIMELINE_DIFF":
-                import timeline_checks
-                check = timeline_checks.timeline_diff
-            elif registry == "SOFTNESS_CHECK":
-                import honesty_check
-                import apodictic_artifacts
-                check = honesty_check.softness_check
-                require_schema(apodictic_artifacts, "apodictic.severity_calibration.v1")
-            elif registry == "SINGLE_FILE_CHECKS":
-                import timeline_checks
-                check = timeline_checks.SINGLE_FILE_CHECKS[leaf]
-            elif registry == "FICTION_GROUNDTRUTH":
-                import fiction_groundtruth
-                check = fiction_groundtruth.fiction_groundtruth_check
-            elif registry == "DEFICIT_LOCK":
-                import honesty_check
-                import apodictic_artifacts
-                check = honesty_check.deficit_lock
-                require_schema(apodictic_artifacts, "apodictic.finding.v1")
-            elif registry in ("LEGAL_REGISTER", "ETHICS_PLAN"):
-                import apodictic_artifacts
-                if registry == "LEGAL_REGISTER":
-                    import legal_risk
-                    check = legal_risk.register
-                    schema_id = "apodictic.legal_risk.v1"
-                else:
-                    import scene_ethics
-                    check = scene_ethics.plan
-                    schema_id = "apodictic.scene_ethics.v1"
-                require_schema(apodictic_artifacts, schema_id)
-            elif registry == "CALIBRATION_SCAN":
-                import calibration_honesty
-                check = calibration_honesty.scan
-            else:
-                import letter_checks
-                check = getattr(letter_checks, registry)[leaf]
+            check = getattr(__import__(module), entrypoint)
+            if key is not None:
+                check = check[key]
         except Exception:
             result = {"error": "runner_dependency_unavailable"}
         else:
-            code, lines = formatter(*(check(*text) if leaf in PAIR_LEAVES else check(text)))
+            code, lines = formatter(*(check(*text) if leaf in PAIRED else check(text)))
             result = {"exit_code": code, "stdout": "".join(line + "\n" for line in lines),
                       "stderr": ""}
         payload = encoded(result)
@@ -395,8 +348,7 @@ class Session:
         paired = request["type"] == "validate_pair"
         raw_texts = request["texts"] if paired else [request["text"]]
         texts = [text.replace("\r\n", "\n").replace("\r", "\n") for text in raw_texts]
-        leaves = PAIR_LEAVES if paired else LEAVES
-        if request["validator"] not in leaves:
+        if request["validator"] not in LEAVES or (request["validator"] in PAIRED) != paired:
             self.emit(unavailable(request, "validator_unavailable"))
         elif (sum(len(text.encode("utf-8")) for text in raw_texts) > TEXT_BYTES
               or any(text.count("\n") >= TEXT_LINES for text in texts)):
@@ -516,7 +468,7 @@ def main():
     args = sys.argv[1:]
     if args == ["--check-inventory"]:
         return check_inventory()
-    if len(args) == 2 and args[0] == "--worker" and args[1] in (LEAVES | PAIR_LEAVES):
+    if len(args) == 2 and args[0] == "--worker" and args[1] in LEAVES:
         return worker(args[1])
     if args:
         sys.stderr.write("Unsupported validator runner usage.\n")
