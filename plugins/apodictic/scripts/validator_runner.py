@@ -47,6 +47,8 @@ def raw(exit_code, lines):
 # The only runnable leaves: validator id -> (fixed helper registry, result formatter).
 # Adding a leaf is one row here; --check-inventory requires its registry id.
 LEAVES = {
+    "legal-risk": ("LEGAL_REGISTER", raw),
+    "scene-ethics": ("ETHICS_PLAN", raw),
     "calibration-honesty": ("CALIBRATION_SCAN", raw),
     "timeline-arithmetic": ("SINGLE_FILE_CHECKS", timeline_tuple),
     "timeline-anchor-conflict": ("SINGLE_FILE_CHECKS", timeline_tuple),
@@ -156,6 +158,21 @@ def worker_environment():
     return env
 
 
+def require_schema(art, schema_id):
+    """Admit a fixed installed dependency; never search request-supplied paths."""
+    if art.schema_dir() != (HERE.parent / "schemas").resolve():
+        raise ImportError("canonical schema directory unavailable")
+    schema = art.load_schema(schema_id)
+    if (not isinstance(schema, dict) or schema.get("$id") != schema_id
+            or schema.get("type") != "object"
+            or not isinstance(schema.get("required"), list) or not schema["required"]
+            or not all(isinstance(key, str) for key in schema["required"])
+            or not isinstance(schema.get("properties"), dict) or not schema["properties"]
+            or not all(isinstance(value, dict) for value in schema["properties"].values())
+            or not set(schema["required"]) <= set(schema["properties"])):
+        raise ImportError("installed schema unavailable")
+
+
 def worker(leaf):
     """Run one leaf on the coordinator's already bounded, LF-normalized text."""
     try:
@@ -166,6 +183,17 @@ def worker(leaf):
             if registry == "SINGLE_FILE_CHECKS":
                 import timeline_checks
                 check = timeline_checks.SINGLE_FILE_CHECKS[leaf]
+            elif registry in ("LEGAL_REGISTER", "ETHICS_PLAN"):
+                import apodictic_artifacts
+                if registry == "LEGAL_REGISTER":
+                    import legal_risk
+                    check = legal_risk.register
+                    schema_id = "apodictic.legal_risk.v1"
+                else:
+                    import scene_ethics
+                    check = scene_ethics.plan
+                    schema_id = "apodictic.scene_ethics.v1"
+                require_schema(apodictic_artifacts, schema_id)
             elif registry == "CALIBRATION_SCAN":
                 import calibration_honesty
                 check = calibration_honesty.scan

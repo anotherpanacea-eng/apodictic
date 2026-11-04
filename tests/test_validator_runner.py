@@ -20,7 +20,7 @@ FIXTURES = ROOT / "tests/fixtures/validators"
 PYTHON = sys.executable
 LEAVES = ("tone-check", "synthesis-sections", "severity-floor", "decision-layer-check",
           "author-facing-lint", "ledger-check", "ledger-consolidation", "audit-signal-propagation",
-          "underdiagnosis-triggers", "timeline-arithmetic", "timeline-anchor-conflict", "calibration-honesty")
+          "underdiagnosis-triggers", "timeline-arithmetic", "timeline-anchor-conflict", "calibration-honesty", "legal-risk", "scene-ethics")
 REFERENCE = Path("skills/core-editor/references/pass-dependencies.md")
 SIGNAL_APPENDIX = "\n## Appendix A\n### Reception Risk Audit\nhard gate at L42\n"
 SIGNAL_SHOULD = "Should-Fix: Reception Risk needs revision.\n" + SIGNAL_APPENDIX
@@ -209,6 +209,49 @@ CALIBRATION_CASES += [(text.replace("\n", "\r\n"), count)
                       for text, count in list(CALIBRATION_CASES) if "\n" in text]
 CASES["calibration-honesty"] = [text for text, _ in CALIBRATION_CASES]
 
+def artifact_block(kind, obj):
+    return "<!-- apodictic:%s\n%s\n-->" % (kind, json.dumps(obj, ensure_ascii=False))
+
+
+LEGAL_ITEM = dict(schema="apodictic.legal_risk.v1", id="LR-01", risk_class="privacy",
+                  severity="monitor", concern="Invented example", escalation_trigger="review",
+                  disposition="flag for legal review")
+ETHICS_ITEM = dict(schema="apodictic.scene_ethics.v1", id="EP-01", subject="Invented person",
+                   depiction="Invented encounter", consent_status="obtained", handling="anonymize")
+SCHEMA_CASES = {}
+for leaf, kind, obj, prefix in (
+    ("legal-risk", "legal_risk", LEGAL_ITEM, "This is not legal advice.\n"),
+    ("scene-ethics", "scene_ethics", ETHICS_ITEM, ""),
+):
+    block = artifact_block(kind, obj)
+    SCHEMA_CASES[leaf] = [(prefix + block, 0), (prefix + block + "\n" + block, 1),
+        (prefix + artifact_block(kind, dict(obj, id="bad")), 1),
+        (prefix + artifact_block(kind, {k: v for k, v in obj.items() if k != "id"}), 1),
+        (prefix + artifact_block(kind, []), 1),
+        (prefix + "<!-- apodictic:%s\n{broken\n-->" % kind, 1)]
+SCHEMA_CASES["legal-risk"] += [
+    (artifact_block("legal_risk", LEGAL_ITEM), 1),
+    ("<!-- not legal advice -->\n" + artifact_block("legal_risk", LEGAL_ITEM), 1),
+    ("Not legal advice.\n" + artifact_block("legal_risk", dict(LEGAL_ITEM, severity="review-now",
+                                                              disposition="hold", concern="fair use")), 0),
+]
+for consent in ("obtained", "sought-pending", "not-sought", "not-applicable"):
+    for fairness in ("", "Invented fairness rationale"):
+        SCHEMA_CASES["scene-ethics"].append((artifact_block("scene_ethics", dict(
+            ETHICS_ITEM, handling="as-is", consent_status=consent, fairness_check=fairness)), 0))
+for leaf, kind, obj, slug in (
+    ("legal-risk", "legal_risk", dict(LEGAL_ITEM, disposition="this is not defamatory"), "legal-advice-drift"),
+    ("scene-ethics", "scene_ethics", dict(ETHICS_ITEM, handling="as-is", consent_status="not-sought"),
+     "scene-ethics-unresolved"),
+):
+    marker = "<!-- override: %s %s -->" % (slug, obj["id"])
+    for override in (marker, "`" + marker + "`", marker.replace(slug, slug + "-suffix"),
+                     marker.replace(obj["id"], obj["id"] + "1"), "~~~\n" + marker + "\n~~~"):
+        SCHEMA_CASES[leaf].append(("Not legal advice.\n" + override + "\n" + artifact_block(kind, obj), 0))
+for leaf, cases in SCHEMA_CASES.items():
+    cases += [(text.replace("\n", "\r\n"), code) for text, code in list(cases)]
+    CASES[leaf] = [text for text, _ in cases]
+
 SHARED = ["", "masterpiece", "雪 😀\r\n" + WEAK + "\rQF-7\n" + LEDGER, "x" * 262144, "\n" * 8191]
 
 
@@ -290,8 +333,12 @@ class RunnerTests(unittest.TestCase):
         self.schemas = self.scripts.parent / "schemas"
         self.scripts.mkdir(parents=True)
         self.schemas.mkdir()
-        for name in ("validator_runner.py", "letter_checks.py", "timeline_checks.py", "calibration_honesty.py", "override_marker.py", "validate.py"):
+        for name in ("validator_runner.py", "letter_checks.py", "timeline_checks.py", "calibration_honesty.py", "legal_risk.py", "scene_ethics.py",
+                     "apodictic_artifacts.py", "override_marker.py", "validate.py"):
             shutil.copyfile(SCRIPT.parent / name, self.scripts / name)
+        for schema_id in ("apodictic.legal_risk.v1", "apodictic.scene_ethics.v1"):
+            name = schema_id + ".schema.json"
+            shutil.copyfile(SCRIPT.parent.parent / "schemas" / name, self.schemas / name)
         self.metadata = self.schemas / "validator-runtime-inventory.json"
         shutil.copyfile(SCRIPT.parent.parent / "schemas/validator-runtime-inventory.json", self.metadata)
         self.reference = self.scripts.parent / REFERENCE
@@ -328,6 +375,10 @@ class RunnerTests(unittest.TestCase):
         (self.scripts / "calibration_honesty.py").write_text(
             body + "\ndef scan(text):\n r = check(text)\n return int(bool(r[0])), r[1] + [r[2]]\n")
 
+        for name, entry in (("legal_risk.py", "register"), ("scene_ethics.py", "plan")):
+            (self.scripts / name).write_text(body +
+                "\ndef %s(text):\n r = check(text)\n return int(bool(r[0])), r[1] + [r[2]]\n" % entry)
+
     def sleeping(self):
         self.pidfile = self.root / "synthetic-worker.pid"
         self.pidfile.unlink(missing_ok=True)
@@ -360,6 +411,8 @@ class RunnerTests(unittest.TestCase):
         (self.root / "letter_checks.py").write_text("raise RuntimeError('cwd injection')\n")
         (self.root / "timeline_checks.py").write_text("raise RuntimeError('cwd injection')\n")
         (self.root / "calibration_honesty.py").write_text("raise RuntimeError('cwd injection')\n")
+        for name in ("legal_risk.py", "scene_ethics.py", "apodictic_artifacts.py"):
+            (self.root / name).write_text("raise RuntimeError('cwd injection')\n")
         (self.root / "sitecustomize.py").write_text("raise RuntimeError('site injection')\n")
         c = self.client(cwd=self.root, env=dict(os.environ, PATH="", PYTHONPATH=str(self.root)))
         source = self.root / "invented.txt"
@@ -378,6 +431,10 @@ class RunnerTests(unittest.TestCase):
                     result = got["result"]
                     self.assertEqual((result["exit_code"], result["stdout"].encode(), result["stderr"].encode()),
                                      (oracle.returncode, oracle.stdout, oracle.stderr))
+                    if leaf in SCHEMA_CASES:
+                        expected = dict(SCHEMA_CASES[leaf])
+                        if text in expected:
+                            self.assertEqual(result["exit_code"], expected[text])
                     if leaf == "calibration-honesty":
                         self.assertEqual(result["exit_code"], 0)
                         expected = dict(CALIBRATION_CASES)
@@ -638,6 +695,77 @@ class RunnerTests(unittest.TestCase):
             self.assertNotIn("SYNTHETIC_SENTINEL", json.dumps(got))
             self.assertEqual(c.end(), (0, [], b""))
 
+    def test_schema_dependencies_are_required_even_for_empty_text(self):
+        for leaf, schema_id in (("legal-risk", "apodictic.legal_risk.v1"),
+                                ("scene-ethics", "apodictic.scene_ethics.v1")):
+            path = self.schemas / (schema_id + ".schema.json")
+            original = path.read_bytes()
+            schema = json.loads(original)
+            faults = [None, b"{broken", b"[]", b"null", b"\xff", json.dumps(dict(schema, **{"$id": "wrong"})).encode()]
+            faults += [json.dumps(dict(schema, **{key: value})).encode() for key, value in
+                       (("type", "array"), ("required", "id"), ("required", [3]),
+                        ("properties", []), ("properties", {"id": "string"}))]
+            for fault in faults:
+                with self.subTest(leaf=leaf, fault=fault):
+                    if fault is None:
+                        path.unlink()
+                    else:
+                        path.write_bytes(fault)
+                    c = self.client(script=self.script)
+                    c.send(validation("missing", "", leaf))
+                    self.error(c.next(), "runner_dependency_unavailable")
+                    self.assertEqual(c.end(), (0, [], b""))
+                    path.write_bytes(original)
+        artifact = self.scripts / "apodictic_artifacts.py"
+        artifact.unlink()
+        c = self.client(script=self.script)
+        for leaf in ("legal-risk", "scene-ethics"):
+            c.send(validation(leaf, "", leaf))
+            self.error(c.next(), "runner_dependency_unavailable")
+        self.assertEqual(c.end(), (0, [], b""))
+
+    def test_schema_leaf_helpers_must_be_present(self):
+        for leaf, module in (("legal-risk", "legal_risk.py"), ("scene-ethics", "scene_ethics.py")):
+            path = self.scripts / module
+            original = path.read_bytes()
+            for body in (None, b"# entrypoint missing\n"):
+                if body is None:
+                    path.unlink()
+                else:
+                    path.write_bytes(body)
+                c = self.client(script=self.script)
+                c.send(validation("helper", "", leaf))
+                self.error(c.next(), "runner_dependency_unavailable")
+                self.assertEqual(c.end(), (0, [], b""))
+                path.write_bytes(original)
+
+    def test_installed_schema_is_authoritative_and_environment_override_is_ignored(self):
+        source = self.root / "invented.md"
+        alternate = self.root / "alternate"
+        alternate.mkdir()
+        for leaf, schema_id, kind, obj in (
+            ("legal-risk", "apodictic.legal_risk.v1", "legal_risk", LEGAL_ITEM),
+            ("scene-ethics", "apodictic.scene_ethics.v1", "scene_ethics", ETHICS_ITEM),
+        ):
+            path = self.schemas / (schema_id + ".schema.json")
+            schema = json.loads(path.read_text())
+            (alternate / path.name).write_text(json.dumps(schema))
+            schema["required"].append("synthetic_required")
+            schema["properties"]["synthetic_required"] = {"type": "string"}
+            path.write_text(json.dumps(schema))
+            text = "Not legal advice.\n" + artifact_block(kind, obj)
+            source.write_text(text)
+            oracle = subprocess.run([PYTHON, "-I", "-S", str(self.scripts / "validate.py"),
+                                     leaf, str(source)], capture_output=True)
+            c = self.client(script=self.script, env=dict(os.environ, APODICTIC_SCHEMA_DIR=str(alternate)))
+            c.send(validation("schema", text, leaf))
+            result = c.next()["result"]
+            self.assertEqual((result["exit_code"], result["stdout"].encode(), result["stderr"].encode()),
+                             (oracle.returncode, oracle.stdout, oracle.stderr))
+            self.assertEqual(result["exit_code"], 1)
+            self.assertIn("synthetic_required", result["stdout"])
+            self.assertEqual(c.end(), (0, [], b""))
+
     def test_closed_schemas_and_ids(self):
         cases = []
         for request in (validation(), cancel()):
@@ -716,7 +844,8 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(c.end(), (0, [], b""))
         # Leaves are trusted local text code: no network-capable module is imported.
         network = {"socket", "ssl", "http", "urllib", "ftplib", "smtplib", "asyncio", "requests"}
-        for name in ("validator_runner.py", "letter_checks.py", "timeline_checks.py", "calibration_honesty.py", "override_marker.py"):
+        for name in ("validator_runner.py", "letter_checks.py", "timeline_checks.py", "calibration_honesty.py", "legal_risk.py", "scene_ethics.py",
+                     "apodictic_artifacts.py", "override_marker.py"):
             tree = ast.parse((SCRIPT.parent / name).read_text())
             imported = {alias.name.split(".")[0] for node in ast.walk(tree)
                         if isinstance(node, ast.Import) for alias in node.names}
