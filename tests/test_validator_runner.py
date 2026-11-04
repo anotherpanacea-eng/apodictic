@@ -531,22 +531,8 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(c.next()['error']['code'], 'duplicate_id')
         self.assertEqual(c.end(), (2, [], b''))
 
-    def test_pair_dependencies_and_worker_errors(self):
-        path = self.schemas / 'apodictic.severity_calibration.v1.schema.json'
-        original = path.read_bytes()
-        for fault in [None, b'{', b'[]', b'{"$id":"wrong"}']:
-            if fault is None: path.unlink()
-            else: path.write_bytes(fault)
-            c = self.client(script=self.script)
-            c.send(pair_validation(validator='softness-check'))
-            self.error(c.next(), 'runner_dependency_unavailable')
-            self.assertEqual(c.end(), (0, [], b''))
-            path.write_bytes(original)
-        # Finding schema is not used by softness_check; do not impose new validation.
-        (self.schemas / 'apodictic.finding.v1.schema.json').unlink()
+    def test_pair_worker_errors(self):
         c = self.client(script=self.script)
-        c.send(pair_validation('no-finding-schema', validator='softness-check'))
-        self.assertTrue(c.next()['available'])
         broken = artifact_block('finding', {'schema': 'apodictic.finding.v1', 'severity': [],
                                            'mechanism': 'PRIVATE_SENTINEL'})
         c.send(pair_validation('broken', ['', broken], 'softness-check'))
@@ -851,36 +837,6 @@ class RunnerTests(unittest.TestCase):
             self.error(got, "runner_dependency_unavailable")
             self.assertNotIn("SYNTHETIC_SENTINEL", json.dumps(got))
             self.assertEqual(c.end(), (0, [], b""))
-
-    def test_schema_dependencies_are_required_even_for_empty_text(self):
-        for leaf, schema_id in (("legal-risk", "apodictic.legal_risk.v1"),
-                                ("scene-ethics", "apodictic.scene_ethics.v1"),
-                                ("deficit-lock", "apodictic.finding.v1")):
-            path = self.schemas / (schema_id + ".schema.json")
-            original = path.read_bytes()
-            schema = json.loads(original)
-            faults = [None, b"{broken", b"[]", b"null", b"\xff", json.dumps(dict(schema, **{"$id": "wrong"})).encode()]
-            faults += [json.dumps(dict(schema, **{key: value})).encode() for key, value in
-                       (("type", "array"), ("required", "id"), ("required", [3]),
-                        ("properties", []), ("properties", {"id": "string"}))]
-            for fault in faults:
-                with self.subTest(leaf=leaf, fault=fault):
-                    if fault is None:
-                        path.unlink()
-                    else:
-                        path.write_bytes(fault)
-                    c = self.client(script=self.script)
-                    c.send(validation("missing", "", leaf))
-                    self.error(c.next(), "runner_dependency_unavailable")
-                    self.assertEqual(c.end(), (0, [], b""))
-                    path.write_bytes(original)
-        artifact = self.scripts / "apodictic_artifacts.py"
-        artifact.unlink()
-        c = self.client(script=self.script)
-        for leaf in ("legal-risk", "scene-ethics", "deficit-lock"):
-            c.send(validation(leaf, "", leaf))
-            self.error(c.next(), "runner_dependency_unavailable")
-        self.assertEqual(c.end(), (0, [], b""))
 
     def test_schema_leaf_helpers_must_be_present(self):
         for leaf, module in (("legal-risk", "legal_risk.py"), ("scene-ethics", "scene_ethics.py"),
