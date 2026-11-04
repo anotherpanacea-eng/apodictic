@@ -290,6 +290,10 @@ def validation(id="r1", text="The pacing needs work.", validator="tone-check"):
     return {"protocol": 1, "type": "validate", "id": id, "validator": validator, "text": text}
 
 
+def pair_validation(id="r1", texts=("", ""), validator="timeline-diff"):
+    return {"protocol": 1, "type": "validate_pair", "id": id, "validator": validator, "texts": texts}
+
+
 def cancel(target="r1", id="c1"):
     return {"protocol": 1, "type": "cancel", "id": id, "target": target}
 
@@ -368,7 +372,7 @@ class RunnerTests(unittest.TestCase):
                      "apodictic_artifacts.py", "fiction_groundtruth.py", "honesty_check.py",
                      "severity_vocab.py", "override_marker.py", "validate.py"):
             shutil.copyfile(SCRIPT.parent / name, self.scripts / name)
-        for schema_id in ("apodictic.legal_risk.v1", "apodictic.scene_ethics.v1", "apodictic.finding.v1"):
+        for schema_id in ("apodictic.legal_risk.v1", "apodictic.scene_ethics.v1", "apodictic.finding.v1", "apodictic.severity_calibration.v1"):
             name = schema_id + ".schema.json"
             shutil.copyfile(SCRIPT.parent.parent / "schemas" / name, self.schemas / name)
         self.metadata = self.schemas / "validator-runtime-inventory.json"
@@ -402,7 +406,7 @@ class RunnerTests(unittest.TestCase):
 
         (self.scripts / "timeline_checks.py").write_text(
             body + "\nSINGLE_FILE_CHECKS = dict.fromkeys(%r, check)\n" %
-            (("timeline-arithmetic", "timeline-anchor-conflict"),))
+            (("timeline-arithmetic", "timeline-anchor-conflict"),) + "\ntimeline_diff = lambda first, second: check(first)\n")
 
         (self.scripts / "calibration_honesty.py").write_text(
             body + "\ndef scan(text):\n r = check(text)\n return int(bool(r[0])), r[1] + [r[2]]\n")
@@ -412,7 +416,7 @@ class RunnerTests(unittest.TestCase):
                 "\ndef %s(text):\n r = check(text)\n return int(bool(r[0])), r[1] + [r[2]]\n" % entry)
 
         (self.scripts / "fiction_groundtruth.py").write_text(body + "\nfiction_groundtruth_check = check\n")
-        (self.scripts / "honesty_check.py").write_text(body + "\ndef deficit_lock(text):\n return check(text)[:2]\n")
+        (self.scripts / "honesty_check.py").write_text(body + "\ndef deficit_lock(text):\n return check(text)[:2]\ndef softness_check(first, second):\n return check(first)[:2]\n")
 
     def sleeping(self):
         self.pidfile = self.root / "synthetic-worker.pid"
@@ -440,6 +444,116 @@ class RunnerTests(unittest.TestCase):
         return subprocess.run([PYTHON, "-I", "-S", str(self.script), "--check-inventory"],
                               capture_output=True, cwd=self.root,
                               env=dict(os.environ, PATH="", PYTHONPATH=str(self.root))).returncode
+
+    def test_paired_leaves_match_native_cli(self):
+        # Assert findings independently as well as byte parity with native execution.
+        prior = '## Section 1\n| Scene ID | Event |\n|---|---|\n| S1 | Before |\n'
+        added = prior + '| S2 | After |\n'
+        notes = '\n## Section 8: Changes\n'
+        marker = '<!-- override: timeline-diff-undocumented -->'
+        timeline = [(('', ''), 0), ((prior, prior), 0), ((prior, added), 1),
+                    ((prior, added + notes + '- Added event\n'), 0),
+                    ((prior, added + notes + '- Changed event\n'), 1),
+                    ((added, prior + notes + '- Removed event\n'), 0),
+                    ((added, prior + notes + '- Added event\n'), 1),
+                    ((prior, added + marker), 0),
+                    ((prior, added + '~~~\n' + marker + '\n~~~'), 1),
+                    ((prior, added + notes + marker), 1),
+                    ((prior, prior.replace('Before', 'After') + notes + '- Changed event\n'), 0),
+                    (('', '## Section 3\n- S1: Day 2\n' + notes + '- Anchors added\n'), 0)]
+        finding = {'schema': 'apodictic.finding.v1', 'id': 'F-P5-01', 'severity': 'Must-Fix',
+                   'mechanism': 'Invented protagonist motivation', 'evidence_refs': ['Chapter 3']}
+        ledger = artifact_block('finding', finding)
+        body = '## What Needs Work\nF-P5-01: protagonist motivation fails in Chapter 3.\n'
+        calibration = '\n## Appendix B: Severity Calibration\nF-P5-01 Must-Fix\n'
+        downgrade = calibration.replace('Must-Fix', 'Should-Fix')
+        override = '<!-- override: softness-downgrade F-P5-01 -->\n'
+        structured = artifact_block('severity_calibration', {
+            'schema': 'apodictic.severity_calibration.v1', 'id': 'F-P5-01',
+            'locked': 'Must-Fix', 'delivered': 'Should-Fix', 'direction': 'softened'})
+        softness = [(('', ''), 0), ((body + calibration, ledger), 0),
+                    ((body + downgrade, ledger), 1), ((body + override + downgrade, ledger), 0),
+                    ((body + override.replace('F-P5-01', 'F-P5-011') + downgrade, ledger), 1),
+                    ((body + override.replace('F-P5-01', 'F-P5-99') + downgrade, ledger), 1),
+                    ((body + '~~~\n' + override + '~~~\n' + downgrade, ledger), 1),
+                    ((body + calibration + structured, ledger), 1),
+                    ((body + calibration + '<!-- apodictic:severity_calibration\n{bad\n-->', ledger), 1),
+                    (('', ledger), 1), ((ledger, body + calibration), 0),
+                    ((body + calibration, artifact_block('finding', dict(finding, id=42))), 0)]
+        for name in ('timeline_checks.py', 'honesty_check.py', 'sitecustomize.py'):
+            (self.root / name).write_text("raise RuntimeError('injection')\n")
+        c = self.client(cwd=self.root, env=dict(os.environ, PATH='', PYTHONPATH=str(self.root)))
+        n = 0
+        for leaf, cases in [('timeline-diff', timeline), ('softness-check', softness)]:
+            for texts, expected in cases:
+                for ending in ['\n', '\r\n', '\r']:
+                    pair = [text.replace('\n', ending) for text in texts]
+                    with self.subTest(leaf=leaf, n=n, ending=ending):
+                        paths = [self.root / 'first.txt', self.root / 'second.txt']
+                        for path, text in zip(paths, pair): path.write_bytes(text.encode())
+                        oracle = subprocess.run([PYTHON, str(SCRIPT.parent / 'validate.py'), leaf,
+                                                 *map(str, paths)], capture_output=True)
+                        c.send(pair_validation(str(n), pair, leaf)); got = c.next()
+                        self.assertTrue(got['available'], got)
+                        result = got['result']
+                        self.assertEqual((result['exit_code'], result['stdout'].encode(), result['stderr'].encode()),
+                                         (oracle.returncode, oracle.stdout, oracle.stderr))
+                        self.assertEqual(result['exit_code'], expected)
+                        n += 1
+        self.assertEqual(c.end(), (0, [], b''))
+
+    def test_pair_shape_mode_and_limits(self):
+        for texts in [None, '', {}, [], [''], ['', '', ''], [0, ''], ['', False], ['', []]]:
+            c = self.client(); c.send(pair_validation(texts=texts))
+            self.assertEqual(c.next()['error']['code'], 'invalid_request')
+            self.assertEqual(c.end(), (2, [], b''))
+        for change in [{'text': ''}, {'path': '/tmp/input'}, {'protocol': True}]:
+            c = self.client(); c.send(dict(pair_validation(), **change))
+            self.assertEqual(c.next()['error']['code'], 'invalid_request')
+            self.assertEqual(c.end(), (2, [], b''))
+        c = self.client()
+        for i, request in enumerate([validation(validator='timeline-diff'), validation(validator='softness-check'),
+                                     pair_validation(validator='tone-check'), pair_validation(validator='other')]):
+            c.send(dict(request, id='mode' + str(i))); self.error(c.next(), 'validator_unavailable')
+        for slot in [0, 1]:
+            for i, text in enumerate(['x' * 262144, '😀' * 65536, '\n' * 8191, '\r\n' * 8191]):
+                texts = ['', '']; texts[slot] = text
+                c.send(pair_validation('at%d_%d' % (slot, i), texts)); self.assertTrue(c.next()['available'])
+            for i, text in enumerate(['x' * 262145, '😀' * 65536 + 'x', '\n' * 8192, '\r' * 8192]):
+                texts = ['', '']; texts[slot] = text
+                c.send(pair_validation('over%d_%d' % (slot, i), texts)); self.error(c.next(), 'input_limit')
+        c.send(pair_validation('combined-at', ['x' * 131072, 'x' * 131072])); self.assertTrue(c.next()['available'])
+        c.send(pair_validation('combined-over', ['x' * 131072, 'x' * 131073])); self.error(c.next(), 'input_limit')
+        # Byte budget is measured before CRLF normalization, across both inputs.
+        c.send(pair_validation('raw-over', ['x' * 262143, '\r\n'])); self.error(c.next(), 'input_limit')
+        c.send(validation('healthy')); self.assertTrue(c.next()['available'])
+        c.send(pair_validation('healthy'))
+        self.assertEqual(c.next()['error']['code'], 'duplicate_id')
+        self.assertEqual(c.end(), (2, [], b''))
+
+    def test_pair_dependencies_and_worker_errors(self):
+        path = self.schemas / 'apodictic.severity_calibration.v1.schema.json'
+        original = path.read_bytes()
+        for fault in [None, b'{', b'[]', b'{"$id":"wrong"}']:
+            if fault is None: path.unlink()
+            else: path.write_bytes(fault)
+            c = self.client(script=self.script)
+            c.send(pair_validation(validator='softness-check'))
+            self.error(c.next(), 'runner_dependency_unavailable')
+            self.assertEqual(c.end(), (0, [], b''))
+            path.write_bytes(original)
+        # Finding schema is not used by softness_check; do not impose new validation.
+        (self.schemas / 'apodictic.finding.v1.schema.json').unlink()
+        c = self.client(script=self.script)
+        c.send(pair_validation('no-finding-schema', validator='softness-check'))
+        self.assertTrue(c.next()['available'])
+        broken = artifact_block('finding', {'schema': 'apodictic.finding.v1', 'severity': [],
+                                           'mechanism': 'PRIVATE_SENTINEL'})
+        c.send(pair_validation('broken', ['', broken], 'softness-check'))
+        got = c.next(); self.error(got, 'worker_failed')
+        self.assertNotIn('PRIVATE_SENTINEL', json.dumps(got))
+        c.send(pair_validation('healthy')); self.assertTrue(c.next()['available'])
+        self.assertEqual(c.end(), (0, [], b''))
 
     def test_every_leaf_matches_the_native_cli(self):
         # Foreign cwd, empty PATH and injected PYTHONPATH/site files cannot change a leaf.
@@ -626,17 +740,20 @@ class RunnerTests(unittest.TestCase):
     def test_lifecycle_is_shared_by_every_leaf(self):
         actions = ("cancel", "timeout", "eof", "fatal", "partial", "bad_target", "SIGTERM", "SIGINT")
         for i, action in enumerate(actions):
-            leaf, queued = LEAVES[i % len(LEAVES)], LEAVES[(i + 1) % len(LEAVES)]
+            leaf = "timeline-diff" if i % 2 == 0 else "softness-check"
+            queued = LEAVES[(i + 1) % len(LEAVES)]
+            def request(id, text):
+                return pair_validation(id, [text, ""], leaf)
             with self.subTest(action=action, leaf=leaf):
                 self.sleeping()
                 c = self.client(script=self.script)
                 started = time.monotonic()
-                c.send(validation("active", "sleep", leaf)); pid = self.pid()
+                c.send(request("active", "sleep")); pid = self.pid()
                 # One active worker; later valid requests wait in order, refusals answer at once.
                 c.send(validation("queued", "", queued))
-                c.send(validation("dropped", "", leaf))
+                c.send(request("dropped", ""))
                 c.send(validation("other", "", "other")); self.error(c.next(), "validator_unavailable")
-                c.send(validation("limit", "\n" * 8192, leaf)); self.error(c.next(), "input_limit")
+                c.send(request("limit", "\n" * 8192)); self.error(c.next(), "input_limit")
                 c.send(cancel("dropped", "c0")); got = c.next(); self.error(got, "cancelled")
                 self.assertEqual((got["id"], got["validator"]), ("dropped", leaf))
                 self.assertTrue(c.next()["cancelled"])
@@ -664,7 +781,7 @@ class RunnerTests(unittest.TestCase):
                                      "invalid_frame" if action == "partial" else "invalid_request")
                 if action in ("cancel", "timeout"):
                     c.send(cancel("active", "late")); self.assertFalse(c.next()["cancelled"])
-                    c.send(validation("healthy", "", leaf)); self.assertTrue(c.next()["available"])
+                    c.send(request("healthy", "")); self.assertTrue(c.next()["available"])
                 self.assertEqual(c.end(), (0 if drains else 2, [], b""))
 
     def test_dependency_and_worker_failures_are_unavailable(self):

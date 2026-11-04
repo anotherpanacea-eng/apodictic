@@ -39,14 +39,22 @@ def timeline_tuple(errors, warnings, ok_line, failed_line):
     return int(bool(errors)), warnings + errors + summary
 
 
-def deficit_tuple(errors, warnings):
-    """honesty_check.report with the fixed deficit-lock label."""
+def honesty_tuple(label, errors, warnings):
+    """honesty_check.report with a fixed adapter-selected label."""
     lines = ["WARN: " + w for w in warnings] + ["ERROR: " + e for e in errors]
     if errors:
-        lines.append("deficit-lock: FAIL (%d error(s), %d warning(s))" % (len(errors), len(warnings)))
+        lines.append("%s: FAIL (%d error(s), %d warning(s))" % (label, len(errors), len(warnings)))
     else:
-        lines.append("deficit-lock: PASS" + (" (%d warning(s))" % len(warnings) if warnings else ""))
+        lines.append(label + ": PASS" + (" (%d warning(s))" % len(warnings) if warnings else ""))
     return int(bool(errors)), lines
+
+
+def deficit_tuple(errors, warnings):
+    return honesty_tuple("deficit-lock", errors, warnings)
+
+
+def softness_tuple(errors, warnings):
+    return honesty_tuple("softness-check", errors, warnings)
 
 
 def raw(exit_code, lines):
@@ -73,6 +81,10 @@ LEAVES = {
     "ledger-consolidation": ("CHECKS", four_tuple),
     "audit-signal-propagation": ("CHECKS", four_tuple),
     "underdiagnosis-triggers": ("CHECKS", four_tuple),
+}
+PAIR_LEAVES = {
+    "timeline-diff": ("TIMELINE_DIFF", timeline_tuple),
+    "softness-check": ("SOFTNESS_CHECK", softness_tuple),
 }
 WORKER_ERRORS = ("runner_dependency_unavailable", "worker_failed", "output_limit")
 
@@ -128,7 +140,8 @@ def check_inventory():
         ok = (set(value) == {"version", "validators"} and value["version"] == 1
               and registry and len(set(registry)) == len(registry)
               and len(set(ids)) == len(ids) and set(ids) == set(registry)
-              and set(LEAVES) <= set(ids)
+              and not (LEAVES.keys() & PAIR_LEAVES.keys())
+              and (LEAVES.keys() | PAIR_LEAVES.keys()) <= set(ids)
               and all(set(row) == {"id", "desktop_disposition", "omitted_capability"}
                       and row["desktop_disposition"] in ("ci-only", "not-yet-supported")
                       and isinstance(row["omitted_capability"], str)
@@ -150,13 +163,17 @@ def request_shape(value):
         return "unsupported_protocol"
     kind = value.get("type")
     keys = ({"protocol", "type", "id", "validator", "text"} if kind == "validate"
+            else {"protocol", "type", "id", "validator", "texts"} if kind == "validate_pair"
             else {"protocol", "type", "id", "target"} if kind == "cancel" else set())
     if not keys or set(value) != keys:
         return "invalid_request"
-    field = "validator" if kind == "validate" else "target"
+    field = "target" if kind == "cancel" else "validator"
     if not all(isinstance(value[k], str) and IDENTIFIER.fullmatch(value[k]) for k in ("id", field)):
         return "invalid_request"
     if kind == "validate" and not isinstance(value["text"], str):
+        return "invalid_request"
+    if kind == "validate_pair" and (not isinstance(value["texts"], list)
+            or len(value["texts"]) != 2 or not all(isinstance(text, str) for text in value["texts"])):
         return "invalid_request"
     return None
 
@@ -189,10 +206,18 @@ def worker(leaf):
     """Run one leaf on the coordinator's already bounded, LF-normalized text."""
     try:
         text = json.loads(sys.stdin.buffer.read())
-        registry, formatter = LEAVES[leaf]
+        registry, formatter = (LEAVES | PAIR_LEAVES)[leaf]
         sys.path.insert(0, str(HERE))
         try:
-            if registry == "SINGLE_FILE_CHECKS":
+            if registry == "TIMELINE_DIFF":
+                import timeline_checks
+                check = timeline_checks.timeline_diff
+            elif registry == "SOFTNESS_CHECK":
+                import honesty_check
+                import apodictic_artifacts
+                check = honesty_check.softness_check
+                require_schema(apodictic_artifacts, "apodictic.severity_calibration.v1")
+            elif registry == "SINGLE_FILE_CHECKS":
                 import timeline_checks
                 check = timeline_checks.SINGLE_FILE_CHECKS[leaf]
             elif registry == "FICTION_GROUNDTRUTH":
@@ -223,7 +248,7 @@ def worker(leaf):
         except Exception:
             result = {"error": "runner_dependency_unavailable"}
         else:
-            code, lines = formatter(*check(text))
+            code, lines = formatter(*(check(*text) if leaf in PAIR_LEAVES else check(text)))
             result = {"exit_code": code, "stdout": "".join(line + "\n" for line in lines),
                       "stderr": ""}
         payload = encoded(result)
@@ -292,7 +317,7 @@ class Session:
         def send():
             try:
                 with child.stdin:
-                    child.stdin.write(encoded(request["text"]))
+                    child.stdin.write(encoded(request["texts"] if request["type"] == "validate_pair" else request["text"]))
             except OSError:
                 self.notify(self.events, ("child_error", active, b""))
         for target, args in ((pump, ("stdout", child.stdout)), (pump, ("stderr", child.stderr)),
@@ -366,14 +391,18 @@ class Session:
         if request["type"] == "cancel":
             self.cancel(request)
             return None
-        # Reproduce the canonical helper's universal-newline file reading.
-        text = request["text"].replace("\r\n", "\n").replace("\r", "\n")
-        if request["validator"] not in LEAVES:
+        # Reproduce each canonical helper's universal-newline file reading.
+        paired = request["type"] == "validate_pair"
+        raw_texts = request["texts"] if paired else [request["text"]]
+        texts = [text.replace("\r\n", "\n").replace("\r", "\n") for text in raw_texts]
+        leaves = PAIR_LEAVES if paired else LEAVES
+        if request["validator"] not in leaves:
             self.emit(unavailable(request, "validator_unavailable"))
-        elif len(request["text"].encode("utf-8")) > TEXT_BYTES or text.count("\n") >= TEXT_LINES:
+        elif (sum(len(text.encode("utf-8")) for text in raw_texts) > TEXT_BYTES
+              or any(text.count("\n") >= TEXT_LINES for text in texts)):
             self.emit(unavailable(request, "input_limit"))
         else:
-            self.pending.append(dict(request, text=text))
+            self.pending.append(dict(request, **({"texts": texts} if paired else {"text": texts[0]})))
         return None
 
     def receive(self, data):
@@ -487,7 +516,7 @@ def main():
     args = sys.argv[1:]
     if args == ["--check-inventory"]:
         return check_inventory()
-    if len(args) == 2 and args[0] == "--worker" and args[1] in LEAVES:
+    if len(args) == 2 and args[0] == "--worker" and args[1] in (LEAVES | PAIR_LEAVES):
         return worker(args[1])
     if args:
         sys.stderr.write("Unsupported validator runner usage.\n")

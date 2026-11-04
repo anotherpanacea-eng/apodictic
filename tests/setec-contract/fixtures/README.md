@@ -62,6 +62,25 @@ deterministic and dependency-free. (`narrative_decision_audit` is driven
 through its own deterministic, dependency-free **mock judge**, so its
 feature contributions and aggregate are the real ones the script emits.)
 
+## Conditional keys (present in a golden, not in every run)
+
+The goldens are a **superset** shape: a golden may carry a key that a
+*default* install does not emit, because the key depends on optional,
+locally acquired data. A consumer parser must key off such a key's
+**presence**, never assume it. The `fixture_drift` gate cannot catch this
+class on its own — it compares the generator against the golden, and both
+sides carry the key — so each conditional key is listed here and pinned by a
+behavioral test.
+
+| Golden | Conditional key | Emitted only when |
+|---|---|---|
+| `argument_decision_audit.json` | `results.reused_signals.signals["abstraction.mean_concreteness"]` | the optional Brysbaert concreteness CSV has been fetched locally (SETEC does not redistribute it; `plugins/setec-voiceprint/scripts/fetch_brysbaert.py`). The rest of `reused_signals` — and `reused_signals.available: true` — are unchanged when it is absent. |
+
+`plugins/setec-voiceprint/scripts/tests/test_argument_decision_audit.py::test_only_documented_conditional_key_is_golden_only`
+runs the surface on a default install with the data path forced absent and
+asserts the golden-only signal keys are **exactly** that set, so a future
+golden-only key that is not documented here fails CI.
+
 ## Normalization (volatile fields)
 
 Volatile fields would change every release or run, so the generator and the
