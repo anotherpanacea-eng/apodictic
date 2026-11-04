@@ -33,14 +33,22 @@ def four_tuple(errors, warnings, ok_line, failed_line):
     return int(bool(errors)), warnings + errors + (["", failed_line] if errors else [ok_line])
 
 
+def timeline_tuple(errors, warnings, ok_line, failed_line):
+    """timeline_checks._emit omits empty success/failure summaries."""
+    summary = (["", failed_line] if failed_line else []) if errors else ([ok_line] if ok_line else [])
+    return int(bool(errors)), warnings + errors + summary
+
+
 def raw(exit_code, lines):
     """letter_checks.run_raw_check's stdout lines and exit code."""
     return exit_code, lines
 
 
-# The only runnable leaves: validator id -> (letter_checks registry, result formatter).
+# The only runnable leaves: validator id -> (fixed helper registry, result formatter).
 # Adding a leaf is one row here; --check-inventory requires its registry id.
 LEAVES = {
+    "timeline-arithmetic": ("SINGLE_FILE_CHECKS", timeline_tuple),
+    "timeline-anchor-conflict": ("SINGLE_FILE_CHECKS", timeline_tuple),
     "tone-check": ("CHECKS", four_tuple),
     "synthesis-sections": ("CHECKS", four_tuple),
     "severity-floor": ("CHECKS", four_tuple),
@@ -154,8 +162,12 @@ def worker(leaf):
         registry, formatter = LEAVES[leaf]
         sys.path.insert(0, str(HERE))
         try:
-            import letter_checks
-            check = getattr(letter_checks, registry)[leaf]
+            if registry == "SINGLE_FILE_CHECKS":
+                import timeline_checks
+                check = timeline_checks.SINGLE_FILE_CHECKS[leaf]
+            else:
+                import letter_checks
+                check = getattr(letter_checks, registry)[leaf]
         except Exception:
             result = {"error": "runner_dependency_unavailable"}
         else:

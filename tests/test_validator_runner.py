@@ -20,7 +20,7 @@ FIXTURES = ROOT / "tests/fixtures/validators"
 PYTHON = sys.executable
 LEAVES = ("tone-check", "synthesis-sections", "severity-floor", "decision-layer-check",
           "author-facing-lint", "ledger-check", "ledger-consolidation", "audit-signal-propagation",
-          "underdiagnosis-triggers")
+          "underdiagnosis-triggers", "timeline-arithmetic", "timeline-anchor-conflict")
 REFERENCE = Path("skills/core-editor/references/pass-dependencies.md")
 SIGNAL_APPENDIX = "\n## Appendix A\n### Reception Risk Audit\nhard gate at L42\n"
 SIGNAL_SHOULD = "Should-Fix: Reception Risk needs revision.\n" + SIGNAL_APPENDIX
@@ -162,6 +162,28 @@ CASES = {
     "audit-signal-propagation": [text for _, text, _ in SIGNAL_CASES],
     "underdiagnosis-triggers": [text for _, text, _, _ in UNDERDIAGNOSIS_CASES],
 }
+# Preserve override warnings exactly: timeline summaries can be empty.
+TIMELINE_CASES = {}
+for leaf, conflict, slug in (
+    ("timeline-arithmetic", "| Scene | -2 hours |\n", "timeline-arithmetic-conflict"),
+    ("timeline-anchor-conflict", "Anchor (contradicts another)\n", "timeline-anchor-conflict"),
+):
+    marker = "<!-- override: %s -->" % slug
+    TIMELINE_CASES[leaf] = [(conflict, 1), (marker + "\n" + conflict, 0)] + [
+        (wrapped + "\n" + conflict, 1) for wrapped in
+        ("`" + marker + "`", "~~~\n" + marker + "\n~~~", marker.replace(slug, slug + "-suffix"))
+    ] + [(conflict + "## Section 8: Diff Notes\n" + marker, 1),
+         ("## Section 8: Diff Notes\n" + conflict, 0)]
+    CASES[leaf] = [text for text, _ in TIMELINE_CASES[leaf]]
+
+# Grouped day numbers must stay numeric, and uncertainty/nonlinearity remains
+# the canonical helper's decision rather than a runner-side interpretation.
+for leaf, fixture in (("timeline-arithmetic", "silent_arithmetic"),
+                      ("timeline-anchor-conflict", "silent_anchor")):
+    example = (FIXTURES / ("tl.fail.%s.%s.md" % (leaf, fixture))).read_text()
+    CASES[leaf] += [example.replace("Day 1", "Day 1,000").replace("Day 2", "Day 1,001"),
+                    example.replace("\n", "\r\n"), example.replace("\n", "\r")]
+
 SHARED = ["", "masterpiece", "雪 😀\r\n" + WEAK + "\rQF-7\n" + LEDGER, "x" * 262144, "\n" * 8191]
 
 
@@ -243,7 +265,7 @@ class RunnerTests(unittest.TestCase):
         self.schemas = self.scripts.parent / "schemas"
         self.scripts.mkdir(parents=True)
         self.schemas.mkdir()
-        for name in ("validator_runner.py", "letter_checks.py", "override_marker.py", "validate.py"):
+        for name in ("validator_runner.py", "letter_checks.py", "timeline_checks.py", "override_marker.py", "validate.py"):
             shutil.copyfile(SCRIPT.parent / name, self.scripts / name)
         self.metadata = self.schemas / "validator-runtime-inventory.json"
         shutil.copyfile(SCRIPT.parent.parent / "schemas/validator-runtime-inventory.json", self.metadata)
@@ -273,6 +295,10 @@ class RunnerTests(unittest.TestCase):
         (self.scripts / "letter_checks.py").write_text(
             body + "\nCHECKS = dict.fromkeys(%r, check)\nRAW_CHECKS = {'ledger-check': "
             "lambda text: (lambda r: (int(bool(r[0])), r[1] + [r[2]]))(check(text))}\n" % (tuple(leaf for leaf in LEAVES if leaf != "ledger-check"),))
+
+        (self.scripts / "timeline_checks.py").write_text(
+            body + "\nSINGLE_FILE_CHECKS = dict.fromkeys(%r, check)\n" %
+            (("timeline-arithmetic", "timeline-anchor-conflict"),))
 
     def sleeping(self):
         self.pidfile = self.root / "synthetic-worker.pid"
@@ -304,12 +330,13 @@ class RunnerTests(unittest.TestCase):
     def test_every_leaf_matches_the_native_cli(self):
         # Foreign cwd, empty PATH and injected PYTHONPATH/site files cannot change a leaf.
         (self.root / "letter_checks.py").write_text("raise RuntimeError('cwd injection')\n")
+        (self.root / "timeline_checks.py").write_text("raise RuntimeError('cwd injection')\n")
         (self.root / "sitecustomize.py").write_text("raise RuntimeError('site injection')\n")
         c = self.client(cwd=self.root, env=dict(os.environ, PATH="", PYTHONPATH=str(self.root)))
         source = self.root / "invented.txt"
         n = 0
         for leaf in LEAVES:
-            texts = [p.read_bytes().decode() for p in sorted(FIXTURES.glob("lc.*.%s.*.md" % leaf))]
+            texts = [p.read_bytes().decode() for p in sorted(FIXTURES.glob("%s.*.%s.*.md" % ("tl" if leaf.startswith("timeline-") else "lc", leaf)))]
             for text in texts + SHARED + CASES[leaf]:
                 with self.subTest(leaf=leaf, case=n):
                     source.write_bytes(text.encode())
@@ -322,6 +349,12 @@ class RunnerTests(unittest.TestCase):
                     result = got["result"]
                     self.assertEqual((result["exit_code"], result["stdout"].encode(), result["stderr"].encode()),
                                      (oracle.returncode, oracle.stdout, oracle.stderr))
+                    if leaf in TIMELINE_CASES:
+                        expected = dict(TIMELINE_CASES[leaf])
+                        if text in expected:
+                            self.assertEqual(result["exit_code"], expected[text])
+                        if result["stdout"].startswith("WARN:"):
+                            self.assertFalse(result["stdout"].endswith("\n\n"))
                     if leaf == "audit-signal-propagation":
                         expected = {t: decision for _, t, decision in SIGNAL_CASES}
                         if text in expected:
@@ -532,6 +565,23 @@ class RunnerTests(unittest.TestCase):
                 self.assertEqual(c.end(), (0, [], b""))
                 self.assertEqual(before, sorted(self.root.rglob("*")))
 
+    def test_timeline_dependency_refusals_and_two_input_leaf_unavailable(self):
+        module = self.scripts / "timeline_checks.py"
+        for body in (None, "SINGLE_FILE_CHECKS = {}\n"):
+            if body is None:
+                module.unlink()
+            else:
+                module.write_text(body)
+            c = self.client(script=self.script)
+            for i, leaf in enumerate(("timeline-arithmetic", "timeline-anchor-conflict")):
+                c.send(validation(str(i), "SYNTHETIC_SENTINEL", leaf))
+                got = c.next()
+                self.error(got, "runner_dependency_unavailable")
+                self.assertNotIn("SYNTHETIC_SENTINEL", json.dumps(got))
+            c.send(validation("diff", "", "timeline-diff"))
+            self.error(c.next(), "validator_unavailable")
+            self.assertEqual(c.end(), (0, [], b""))
+
     def test_closed_schemas_and_ids(self):
         cases = []
         for request in (validation(), cancel()):
@@ -610,7 +660,7 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(c.end(), (0, [], b""))
         # Leaves are trusted local text code: no network-capable module is imported.
         network = {"socket", "ssl", "http", "urllib", "ftplib", "smtplib", "asyncio", "requests"}
-        for name in ("validator_runner.py", "letter_checks.py", "override_marker.py"):
+        for name in ("validator_runner.py", "letter_checks.py", "timeline_checks.py", "override_marker.py"):
             tree = ast.parse((SCRIPT.parent / name).read_text())
             imported = {alias.name.split(".")[0] for node in ast.walk(tree)
                         if isinstance(node, ast.Import) for alias in node.names}

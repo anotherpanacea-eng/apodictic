@@ -1,6 +1,6 @@
 # M3 validator runner: first leaf
 
-**Status:** Built as a source-development runner for nine fixed leaves: tone-check, synthesis-sections, severity-floor, decision-layer-check, author-facing-lint, ledger-check, ledger-consolidation, audit-signal-propagation and underdiagnosis-triggers. Signed desktop availability and native Windows process qualification are not established.
+**Status:** Built as a source-development runner for eleven fixed leaves: tone-check, synthesis-sections, severity-floor, decision-layer-check, author-facing-lint, ledger-check, ledger-consolidation, audit-signal-propagation, underdiagnosis-triggers, timeline-arithmetic and timeline-anchor-conflict. Signed desktop availability and native Windows process qualification are not established.
 <!-- built-when: plugins/apodictic/scripts/validator_runner.py -->
 
 ## 1. Deliverable and boundary
@@ -13,7 +13,9 @@ The future Tauri broker owns signing, embedded or dependency-locked Python, envi
 
 ## 2. Existing behavior reused
 
-Leaves reuse the unchanged helpers registered in `letter_checks.CHECKS`, which return `(errors, warnings, ok_line, failed_line)`, and in `letter_checks.RAW_CHECKS`, which return `(exit_code, lines)`. The adapter reproduces `run_check` and `run_raw_check` stdout byte for byte. For a `CHECKS` leaf, it writes warnings, then errors, each followed by LF. If there are errors, it adds one LF, then `failed_line` and LF, and the exit code is 1. Otherwise it writes `ok_line` and LF, and the exit code is 0. A `RAW_CHECKS` leaf prints each line followed by LF and returns the helper's exit code. `stderr` is empty for every executed leaf. Before the helper runs, input line endings are translated `CRLF -> LF` and then `CR -> LF`, which reproduces the canonical helper's universal-newline file read. There is no trimming, normalization or minimum length. `run_check` takes a file path, so the adapter keeps these formatting rules as a one-line formatter, and tests prove its parity.
+The two timeline leaves use unchanged `timeline_checks.SINGLE_FILE_CHECKS` functions and reproduce `_emit`: warnings precede errors; empty success/failure summaries are omitted. The two-input `timeline-diff` remains unavailable.
+
+Letter leaves reuse the unchanged helpers registered in `letter_checks.CHECKS`, which return `(errors, warnings, ok_line, failed_line)`, and in `letter_checks.RAW_CHECKS`, which return `(exit_code, lines)`. The adapter reproduces `run_check` and `run_raw_check` stdout byte for byte. For a `CHECKS` leaf, it writes warnings, then errors, each followed by LF. If there are errors, it adds one LF, then `failed_line` and LF, and the exit code is 1. Otherwise it writes `ok_line` and LF, and the exit code is 0. A `RAW_CHECKS` leaf prints each line followed by LF and returns the helper's exit code. `stderr` is empty for every executed leaf. Before the helper runs, input line endings are translated `CRLF -> LF` and then `CR -> LF`, which reproduces the canonical helper's universal-newline file read. There is no trimming, normalization or minimum length. `run_check` takes a file path, so the adapter keeps these formatting rules as a one-line formatter, and tests prove its parity.
 
 ## 3. Closed version 1 protocol
 
@@ -68,13 +70,13 @@ The process exits 0 for a clean session, whether leaves pass or fail, and 2 for 
 - a §7 leaf id is missing;
 - a row or the file is malformed.
 
-So any undispositioned registry addition, removal or rename fails the hosted gate. The runtime does not read the inventory. It grants no execution authority, and desktop support stays disabled. At baseline, three ids are `ci-only` (`schema-coverage`, `validator-conventions`, `argument-carve-behavior-preservation`), and every other id, including the nine leaves, is `not-yet-supported`. The JSON file is the source of truth for the per-id reasons. The gate compares sets, not counts.
+So any undispositioned registry addition, removal or rename fails the hosted gate. The runtime does not read the inventory. It grants no execution authority, and desktop support stays disabled. At baseline, three ids are `ci-only` (`schema-coverage`, `validator-conventions`, `argument-carve-behavior-preservation`), and every other id, including the eleven leaves, is `not-yet-supported`. The JSON file is the source of truth for the per-id reasons. The gate compares sets, not counts.
 
 ## 6. Acceptance evidence
 
 `tests/test_validator_runner.py` runs locally and is not in CI. It covers:
 
-1. **Parity.** One table runs leaves × cases (shipped `lc.*.<leaf>.*.md` fixtures, shared empty/Unicode/mixed-line-ending/text-ceiling cases, and invented per-leaf adversaries) through one real JSONL session. The session runs from a foreign cwd with an empty `PATH` and injected `PYTHONPATH`/site files. Each result's exit code and UTF-8 stdout/stderr bytes must equal the native `validate.py <leaf>` oracle.
+1. **Parity.** One table runs leaves × cases (shipped `lc.*.<leaf>.*.md` and `tl.*.<leaf>.*.md` fixtures, shared empty/Unicode/mixed-line-ending/text-ceiling cases, and invented per-leaf adversaries) through one real JSONL session. The session runs from a foreign cwd with an empty `PATH` and injected `PYTHONPATH`/site files. Each result's exit code and UTF-8 stdout/stderr bytes must equal the native `validate.py <leaf>` oracle.
    A second table runs the runner and the native CLI from the same disposable installation against changed, missing and malformed `pass-dependencies.md` maps, for `audit-signal-propagation` and `underdiagnosis-triggers`.
 2. **Lifecycle.** One leaf-agnostic test uses a synthetic sleeping helper in a copied installation. It covers cancel (active and queued), timeout, EOF drain, fatal schema and frame errors, an invalid cancel target, SIGTERM and SIGINT. It asserts the worker is reaped, there is no late result, the queue keeps its order, and healthy reuse works. It also covers dependency and worker failures, which must be unavailable with no text in errors and no files written.
 3. **Protocol.** Closed request schemas, framing refusals, the frame, text and response ceilings at the limit and one over, a 70-request session, a three-request piped batch drained at EOF, fixed worker locale and time, and no network imports.
@@ -84,10 +86,12 @@ Also run `python plugins/apodictic/scripts/validate.py --check-all`, compile, ch
 
 ## 7. Leaves
 
-The runner admits exactly the keys of the literal `LEAVES` table in `validator_runner.py`. Each row names the `letter_checks` registry (`CHECKS` or `RAW_CHECKS`) and the §2 formatter. The worker resolves that registry entry for its leaf id and nothing else. To add a leaf, add one `LEAVES` row for a canonical registry id and add its cases to the parity table. The lifecycle test is shared and needs no copy. No request, inventory value or argv selects a module, path, executable or formatter.
+The runner admits exactly the keys of the literal `LEAVES` table in `validator_runner.py`. Each row names a fixed registry (`letter_checks.CHECKS`, `letter_checks.RAW_CHECKS`, or `timeline_checks.SINGLE_FILE_CHECKS`) and the §2 formatter. The worker resolves that registry entry for its leaf id and nothing else. To add a leaf, add one `LEAVES` row for a canonical registry id and add its cases to the parity table. The lifecycle test is shared and needs no copy. No request, inventory value or argv selects a module, path, executable or formatter.
 
 | Leaf | Helper result | Inherited behavior preserved for parity |
 | --- | --- | --- |
+| `timeline-arithmetic` | four-tuple, empty summary omitted | Negative gaps, labeled conflicts and computed span overruns; low-confidence/nonlinear exemptions and body-only overrides. |
+| `timeline-anchor-conflict` | four-tuple, empty summary omitted | Labeled conflicts and same-scene anchor drift; Section 8 excluded and body-only overrides. |
 | `tone-check` | four-tuple | Body before the first Appendix heading; code spans and blockquotes exempt; at most seven distinct blocked superlatives. |
 | `synthesis-sections` | four-tuple | Fixed 14 heading names at levels 1–4, matched by the helper's own prefix and word-boundary rules; empty text fails with 14 errors. |
 | `severity-floor` | four-tuple | Three mechanical rules; whole-letter justification search; overrides only in the body. Not proof of narrative adequacy. |
