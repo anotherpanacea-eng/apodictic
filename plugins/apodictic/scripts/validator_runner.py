@@ -39,6 +39,16 @@ def timeline_tuple(errors, warnings, ok_line, failed_line):
     return int(bool(errors)), warnings + errors + summary
 
 
+def deficit_tuple(errors, warnings):
+    """honesty_check.report with the fixed deficit-lock label."""
+    lines = ["WARN: " + w for w in warnings] + ["ERROR: " + e for e in errors]
+    if errors:
+        lines.append("deficit-lock: FAIL (%d error(s), %d warning(s))" % (len(errors), len(warnings)))
+    else:
+        lines.append("deficit-lock: PASS" + (" (%d warning(s))" % len(warnings) if warnings else ""))
+    return int(bool(errors)), lines
+
+
 def raw(exit_code, lines):
     """letter_checks.run_raw_check's stdout lines and exit code."""
     return exit_code, lines
@@ -47,6 +57,8 @@ def raw(exit_code, lines):
 # The only runnable leaves: validator id -> (fixed helper registry, result formatter).
 # Adding a leaf is one row here; --check-inventory requires its registry id.
 LEAVES = {
+    "fiction-groundtruth-check": ("FICTION_GROUNDTRUTH", four_tuple),
+    "deficit-lock": ("DEFICIT_LOCK", deficit_tuple),
     "legal-risk": ("LEGAL_REGISTER", raw),
     "scene-ethics": ("ETHICS_PLAN", raw),
     "calibration-honesty": ("CALIBRATION_SCAN", raw),
@@ -183,6 +195,14 @@ def worker(leaf):
             if registry == "SINGLE_FILE_CHECKS":
                 import timeline_checks
                 check = timeline_checks.SINGLE_FILE_CHECKS[leaf]
+            elif registry == "FICTION_GROUNDTRUTH":
+                import fiction_groundtruth
+                check = fiction_groundtruth.fiction_groundtruth_check
+            elif registry == "DEFICIT_LOCK":
+                import honesty_check
+                import apodictic_artifacts
+                check = honesty_check.deficit_lock
+                require_schema(apodictic_artifacts, "apodictic.finding.v1")
             elif registry in ("LEGAL_REGISTER", "ETHICS_PLAN"):
                 import apodictic_artifacts
                 if registry == "LEGAL_REGISTER":
