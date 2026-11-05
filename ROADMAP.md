@@ -368,6 +368,8 @@ Small, independent items surfaced during the Increment 1–4 build + reviews. Ne
 
 Goal ID: `AP-G8`
 
+**M3 development runner:** fixed text leaves now have native Windows protocol-lifecycle coverage alongside the retained POSIX signal/reaping checks. Windows workers use the loaded interpreter image directly so a virtual-environment redirector cannot acknowledge cleanup early. [Runner contract](docs/m3-validator-runner-first-leaf.md). Desktop consumption, signed/locked Python packaging and abrupt coordinator-death containment remain open; the existing leaf freeze stays in force.
+
 The trajectory from "a brilliant prompt stack" toward an editorial operating system. These build directly on the v2.0.0 structural-integrity work (#10–#14) and extend the forward design patterns surfaced by the model-capability review (see §Future Work → Forward design patterns). The first three are the priority set; together they move enforcement out of the prompt and into the harness.
 
 ### Harness Contracts v2
