@@ -1,6 +1,7 @@
 """Behavioral contract tests using only invented text/public validator fixtures."""
 import ast
 import copy
+from contextlib import contextmanager
 import json
 import os
 from pathlib import Path
@@ -435,10 +436,59 @@ class RunnerTests(unittest.TestCase):
             time.sleep(.01)
         self.fail("Synthetic worker did not start")
 
-    def dead(self, pid):
-        # On the development POSIX host kill(0) also sees zombies: absence proves reaping.
-        with self.assertRaises(ProcessLookupError):
-            os.kill(pid, 0)
+    @contextmanager
+    def observed_worker(self, pid):
+        if os.name != "nt":
+            def exited():
+                # POSIX kill(0) sees zombies too: absence proves reaping.
+                try:
+                    os.kill(pid, 0)
+                except ProcessLookupError:
+                    return True
+                return False
+            yield exited
+            return
+
+        # Never use kill(pid, 0) to observe Windows processes: it can kill them.
+        import ctypes
+        from ctypes import wintypes
+        api = ctypes.WinDLL("kernel32", use_last_error=True)
+        api.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+        api.OpenProcess.restype = wintypes.HANDLE
+        api.WaitForSingleObject.argtypes = (wintypes.HANDLE, wintypes.DWORD)
+        api.WaitForSingleObject.restype = wintypes.DWORD
+        api.TerminateProcess.argtypes = (wintypes.HANDLE, wintypes.UINT)
+        api.TerminateProcess.restype = wintypes.BOOL
+        api.CloseHandle.argtypes = (wintypes.HANDLE,)
+        api.CloseHandle.restype = wintypes.BOOL
+        # Hold the original worker object across cancellation, even if its PID is reused.
+        handle = api.OpenProcess(0x00100000 | 0x0001, False, pid)
+        if not handle:
+            raise ctypes.WinError(ctypes.get_last_error())
+        def exited():
+            result = api.WaitForSingleObject(handle, 0)
+            if result == 0:
+                return True
+            if result == 258:
+                return False
+            if result == 0xFFFFFFFF:
+                raise ctypes.WinError(ctypes.get_last_error())
+            raise AssertionError("Unexpected Windows process wait result: %s" % result)
+        try:
+            self.assertFalse(exited(), "Synthetic worker must be alive when observed")
+            yield exited
+        finally:
+            try:
+                # Failure cleanup targets only this case's held synthetic worker.
+                # The scenario's exit assertion must run before this cleanup.
+                if not exited():
+                    # It may already be terminating; wait even if termination is refused.
+                    api.TerminateProcess(handle, 1)
+                    self.assertEqual(api.WaitForSingleObject(handle, 2000), 0,
+                                     "Synthetic worker cleanup did not finish")
+            finally:
+                if not api.CloseHandle(handle):
+                    raise ctypes.WinError(ctypes.get_last_error())
 
     def inventory_check(self):
         return subprocess.run([PYTHON, "-I", "-S", str(self.script), "--check-inventory"],
@@ -722,9 +772,10 @@ class RunnerTests(unittest.TestCase):
             else: self.assertEqual(len(frame(got)), 32768)
             self.assertEqual(c.end(), (0, [], b""))
 
-    @unittest.skipUnless(os.name == "posix", "POSIX development-host death/reaping evidence")
     def test_lifecycle_is_shared_by_every_leaf(self):
-        actions = ("cancel", "timeout", "eof", "fatal", "partial", "bad_target", "SIGTERM", "SIGINT")
+        actions = ("cancel", "timeout", "eof", "fatal", "partial", "bad_target")
+        if os.name == "posix":
+            actions += ("SIGTERM", "SIGINT")
         for i, action in enumerate(actions):
             leaf = "timeline-diff" if i % 2 == 0 else "softness-check"
             queued = LEAVES[(i + 1) % len(LEAVES)]
@@ -735,40 +786,41 @@ class RunnerTests(unittest.TestCase):
                 c = self.client(script=self.script)
                 started = time.monotonic()
                 c.send(request("active", "sleep")); pid = self.pid()
-                # One active worker; later valid requests wait in order, refusals answer at once.
-                c.send(validation("queued", "", queued))
-                c.send(request("dropped", ""))
-                c.send(validation("other", "", "other")); self.error(c.next(), "validator_unavailable")
-                c.send(request("limit", "\n" * 8192)); self.error(c.next(), "input_limit")
-                c.send(cancel("dropped", "c0")); got = c.next(); self.error(got, "cancelled")
-                self.assertEqual((got["id"], got["validator"]), ("dropped", leaf))
-                self.assertTrue(c.next()["cancelled"])
-                os.kill(pid, 0)
-                if action == "cancel": c.send(cancel("active"))
-                elif action == "eof": c.child.stdin.close()
-                elif action == "fatal": c.raw(b"{}\n")
-                elif action == "partial": c.raw(b"{}"); c.child.stdin.close()
-                elif action == "bad_target": c.send(cancel("x" * 65))
-                elif action.startswith("SIG"): c.child.send_signal(getattr(signal, action))
-                drains = action in ("cancel", "timeout", "eof")
-                got = c.next()
-                self.error(got, "cancelled" if action == "cancel" else "timeout" if drains else "session_ended")
-                self.assertEqual((got["id"], got["validator"]), ("active", leaf))
-                self.dead(pid)
-                if action in ("timeout", "eof"):
-                    self.assertTrue(5 <= time.monotonic() - started < 7)
-                if action == "cancel": self.assertTrue(c.next()["cancelled"])
-                got = c.next()
-                self.assertEqual((got["id"], got["validator"]), ("queued", queued))
-                if drains: self.assertEqual(got["result"]["stdout"], "synthetic OK\n")
-                else: self.error(got, "session_ended")
-                if action in ("fatal", "partial", "bad_target"):
-                    self.assertEqual(c.next()["error"]["code"],
-                                     "invalid_frame" if action == "partial" else "invalid_request")
-                if action in ("cancel", "timeout"):
-                    c.send(cancel("active", "late")); self.assertFalse(c.next()["cancelled"])
-                    c.send(request("healthy", "")); self.assertTrue(c.next()["available"])
-                self.assertEqual(c.end(), (0 if drains else 2, [], b""))
+                with self.observed_worker(pid) as exited:
+                    # One active worker; later valid requests wait in order, refusals answer at once.
+                    c.send(validation("queued", "", queued))
+                    c.send(request("dropped", ""))
+                    c.send(validation("other", "", "other")); self.error(c.next(), "validator_unavailable")
+                    c.send(request("limit", "\n" * 8192)); self.error(c.next(), "input_limit")
+                    c.send(cancel("dropped", "c0")); got = c.next(); self.error(got, "cancelled")
+                    self.assertEqual((got["id"], got["validator"]), ("dropped", leaf))
+                    self.assertTrue(c.next()["cancelled"])
+                    self.assertFalse(exited(), "Worker exited before the lifecycle action")
+                    if action == "cancel": c.send(cancel("active"))
+                    elif action == "eof": c.child.stdin.close()
+                    elif action == "fatal": c.raw(b"{}\n")
+                    elif action == "partial": c.raw(b"{}"); c.child.stdin.close()
+                    elif action == "bad_target": c.send(cancel("x" * 65))
+                    elif action.startswith("SIG"): c.child.send_signal(getattr(signal, action))
+                    drains = action in ("cancel", "timeout", "eof")
+                    got = c.next()
+                    self.error(got, "cancelled" if action == "cancel" else "timeout" if drains else "session_ended")
+                    self.assertEqual((got["id"], got["validator"]), ("active", leaf))
+                    self.assertTrue(exited(), "Worker must exit before its terminal response")
+                    if action in ("timeout", "eof"):
+                        self.assertTrue(5 <= time.monotonic() - started < 7)
+                    if action == "cancel": self.assertTrue(c.next()["cancelled"])
+                    got = c.next()
+                    self.assertEqual((got["id"], got["validator"]), ("queued", queued))
+                    if drains: self.assertEqual(got["result"]["stdout"], "synthetic OK\n")
+                    else: self.error(got, "session_ended")
+                    if action in ("fatal", "partial", "bad_target"):
+                        self.assertEqual(c.next()["error"]["code"],
+                                         "invalid_frame" if action == "partial" else "invalid_request")
+                    if action in ("cancel", "timeout"):
+                        c.send(cancel("active", "late")); self.assertFalse(c.next()["cancelled"])
+                        c.send(request("healthy", "")); self.assertTrue(c.next()["available"])
+                    self.assertEqual(c.end(), (0 if drains else 2, [], b""))
 
     def test_dependency_and_worker_failures_are_unavailable(self):
         cases = (("raise ImportError('synthetic')\n", "runner_dependency_unavailable"),
