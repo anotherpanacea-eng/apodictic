@@ -1,6 +1,6 @@
 name: Release readiness
 
-# Weekly nudge so the version doesn't stall (it sat at 2.5.0 across ~8 merges).
+# On-demand reminder when the owner wants to inspect unreleased changes.
 # If changelog.d/ has accumulated unreleased fragments, OR plugin.json has been
 # bumped past the last git tag, open/refresh a single "Release readiness" issue
 # prompting a release cut; auto-close it once there is nothing unreleased.
@@ -9,12 +9,10 @@ name: Release readiness
 # github.event.* input is read, so there is no workflow-injection surface.
 
 on:
-  schedule:
-    - cron: "0 16 * * 2" # Tuesdays 16:00 UTC (offset from the Monday SETEC syncs)
   workflow_dispatch:
 
 concurrency:
-  # Serialize runs so a schedule + workflow_dispatch overlap can't both pass the
+  # Serialize runs so overlapping manual dispatches can't both pass the
   # "does the issue exist?" check while no reminder exists and each take the
   # create branch — that left duplicate "single" readiness issues. A fixed group
   # (not per-ref) makes the whole workflow a singleton; cancel-in-progress:false
@@ -107,7 +105,7 @@ jobs:
             echo "# then commit the result and: git tag v<next-version> && git push origin main v<next-version>"
             echo '```'
             echo
-            echo "_Auto-generated weekly by \`.github/workflows/release-readiness.yml\`; closes itself once nothing is unreleased._"
+            echo "_Generated on request by \`.github/workflows/release-readiness.yml\`; closes itself once nothing is unreleased._"
           } > "$BODY_FILE"
 
           if [ -n "$EXISTING" ]; then
