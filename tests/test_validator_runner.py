@@ -304,8 +304,8 @@ def frame(value):
 
 
 class Client:
-    def __init__(self, script=SCRIPT, env=None, cwd=None):
-        self.child = subprocess.Popen([PYTHON, "-I", "-S", str(script)],
+    def __init__(self, script=SCRIPT, env=None, cwd=None, python=PYTHON):
+        self.child = subprocess.Popen([python, "-I", "-S", str(script)],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
             env=env, cwd=cwd)
         self.lines = queue.Queue()
@@ -776,51 +776,89 @@ class RunnerTests(unittest.TestCase):
         actions = ("cancel", "timeout", "eof", "fatal", "partial", "bad_target")
         if os.name == "posix":
             actions += ("SIGTERM", "SIGINT")
-        for i, action in enumerate(actions):
-            leaf = "timeline-diff" if i % 2 == 0 else "softness-check"
-            queued = LEAVES[(i + 1) % len(LEAVES)]
-            def request(id, text):
-                return pair_validation(id, [text, ""], leaf)
-            with self.subTest(action=action, leaf=leaf):
-                self.sleeping()
+        interpreters = [("configured", PYTHON)]
+        base = getattr(sys, "_base_executable", PYTHON)
+        if os.name == "nt" and os.path.normcase(base) != os.path.normcase(PYTHON):
+            interpreters.append(("base", base))
+        for launch, python in interpreters:
+            for i, action in enumerate(actions):
+                leaf = "timeline-diff" if i % 2 == 0 else "softness-check"
+                queued = LEAVES[(i + 1) % len(LEAVES)]
+                def request(id, text):
+                    return pair_validation(id, [text, ""], leaf)
+                with self.subTest(action=action, leaf=leaf, launch=launch):
+                    self.sleeping()
+                    c = self.client(script=self.script, python=python)
+                    started = time.monotonic()
+                    c.send(request("active", "sleep")); pid = self.pid()
+                    with self.observed_worker(pid) as exited:
+                        # One active worker; later valid requests wait in order, refusals answer at once.
+                        c.send(validation("queued", "", queued))
+                        c.send(request("dropped", ""))
+                        c.send(validation("other", "", "other")); self.error(c.next(), "validator_unavailable")
+                        c.send(request("limit", "\n" * 8192)); self.error(c.next(), "input_limit")
+                        c.send(cancel("dropped", "c0")); got = c.next(); self.error(got, "cancelled")
+                        self.assertEqual((got["id"], got["validator"]), ("dropped", leaf))
+                        self.assertTrue(c.next()["cancelled"])
+                        self.assertFalse(exited(), "Worker exited before the lifecycle action")
+                        if action == "cancel": c.send(cancel("active"))
+                        elif action == "eof": c.child.stdin.close()
+                        elif action == "fatal": c.raw(b"{}\n")
+                        elif action == "partial": c.raw(b"{}"); c.child.stdin.close()
+                        elif action == "bad_target": c.send(cancel("x" * 65))
+                        elif action.startswith("SIG"): c.child.send_signal(getattr(signal, action))
+                        drains = action in ("cancel", "timeout", "eof")
+                        got = c.next()
+                        self.error(got, "cancelled" if action == "cancel" else "timeout" if drains else "session_ended")
+                        self.assertEqual((got["id"], got["validator"]), ("active", leaf))
+                        self.assertTrue(exited(), "Worker must exit before its terminal response")
+                        if action in ("timeout", "eof"):
+                            self.assertTrue(5 <= time.monotonic() - started < 7)
+                        if action == "cancel": self.assertTrue(c.next()["cancelled"])
+                        got = c.next()
+                        self.assertEqual((got["id"], got["validator"]), ("queued", queued))
+                        if drains: self.assertEqual(got["result"]["stdout"], "synthetic OK\n")
+                        else: self.error(got, "session_ended")
+                        if action in ("fatal", "partial", "bad_target"):
+                            self.assertEqual(c.next()["error"]["code"],
+                                             "invalid_frame" if action == "partial" else "invalid_request")
+                        if action in ("cancel", "timeout"):
+                            c.send(cancel("active", "late")); self.assertFalse(c.next()["cancelled"])
+                            c.send(request("healthy", "")); self.assertTrue(c.next()["available"])
+                        self.assertEqual(c.end(), (0 if drains else 2, [], b""))
+
+    @unittest.skipUnless(os.name == "nt", "Windows interpreter-image API")
+    def test_windows_image_resolution_refuses_without_launcher_fallback(self):
+        original = self.script.read_text(encoding="utf-8")
+        cases = {
+            "loader-error": "raise OSError('SYNTHETIC_SENTINEL')",
+            "missing-api": "return object()",
+            "zero": "return 0",
+            "truncated": "return capacity",
+            "empty": "return 1",
+            "relative": "buffer.value = 'worker.exe'; return len(buffer.value)",
+            "drive-relative": "buffer.value = 'C:worker.exe'; return len(buffer.value)",
+            "root-relative": "buffer.value = r'\\worker.exe'; return len(buffer.value)",
+        }
+        for label, body in cases.items():
+            with self.subTest(api=label):
+                if label in ("loader-error", "missing-api"):
+                    prefix = ("import ctypes\ndef _load(*args, **kwargs):\n " + body +
+                              "\nctypes.WinDLL = _load\n")
+                else:
+                    prefix = ("import ctypes\ndef _lookup(module, buffer, capacity):\n " + body +
+                              "\nclass _API:\n GetModuleFileNameW = staticmethod(_lookup)\n"
+                              "ctypes.WinDLL = lambda *args, **kwargs: _API()\n")
+                # Fault the external WinAPI in a copied installation, then observe
+                # actual JSONL responses, rather than exposing a production test hook.
+                self.script.write_text(prefix + original, encoding="utf-8")
                 c = self.client(script=self.script)
-                started = time.monotonic()
-                c.send(request("active", "sleep")); pid = self.pid()
-                with self.observed_worker(pid) as exited:
-                    # One active worker; later valid requests wait in order, refusals answer at once.
-                    c.send(validation("queued", "", queued))
-                    c.send(request("dropped", ""))
-                    c.send(validation("other", "", "other")); self.error(c.next(), "validator_unavailable")
-                    c.send(request("limit", "\n" * 8192)); self.error(c.next(), "input_limit")
-                    c.send(cancel("dropped", "c0")); got = c.next(); self.error(got, "cancelled")
-                    self.assertEqual((got["id"], got["validator"]), ("dropped", leaf))
-                    self.assertTrue(c.next()["cancelled"])
-                    self.assertFalse(exited(), "Worker exited before the lifecycle action")
-                    if action == "cancel": c.send(cancel("active"))
-                    elif action == "eof": c.child.stdin.close()
-                    elif action == "fatal": c.raw(b"{}\n")
-                    elif action == "partial": c.raw(b"{}"); c.child.stdin.close()
-                    elif action == "bad_target": c.send(cancel("x" * 65))
-                    elif action.startswith("SIG"): c.child.send_signal(getattr(signal, action))
-                    drains = action in ("cancel", "timeout", "eof")
-                    got = c.next()
-                    self.error(got, "cancelled" if action == "cancel" else "timeout" if drains else "session_ended")
-                    self.assertEqual((got["id"], got["validator"]), ("active", leaf))
-                    self.assertTrue(exited(), "Worker must exit before its terminal response")
-                    if action in ("timeout", "eof"):
-                        self.assertTrue(5 <= time.monotonic() - started < 7)
-                    if action == "cancel": self.assertTrue(c.next()["cancelled"])
-                    got = c.next()
-                    self.assertEqual((got["id"], got["validator"]), ("queued", queued))
-                    if drains: self.assertEqual(got["result"]["stdout"], "synthetic OK\n")
-                    else: self.error(got, "session_ended")
-                    if action in ("fatal", "partial", "bad_target"):
-                        self.assertEqual(c.next()["error"]["code"],
-                                         "invalid_frame" if action == "partial" else "invalid_request")
-                    if action in ("cancel", "timeout"):
-                        c.send(cancel("active", "late")); self.assertFalse(c.next()["cancelled"])
-                        c.send(request("healthy", "")); self.assertTrue(c.next()["available"])
-                    self.assertEqual(c.end(), (0 if drains else 2, [], b""))
+                c.send(validation("first", "SYNTHETIC_SENTINEL"))
+                got = c.next(); self.error(got, "runner_dependency_unavailable")
+                self.assertNotIn("SYNTHETIC_SENTINEL", json.dumps(got))
+                c.send(validation("second"))
+                self.error(c.next(), "runner_dependency_unavailable")
+                self.assertEqual(c.end(), (0, [], b""))
 
     def test_dependency_and_worker_failures_are_unavailable(self):
         cases = (("raise ImportError('synthetic')\n", "runner_dependency_unavailable"),

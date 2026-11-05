@@ -213,6 +213,26 @@ def worker(leaf):
     return 0
 
 
+def worker_executable():
+    if os.name != "nt":
+        return sys.executable
+    # A Windows venv executable may be a redirector process. Own the worker
+    # interpreter directly so kill/wait finishes it before acknowledging cleanup.
+    try:
+        import ctypes
+        from ctypes import wintypes
+        lookup = ctypes.WinDLL("kernel32", use_last_error=True).GetModuleFileNameW
+        lookup.argtypes = (wintypes.HMODULE, wintypes.LPWSTR, wintypes.DWORD)
+        lookup.restype = wintypes.DWORD
+        buffer = ctypes.create_unicode_buffer(32768)
+        length = lookup(None, buffer, len(buffer))
+    except (ImportError, AttributeError):
+        raise OSError("Windows worker interpreter unavailable") from None
+    if not length or length >= len(buffer) or not buffer.value or not Path(buffer.value).is_absolute():
+        raise OSError("Windows worker interpreter unavailable")
+    return buffer.value
+
+
 class Session:
     def __init__(self):
         self.inputs = queue.Queue(maxsize=2)  # Backpressure on stdin.
@@ -250,7 +270,7 @@ class Session:
     def start(self, request):
         try:
             child = subprocess.Popen(
-                [sys.executable, "-I", "-S", "-B", str(SCRIPT), "--worker", request["validator"]],
+                [worker_executable(), "-I", "-S", "-B", str(SCRIPT), "--worker", request["validator"]],
                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 env=worker_environment(), cwd=str(HERE), close_fds=True)
         except OSError:
