@@ -104,12 +104,16 @@ No line for Types 3 or 7.
 
 **`syllabus.md` step 3 (Exercise), for a writer who has named no passage.** In this order:
 1. Ask for a paragraph of the writer's own prose. Any project counts, and this is preferred.
-2. A public-domain passage, only if its exact text is in the session (the writer pasted it, or it is in a file the session has). Name the author, the work and the edition or source. The coach never quotes from memory. A passage it can't verify isn't used.
+2. A public-domain passage, only when both of these hold:
+   - **Its exact text is in the session.** The writer pasted it, or it is in a file the session has. The coach never quotes from memory.
+   - **The session can show a public-domain basis for that source and edition.** Examples: a Project Gutenberg text carrying its public-domain notice, or an edition (and translation, if any) first published before the current US cutoff, which is before 1931 as of 2026.
+
+   Name the author, the work and the edition. If either condition can't be established, skip this option.
 3. Otherwise, a brain break on the lesson's concept.
 
 Depletion and feedback saturation still mean "teach and stop."
 
-*This plan's own choice:* "verified" means exact text present in the session, so nothing is invented. Bundling a public-domain sample set would be new scope and would need its own rights call. The owner can change this in review.
+*This plan's own choice:* "verified" requires both exact text and a shown public-domain basis, so nothing is invented and no copyrighted edition slips in. Bundling a public-domain sample set would be new scope and would need its own rights call. The owner can change this in review.
 
 **Check:**
 - The validator passes.
