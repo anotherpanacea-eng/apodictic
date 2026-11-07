@@ -82,7 +82,7 @@ A supported new concern is valid criticism, as the editorial-counterfactual prot
 |---|---|---|
 | Cause | match (key or a key-listed alternative) / partial / miss / disputed | B: gates only after the editor panel's agreement |
 | Intervention | within scope / overreach / missing / N/A (abstained) / invalid (unspliceable ledger) | A for the mechanical part (the ledger stays inside its declared span; edit magnitude); B for "within scope" |
-| Abstention | correct (on a family the feasibility check labeled competing) / wrong (abstained on a resolvable family) / missed (repaired a competing family) | B: the label rests on the feasibility check's readers |
+| Abstention | correct abstention (on a competing family) / correct repair (repaired a resolvable family) / wrong (abstained on a resolvable family) / missed (repaired a competing family, and Stage B rejects the repair) / label disputed (repaired a competing family, and **both** Stage-B readers accept the repair as in scope) | B: the label rests on the feasibility check's readers. A `label disputed` result withholds the abstention judgment for that family from **every** system until the owner or panel adjudicates the construction label. |
 | Unsupported intervention | none / target persistence claimed / unsupported new concern / supported new concern | B |
 | Prediction | per audit: the predicted direction matches or misses the observed re-audit | A against the recorded re-audit output (one audit run; its variance is unmeasured) |
 | Conservation | goals and tradeoffs kept / not kept / disputed | B, except where the kept thing is emotional weight (F2's grief beat) or thematic resonance (F5's motif): those are **C, never gating** |
@@ -94,6 +94,8 @@ A supported new concern is valid criticism, as the editorial-counterfactual prot
 
 | Case state | Cause | Intervention | Abstention | Unsupported intervention | Prediction | Conservation | Resulting audits |
 |---|---|---|---|---|---|---|---|
+| ordinary repair (a spliceable repair on a resolvable family) | scored | scored | scored (correct repair) | N/A | scored | scored | scored |
+| repair on a competing family | scored | scored | scored (missed, or label disputed) | N/A | scored | scored | scored |
 | construction-failed family | not eligible (counted) | not eligible | not eligible | not eligible | not eligible | not eligible | not eligible |
 | control | N/A | N/A | N/A | scored | scored if an edit was made | scored if an edit was made | scored if an edit was made |
 | abstention | scored | N/A | scored | N/A | N/A | N/A | N/A (no re-audit) |
