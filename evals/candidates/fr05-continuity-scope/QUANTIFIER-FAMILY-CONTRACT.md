@@ -31,8 +31,9 @@
 - **Fields kept separate:**
   - diagnosis: is the defect present;
   - unsupported intervention: did the reader flag something that isn't there;
-  - conservation: does a repair keep events, facts and voice;
-  - updating: withdrawal after evidence. Withdrawal is evaluable only where the initial reading made the claim.
+  - conservation: does a repair keep events, facts and voice.
+
+  **Updating** (withdrawal after evidence) is **deferred to a separate contract.** Evaluating it needs a comparably substantive control that *retains* the target, so that indiscriminate withdrawal can't pass as evidence-sensitive updating. This family's controls remove the target (the clean base) or test specificity (the craft control), so they cannot support it.
 - **A clean control has no target,** so its diagnosis is N/A, not a miss.
 
 **Allowed repair scope.** Restore or narrow the restrictor ("red-tagged"). Keep every event, the falsifying member's history and the narrator's voice. A repair that deletes the falsifying fact is unsupported, because it destroys a commitment.
