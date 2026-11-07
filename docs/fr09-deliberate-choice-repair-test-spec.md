@@ -55,7 +55,7 @@ Every family has a **declared synthetic author brief**, written before the prose
 5. **Writer judgment.** The brief's author, the "writer", judges device preservation from the brief they wrote. They do this separately from the readers and before seeing the readers' Stage-B judgments.
 6. **Score separately.** A scorer who neither constructed nor read the family compares everything with the key. No stylometric, SETEC, detector or similarity score enters any field.
 
-**Reader calibration.** Before Stage B is scored, each reader also judges the family's flattened decoy without being told what it is. A reader who rates the decoy's device as "kept" in more than one family is reported. Their device judgments are flagged in that report, and they are not dropped.
+**Reader calibration.** Each reader judges the family's flattened decoy without being told what it is, in a **separate isolated context**. That happens only **after** the reader's Stage-B judgments for that family are sealed, so the decoy can never cue a judgment of the candidate. A reader who rates the decoy's device as "kept" in more than one family is reported. Their device judgments are flagged in that report, and they are not dropped.
 
 ## Rubric (each field reported on its own; no composite score)
 
@@ -63,7 +63,7 @@ Every family has a **declared synthetic author brief**, written before the prose
 |---|---|---|
 | Defect resolved | yes / partly / no / disputed | B |
 | Device kept | kept / weakened / removed / disputed (writer and readers disagree) | **C, never gating, for irony, ambiguity and emotional effect (D1, D2, D5)**. B for asymmetry, register and withholding (D3, D4, D6), whose form can be pointed to, gating only after panel agreement. |
-| Device-only restraint | left alone / unsupported change to the device / supported new concern | B |
+| Device-only restraint | left alone / unsupported change to the device / unsupported new concern (an edit elsewhere that the readers don't support) / supported new concern | B. A control with several edits reports every outcome that applies, as a set, plus the worst. Its order, from worst: unsupported change to the device, unsupported new concern, supported new concern, left alone. |
 | Self-report | the system's "left alone" sentence names the device / names something else / is absent | B |
 | Re-audit | defect flag cleared / still flagged / new flag | A against the recorded re-audit output (one run; its variance is unmeasured) |
 
