@@ -24,8 +24,9 @@ public · Python — **this repo**), `setec-voicewright` (consumer · private ·
   ripples to that app on its next weekly pull.
 
 **Shared workflow:** spec → review → build → review → periodic merge train.
-**Both reviews (spec and build) are subagent passes — iterate until everything is
-fixed.** Ordinary code, docs, and tiny fixes all default to draft PRs. Periodically,
+**Each review (spec and build) is a pass by a fresh reviewer that did not write the work,
+usually one subagent; iterate until everything is fixed.** One reviewer per pass is the
+default; add more only when the change is large or risky enough to need them. Ordinary code, docs, and tiny fixes all default to draft PRs. Periodically,
 merge their exact reviewed heads into one disposable `train/` branch, clear that
 combination once, and merge only the train. Merge commits, never squash; version
 bumps, if any, are reviewed train-only commits made before the train freezes.
