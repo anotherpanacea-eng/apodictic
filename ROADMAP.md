@@ -422,7 +422,6 @@ After Tier 1 passes complete, the system has significantly more information abou
 
 **Escalation paths:**
 - Single-agent → sequential (when salience decay risk rises due to unexpected complexity)
-- Sequential → hybrid (when the focus map would meaningfully reduce noise for later passes)
 - Sequential → swarm (when architectural isolation would catch cross-pass anchoring on a complex manuscript)
 
 **Constraints:**
