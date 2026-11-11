@@ -1,6 +1,8 @@
-# Coach: brain breaks unconnected to the manuscript (proposed)
+# Coach: brain breaks unconnected to the manuscript (admitted)
 
-**Status: proposed, not admitted.** Written 2026-10-30 for fleet card AP-LRN-3. Its dependency, OCA-A6
+**Status: admitted; plan written.** Owner rulings 2026-11-05: yes to brain breaks with no state file; yes to a Learning Mode exercise without a named passage, preferring the writer's own prose with a verified, attributed public-domain fallback; no unsolicited exercise during depletion or feedback saturation. Implementation: `coach-learning-implementation-plan.md` (PR 3).
+
+Originally: Written 2026-10-30 for fleet card AP-LRN-3. Its dependency, OCA-A6
 (the syllabus dry run), landed 2026-10-29.
 
 **Owner direction (2026-10-29):** build both exercise kinds: manuscript-connected (the structural prompt
