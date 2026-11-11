@@ -929,21 +929,21 @@ def _gate_folder(references):
 
 
 def _risk_cost(references):
-    _line('== canonical clean contract (quality-risk-triggers: no Q1-Q5 fires; hostile Q1 darkness arm) ==')
+    _line('== canonical clean contract (quality-risk-triggers: no Q3-Q5 fires; hostile Q3 POV-count arm) ==')
     failed = 0
     if (references / 'example-quality-risk-contract.md').is_file():
         result = run_validator('quality-risk-triggers', references / 'example-quality-risk-contract.md')
         failed |= _relay(result)
         with _temporary() as temp:
             path = temp / 'contract'
-            _write(path, (references / 'example-quality-risk-contract.md').read_text(encoding='utf-8').replace('DARKNESS LEVEL: Moderate', 'DARKNESS LEVEL: HIGH'))
+            _write(path, (references / 'example-quality-risk-contract.md').read_text(encoding='utf-8').replace('POV count: 1', 'POV count: 7'))
             result = run_validator('quality-risk-triggers', path)
             if result.returncode == 0:
-                _line('quality-risk-triggers (hostile darkness arm): FAIL (expected Q1 to fire and exit non-zero)'); failed = 1
-            elif 'Q1 (consent/governance)' in _text(result):
-                _line('quality-risk-triggers (hostile darkness arm): PASS')
+                _line('quality-risk-triggers (hostile POV arm): FAIL (expected Q3 to fire and exit non-zero)'); failed = 1
+            elif 'Q3 (6+ POVs)' in _text(result):
+                _line('quality-risk-triggers (hostile POV arm): PASS')
             else:
-                _line('quality-risk-triggers (hostile darkness arm): FAIL (exited non-zero but Q1 not raised)'); failed = 1
+                _line('quality-risk-triggers (hostile POV arm): FAIL (exited non-zero but Q3 not raised)'); failed = 1
     else:
         _line(f'ERROR: {references}/example-quality-risk-contract.md not found'); failed = 1
     _line()

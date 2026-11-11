@@ -81,7 +81,7 @@ When the writer asks "is this ready to submit?", run the Submission Readiness Wo
 
 **Execution details:** Load `references/run-core.md` for intake, pass execution, and Findings Ledger protocol. Load `references/run-synthesis.md` after passes complete for audit integration, synthesis, and deliverables. Load `references/state-lifecycle.md` for revision rounds and state gardening. Use `references/pass-dependencies.md` for pass resolution. For full expansion: load `references/run-full.md`.
 
-**Execution mode** (single-agent, sequential, hybrid, swarm) is selected automatically from context window and manuscript size; the user can override at intake. See `references/run-core.md` §Execution Mode.
+**Execution mode** (single-agent, sequential, swarm) is selected automatically from context window and manuscript size; the user can override at intake. Hybrid runs only when the author asks for it. See `references/run-core.md` §Execution Mode.
 
 ---
 

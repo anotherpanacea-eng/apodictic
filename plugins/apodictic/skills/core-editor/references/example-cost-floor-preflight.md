@@ -24,4 +24,4 @@ exercised separately in the build's preflight verification step.
 - **Standard-context mode (<1M tokens):** swarm
 - **Triage subagent max_turns:** 34
 - **Large-context threshold:** single-agent if estimated load < 600K tokens; sequential otherwise
-- **Standard-context thresholds:** <60K words → sequential; 60-100K → hybrid; >100K → swarm
+- **Standard-context thresholds:** <100K words → sequential; >100K → swarm (hybrid only on author request)

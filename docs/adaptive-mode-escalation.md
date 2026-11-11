@@ -31,13 +31,11 @@ A checkpoint **after Tier 1, before the first Tier 2 pass** that compares reveal
 
 A signal absent from the sidecar makes its trigger **unevaluable** (not fired), and the detector says so — so the model knows to assess that dimension by hand rather than silently passing. `tier1_finding_count` (T4) is always evaluable.
 
-**Recommendation** — escalation paths (single-agent → sequential; sequential → hybrid / swarm):
+**Recommendation** — escalation paths (single-agent → sequential; sequential → swarm). Hybrid is never recommended; it runs only on author request (2026-11):
 
 - `single-agent` + any trigger ⇒ **sequential** (architectural isolation removes the salience-decay risk of one shared context).
-- `sequential` + any trigger ⇒ **swarm** when the manuscript is *architecturally* complex — `pov_count > 3` **and** (`tier1_finding_count > 20` **or** `nonlinear_timeline`) — where cross-pass anchoring on a complex book is the risk; otherwise **hybrid** (a focus map meaningfully reduces noise for later passes).
+- `sequential` + any trigger ⇒ **swarm** when the manuscript is *architecturally* complex — `pov_count > 3` **and** (`tier1_finding_count > 20` **or** `nonlinear_timeline`) — where cross-pass anchoring on a complex book is the risk; otherwise no change.
 - `hybrid` / `swarm` ⇒ no escalation (already at/above the ceiling).
-
-The hybrid-vs-swarm boundary is a documented heuristic, tunable in one place.
 
 **De-escalation (the symmetric case).** When **no** trigger fires *and* every complexity dimension is measured and in a **"clearly simple" band**, an over-provisioned expensive mode is recommended **down** to `sequential`:
 

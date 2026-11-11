@@ -7,7 +7,7 @@ artifact types (contracts, directory trees, run folders, filename conventions) �
 they live here rather than in letter_checks.py:
 
   * quality-risk-triggers      — pre-pass mode selection from a CONTRACT artifact (+ optional
-                                 Diagnostic_State.meta.json sidecar). Five triggers Q1-Q5.
+                                 Diagnostic_State.meta.json sidecar). Triggers Q3-Q5 (Q1/Q2 retired).
   * cost-floor                 — record-integrity gate for a user-declared budget cap that caps the
                                  run BELOW the token-fit floor (CF1 marker integrity incl. the
                                  bidirectional orphan-token check, CF2 marker<->token sync, CF3
@@ -80,55 +80,21 @@ def _fired_triggers(contract, meta_path=None):
     `meta_path` the optional Diagnostic_State.meta.json path (Q4's sidecar branch)."""
     out = []
 
-    # Q1: consent/governance risk.
-    q1 = []
-    if re.search(r"^(genre|GENRE/SUBGENRE):.*(Horror|Erotic)", contract, re.IGNORECASE | re.MULTILINE):
-        q1.append("genre=Horror/Erotic")
-    if re.search(r"(Consent Complexity|Reception Risk)", contract, re.IGNORECASE):
-        q1.append("consent/reception audit recommended")
-    if re.search(r"(darkness[ -]level|DARKNESS LEVEL)\s*:?\s*HIGH", contract, re.IGNORECASE):
-        q1.append("darkness=HIGH")
-    if re.search(r"power[ -]dynamics.*central", contract, re.IGNORECASE):
-        q1.append("power-dynamics-central")
-    if q1:
-        out.append((1, "hybrid", "; ".join(q1),
-                    "Recommended escalation: hybrid. Rationale: structural+reception lenses warrant "
-                    "architectural isolation."))
+    # Q1 (consent/governance) and Q2 (argument-shaped + high stakes) were retired 2026-11, along with
+    # Q3's hybrid tier: their only target was hybrid, and hybrid now runs only when the author asks for
+    # it (run-core.md §Hybrid Mode). The Q numbers are kept so existing override markers stay stable.
 
-    # Q2: argument-shaped nonfiction with high stakes.
-    q2 = []
-    if (re.search(r"constraint:\s*nonfiction|^constraint:nonfiction", contract, re.IGNORECASE | re.MULTILINE)
-            or re.search(r"^(GENRE/SUBGENRE|GENRE):.*(nonfiction|policy|testimony|op-ed|white paper|"
-                         r"white-paper|academic|open letter|open-letter)", contract,
-                         re.IGNORECASE | re.MULTILINE)):
-        if re.search(r"(policy brief|testimony|op-ed|white[- ]paper|academic argument|open letter|"
-                     r"recommendation memo)", contract, re.IGNORECASE):
-            q2.append("nonfiction + argument-shaped form")
-    if (re.search(r"Dialectical Clarity", contract, re.IGNORECASE)
-            and re.search(r"(submission readiness|GOAL:\s*submit|goal:\s*submit)", contract, re.IGNORECASE)):
-        q2.append("Dialectical Clarity + submission readiness")
-    if q2:
-        out.append((2, "hybrid", "; ".join(q2),
-                    "Recommended escalation: hybrid (swarm if Field Recon required). Rationale: "
-                    "claim/evidence/audience lenses warrant independent stress-testing."))
-
-    # Q3: many POVs or non-linear structure.
-    q3, pov_count = [], 0
+    # Q3: six or more POVs.
+    pov_count = 0
     for ln in contract.split("\n"):
         if re.search(r"POV(\s+count)?:\s*[0-9]+", ln, re.IGNORECASE):
             m = re.search(r"[0-9]+", ln)
             pov_count = int(m.group()) if m else 0
             break
-    if pov_count >= 3:
-        q3.append("POV count=%d" % pov_count)
-    if re.search(r"(non-linear|nonlinear|fragmented structure|nested narrative|temporal complexity)",
-                 contract, re.IGNORECASE):
-        q3.append("non-linear/fragmented structure")
-    if q3:
-        target = "swarm" if pov_count >= 6 else "hybrid"
-        out.append((3, target, "; ".join(q3),
-                    "Recommended escalation: %s. Rationale: cross-POV coherence and information-flow "
-                    "tracking degrade under single-context analysis." % target))
+    if pov_count >= 6:
+        out.append((3, "swarm", "POV count=%d" % pov_count,
+                    "Recommended escalation: swarm. Rationale: cross-POV coherence and information-flow "
+                    "tracking degrade under single-context analysis."))
 
     # Q4: prior thin synthesis (sidecar meta JSON, grep-faithful).
     q4 = []
@@ -164,7 +130,7 @@ def _fired_triggers(contract, meta_path=None):
 def quality_risk_triggers(contract_path, meta_path=None):
     contract = _read(contract_path)
     lines, errors, fired, escalation = [], 0, [], "none"
-    ov = {q: has_override(contract, "quality-risk-Q%d" % q) for q in range(1, 6)}
+    ov = {q: has_override(contract, "quality-risk-Q%d" % q) for q in (3, 4, 5)}
 
     # Enumerate via the shared SSoT, then aggregate/render exactly as the inline `fire()` closure did.
     for q, target, hit, rationale in _fired_triggers(contract, meta_path):
@@ -183,7 +149,7 @@ def quality_risk_triggers(contract_path, meta_path=None):
         lines.append("FAILED: %d quality-risk trigger(s) fired without override marker. Orchestrator "
                      "must apply escalation per run-core.md §Quality-Risk Mode Selection (final mode "
                      "= max(token-fit-floor, %s)) OR record an explicit user override marker "
-                     "(<!-- override: quality-risk-Q[1-5] — <rationale> -->)." % (errors, escalation))
+                     "(<!-- override: quality-risk-Q[3-5] — <rationale> -->)." % (errors, escalation))
         return 1, lines
     if fired:
         lines.append("OK: Triggers fired (%s) — all addressed via override markers; recommended "
@@ -194,9 +160,7 @@ def quality_risk_triggers(contract_path, meta_path=None):
 
 
 _QR_LABEL = {
-    1: "Q1 (consent/governance)",
-    2: "Q2 (argument-shaped + high stakes)",
-    3: "Q3 (many POVs / non-linear)",
+    3: "Q3 (6+ POVs)",
     4: "Q4 (prior thin synthesis)",
     5: "Q5 (submission readiness)",
 }
@@ -842,11 +806,10 @@ def run_self_test(which=None):
                 return p
             pos = w("pos.md", "# Contract\nGENRE/SUBGENRE: Literary fiction\nDARKNESS LEVEL: low\n"
                               "POV count: 1\nGOAL: repair\nRECOMMENDED AUDITS: Scene Turn, Emotional Craft\n")
+            # Consent/erotic content no longer escalates (Q1 retired; hybrid is author opt-in only).
             q1 = w("q1.md", "# Contract\nGENRE/SUBGENRE: Horror\nDARKNESS LEVEL: HIGH\nPOV count: 2\n"
                             "GOAL: repair\nRECOMMENDED AUDITS: Consent Complexity, Reception Risk, Stakes System\n")
-            q2 = w("q2.md", "# Contract\nGENRE/SUBGENRE: Nonfiction — policy brief\nconstraint: nonfiction\n"
-                            "FORM: policy brief\nGOAL: submit\nRECOMMENDED AUDITS: Dialectical Clarity, Argument Red-Team\n")
-            q3 = w("q3.md", "# Contract\nGENRE/SUBGENRE: Literary fiction\nPOV count: 4\nGOAL: repair\n"
+            q3 = w("q3.md", "# Contract\nGENRE/SUBGENRE: Literary fiction\nPOV count: 7\nGOAL: repair\n"
                             "RECOMMENDED AUDITS: Scene Turn\n")
             q5 = w("q5.md", "# Contract\nGENRE/SUBGENRE: Literary fiction\nPOV count: 1\nGOAL: submit\n"
                             "PASS SET: 0, 1, 2, 5, 8, 11\nRECOMMENDED AUDITS: Scene Turn, Emotional Craft\n")
@@ -854,26 +817,20 @@ def run_self_test(which=None):
                               "RECOMMENDED AUDITS: Scene Turn\n")
             q4m = w("q4.json", '{\n  "contract_hash": "abc123",\n  "underdiagnosis_flag": "fired",\n'
                                '  "prior_runs": [{"label": "round-1", "underdiagnosis_triggers": ["convergence"]}]\n}\n')
-            ovq1 = w("ovq1.md", "# Contract\nGENRE/SUBGENRE: Horror\nDARKNESS LEVEL: HIGH\nPOV count: 2\n"
-                                "GOAL: repair\nRECOMMENDED AUDITS: Consent Complexity, Reception Risk\n"
-                                "<!-- override: quality-risk-Q1 — Author requests baseline mode; exploratory mid-draft. -->\n")
+            q5_hdr = "# Contract\nGENRE/SUBGENRE: Literary fiction\nPOV count: 1\nGOAL: submit\n"
+            ovq5 = w("ovq5.md", q5_hdr + "<!-- override: quality-risk-Q5 — Author requests baseline mode; exploratory mid-draft. -->\n")
             expect("qr_pos", quality_risk_triggers(pos)[0], 0)
-            expect("qr_neg_q1", quality_risk_triggers(q1)[0], 1)
-            expect("qr_neg_q2", quality_risk_triggers(q2)[0], 1)
+            expect("qr_consent_content_no_escalation", quality_risk_triggers(q1)[0], 0)
             expect("qr_neg_q3", quality_risk_triggers(q3)[0], 1)
             expect("qr_neg_q4", quality_risk_triggers(q4c, q4m)[0], 1)
             expect("qr_neg_q5", quality_risk_triggers(q5)[0], 1)
-            expect("qr_over_q1", quality_risk_triggers(ovq1)[0], 0)
+            expect("qr_over_q5", quality_risk_triggers(ovq5)[0], 0)
             # 2026-06-20 override-substring hardening (override_marker.has_override): a CODE-SPAN decoy
-            # and a SUFFIX-COLLISION slug must NOT suppress the Q1 trigger -> still ERROR (rc 1).
-            ovq1_decoy = w("ovq1_decoy.md", "# Contract\nGENRE/SUBGENRE: Horror\nDARKNESS LEVEL: HIGH\n"
-                           "POV count: 2\nGOAL: repair\nRECOMMENDED AUDITS: Consent Complexity, Reception Risk\n"
-                           "Use `<!-- override: quality-risk-Q1 -->` to suppress.\n")
-            ovq1_suffix = w("ovq1_suffix.md", "# Contract\nGENRE/SUBGENRE: Horror\nDARKNESS LEVEL: HIGH\n"
-                            "POV count: 2\nGOAL: repair\nRECOMMENDED AUDITS: Consent Complexity, Reception Risk\n"
-                            "<!-- override: quality-risk-Q1x — decoy. -->\n")
-            expect("qr_over_q1_codespan_decoy_errors", quality_risk_triggers(ovq1_decoy)[0], 1)
-            expect("qr_over_q1_suffix_collision_errors", quality_risk_triggers(ovq1_suffix)[0], 1)
+            # and a SUFFIX-COLLISION slug must NOT suppress the Q5 trigger -> still ERROR (rc 1).
+            ovq5_decoy = w("ovq5_decoy.md", q5_hdr + "Use `<!-- override: quality-risk-Q5 -->` to suppress.\n")
+            ovq5_suffix = w("ovq5_suffix.md", q5_hdr + "<!-- override: quality-risk-Q5x — decoy. -->\n")
+            expect("qr_over_q5_codespan_decoy_errors", quality_risk_triggers(ovq5_decoy)[0], 1)
+            expect("qr_over_q5_suffix_collision_errors", quality_risk_triggers(ovq5_suffix)[0], 1)
 
     if which in (None, "audit-tier-criterion"):
         with tempfile.TemporaryDirectory() as td:
@@ -1205,9 +1162,9 @@ def run_self_test(which=None):
             # aggregate escalation string or parsed report text.
             def qt(text):
                 return [(q, t) for (q, t, _h, _r) in _fired_triggers(text)]
-            expect("ft_q1_hybrid",
-                   qt("GENRE/SUBGENRE: Horror\nDARKNESS LEVEL: HIGH\nPOV count: 1\nGOAL: repair\n"),
-                   [(1, "hybrid")])
+            expect("ft_no_hybrid_target",
+                   qt("GENRE/SUBGENRE: Horror\nDARKNESS LEVEL: HIGH\nPOV count: 4\nGOAL: repair\n"),
+                   [])
             expect("ft_q5_swarm",
                    qt("GENRE/SUBGENRE: Literary fiction\nPOV count: 1\nGOAL: submit\n"), [(5, "swarm")])
             expect("ft_q3_swarm_6pov",

@@ -3,28 +3,18 @@
 <!--
 Canonical CLEAN Contract worked example (core-editor workflow; schema in
 core-editor/references/contract-template.md). This is the release-gate target for the
-`quality-risk-triggers` validator (run-core.md §Quality-Risk Mode Selection): five pre-pass
-triggers (Q1-Q5) raise an escalation ceiling (none < hybrid < swarm) before a diagnostic run.
-A well-formed, low-risk manuscript contract must raise NONE of them and exit 0
-("No quality-risk triggers fired. Token-fit recommendation applies.").
+`quality-risk-triggers` validator (run-core.md §Quality-Risk Mode Selection): pre-pass
+triggers Q3-Q5 raise an escalation to swarm before a diagnostic run (Q1 and Q2 are retired;
+hybrid is never auto-selected). A well-formed, low-risk manuscript contract must raise NONE of
+them and exit 0 ("No quality-risk triggers fired. Token-fit recommendation applies.").
 
 Exercised by `validate.sh --check-all` as the canonical target for that validator:
   * clean arm  — the validator over this file exits 0 (no trigger raised);
-  * hostile arm — a throwaway copy with the darkness rating flipped from Moderate to the top
-                  setting raises the Q1 consent/governance trigger and exits 1, proving the
-                  gate has teeth.
+  * hostile arm — a throwaway copy with the POV count raised to seven raises the Q3 trigger
+                  and exits 1, proving the gate has teeth.
 
-Why each trigger stays silent (see run-core.md for the authoritative rules; this note is itself
-part of the scanned artifact, so it deliberately paraphrases rather than quoting any trigger
-literal that would trip the validator against its own documentation):
-  Q1 consent/governance — literary fiction (not a horror/erotic genre line); the darkness rating
-     is Moderate, below the top setting that trips it; the sisters' authority imbalance is a
-     texture, not the book's engine; and the contract names none of the consent/reception audit
-     escalators.
-  Q2 argument-shaped nonfiction — this is fiction with no nonfiction/argument constraint and no
-     argument-clarity audit lens, so the claim/evidence/audience escalator does not apply.
-  Q3 many POVs / broken chronology — a single close-third narrator and a strictly chronological
-     structure (no fragmentation, nesting, braiding, or out-of-order time).
+Why each trigger stays silent (see run-core.md for the authoritative rules):
+  Q3 many POVs — a single close-third narrator.
   Q4 prior under-diagnosed round — a first diagnostic round: no prior-run sidecar flag and no
      note that an earlier pass came back too shallow.
   Q5 pre-send stakes — the goal is a mid-draft developmental pass, not a pre-send readiness gate:

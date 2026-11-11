@@ -23,7 +23,7 @@ Load `../skills/core-editor/SKILL.md` first (thin orchestrator). Do NOT preload 
 2. Read `../skills/core-editor/references/submission-readiness.md` in full.
 3. Run the Submission Readiness Workflow as specified:
    - **Intake:** Abbreviated intake (artifact is `full_draft`, goal is `submit`). Confirm publication path (traditional, hybrid, self-pub). Ask about query/synopsis materials if available.
-   - **Execution mode selection:** Run pre-flight. Select execution mode per `../skills/core-editor/references/run-core.md` §Execution Mode. Default recommendation: single-agent or hybrid, depending on context window and manuscript length. If the writer explicitly requests swarm, honor it.
+   - **Execution mode selection:** Run pre-flight. Select execution mode per `../skills/core-editor/references/run-core.md` §Execution Mode. Default recommendation: single-agent on large-context hosts, swarm on standard-context hosts. Run hybrid only if the writer explicitly asks for it.
    - **Core DE passes:** Run the baseline pass set (0, 1, 2, 5, 8) per `../skills/core-editor/references/run-core.md`.
    - **Synthesis:** Run synthesis per `../skills/core-editor/references/run-synthesis.md`, producing the editorial letter.
    - **Pass 11:** Run Pass 11 with sub-passes 11A, 11B always active; 11C (Market Reality Check) and 11D (First-50 Conversion Gate) active by default for submission workflow; 11E (Revision Economics) active if verdict is not READY.

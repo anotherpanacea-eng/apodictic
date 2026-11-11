@@ -5,7 +5,7 @@
 # Usage: ./scripts/preflight.sh <manuscript_path> [output_path]
 #
 # Produces a metadata packet the parent orchestrator uses to:
-#   - Select execution mode (single-context / hybrid / swarm)
+#   - Select execution mode (single-agent / sequential / swarm; hybrid on author request)
 #   - Set max_turns for the triage subagent
 #   - Pass calibration data to analytical passes
 #
@@ -113,11 +113,10 @@ else
   RECOMMENDED_MODE_LARGE_CONTEXT="sequential"
 fi
 
-# Standard-context recommendations (unchanged)
-if [ "$TOTAL_WORDS" -lt 60000 ]; then
+# Standard-context recommendations. Hybrid is never recommended: it runs only when the author
+# asks for it (run-core.md §Hybrid Mode).
+if [ "$TOTAL_WORDS" -lt 100000 ]; then
   RECOMMENDED_MODE_STANDARD="sequential"
-elif [ "$TOTAL_WORDS" -lt 100000 ]; then
-  RECOMMENDED_MODE_STANDARD="hybrid"
 else
   RECOMMENDED_MODE_STANDARD="swarm"
 fi
@@ -177,7 +176,7 @@ $(sample_pov "End (lines ${END_START}-$((END_START+200)))" "$END_START" 200)
 - **Standard-context mode (<1M tokens):** ${RECOMMENDED_MODE_STANDARD}
 - **Triage subagent max_turns:** ${TRIAGE_MAX_TURNS}
 - **Large-context threshold:** single-agent if estimated load < 600K tokens; sequential otherwise
-- **Standard-context thresholds:** <60K words → sequential; 60-100K → hybrid; >100K → swarm
+- **Standard-context thresholds:** <100K words → sequential; >100K → swarm (hybrid only on author request)
 - **max_turns formula:** ceil(total_lines / 500) + 20
 
 ## Notes
