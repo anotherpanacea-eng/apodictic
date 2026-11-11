@@ -42,7 +42,7 @@
 
 - **Base:** each case starts from a clean base story, newly authored and synthetic. In the base, the universal carries an explicit restrictor and the set is enumerated.
 - **Mutation:** exactly one contiguous replacement that widens or drops the restrictor. Everything else stays byte-identical. A mutation ledger records the before and after, the loci, the mechanism and the minimal repair, in the `operator/intent.json` form.
-- **Control:** the base itself. A **craft control** is also proposed: a character, not the narrator, speaks the same unrestricted universal as an evident overstatement. This tests that unreliability or hyperbole is not called a defect.
+- **Control:** the base itself. A **craft control** is also proposed: a character, not the narrator, speaks the same unrestricted universal as an evident overstatement. It is quoted direct speech with a speech tag, never free indirect or focalized narration, so that criterion 1 settles its voice without interpretation. This tests that unreliability or hyperbole is not called a defect.
 - **No seam:** the mutated sentence must read as authored prose. Review the whole story, not an excerpt, because whether the falsifying fact is "unpaid" depends on full context.
 - **Magnitudes:** report each mutation's word-level edit size. Equal word counts don't establish equal salience, so salience is noted in words by the constructor.
 - **No polishing to consensus.** Failed and disputed constructions are kept. As in FR-07, at most one immutable reconstruction per case, made as a v2 with new hashes, never by rewriting v1.
@@ -65,7 +65,7 @@
 2. Reader inputs carry no keys, condition labels or diagnostic hints, and use neutral filenames.
 3. Independent evidence shows the target is material, the control and craft control are clean, and the repair resolves the target while conserving events and voice, with no unresolved confound.
 4. A surviving competing reading makes the case `disputed`. Model agreement is not human licensing.
-5. **Licensing lane, proposed for this family: Lane 1.** Every scoring anchor is checkable (A), so the case needs a documented independent check of those anchors, not the three-editor panel that interpretive (Lane-2/B) anchors require. Any case whose voice-of-claim anchor is contested drops to `disputed`. Owner call 1.
+5. **Licensing lane, proposed for this family: Lane 1.** The scope, enumeration and falsifying-member anchors are checkable (A), and construction keeps voice off the margin (a narrator sentence in the mutation, attributed direct speech in the craft control), so the case needs a documented independent check of those anchors, not the three-editor panel that interpretive (Lane-2/B) anchors require. Any case whose voice-of-claim anchor is contested drops to `disputed`. Owner call 1.
 6. Scorer fields, denominators, invalid and refusal handling, and completion are frozen first. Related variants of one plot count as one family, not as independent cases.
 7. The owner approves this rubric, the planted-defect policy and any ground-truth claim before registration or scoring.
 

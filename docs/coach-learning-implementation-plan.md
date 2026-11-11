@@ -54,7 +54,7 @@ All paths below are under `plugins/apodictic/skills/revision-coach/`. Each PR is
 ## PR 2: AP-LRN-1, lessons as a map
 
 **`SKILL.md` §1 Session Planning.** Add one optional step:
-- When a planned target's finding has an `ORIGIN` (pass or audit code, per `findings-ledger-format.md`) that is a lesson's Assignment, add one line under that target: `Optional lesson: L2 Stakes (/coach learn L2)`.
+- When a planned target's finding came from the audit or pass that a lesson's Assignment runs, add one line under that target: `Optional lesson: L2 Stakes (/coach learn L2)`. The finding's `F-<ORIGIN>-<NN>` id names its origin code (`findings-ledger-format.md`), but no table maps origin codes to Assignment commands, so the match is the same judgment syllabus step 1 already makes; do not build a code table for it.
 - At most one door per plan, for the highest-leverage target that has one.
 - Never for a lesson that is cleared or skipped, and never in a No-Prompt Zone for depletion.
 - The door goes in the session plan only. Core-editor's editorial letter is not touched (owner ruling).
