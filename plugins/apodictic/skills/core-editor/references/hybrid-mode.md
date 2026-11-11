@@ -1,6 +1,6 @@
 # Hybrid Mode — Focus Map Architecture
 
-*Reference file for the APODICTIC Development Editor. Loaded when hybrid execution mode is selected.*
+*Reference file for the APODICTIC Development Editor. Loaded when the author has asked for hybrid execution mode.*
 
 **Status:** Specification (tested on 83k manuscript)
 **Version:** Draft 3
@@ -348,10 +348,7 @@ Hybrid mode uses the same pass specifications, Findings Ledger protocol, staged 
 2. **Later passes receive excerpts instead of the full manuscript.** Their analytical instructions are identical; their input is narrower.
 3. **The parent orchestrator performs excerpt extraction** — a step that doesn't exist in sequential or swarm mode (where each subagent loads the full manuscript).
 
-The intake router presents hybrid as a third execution mode option. Pre-flight recommends the mode based on measured word count:
-- **Sequential:** Default. Manuscripts under ~60k words, budget-constrained runs, quick diagnostics.
-- **Hybrid:** Manuscripts 60–100k words. Actually cheaper than sequential for longer manuscripts because later passes receive excerpts instead of the full text. The sweet spot for most serious editorial runs.
-- **Swarm:** Maximum depth. Final-round diagnostics before submission, or when prior runs felt thin. Parallel execution of analytical passes.
+**Hybrid is opt-in only (2026-11).** It runs only when the author asks for it; pre-flight, the quality-risk triggers, the intake menu, and the mid-run escalation check never select or propose it. A hybrid Full DE on an 86k-word novel cost ~4.3M subagent tokens against a 460k preflight estimate and covered 44–64% of the text per pass. The machinery stays for hosts where it may still fit, such as a local app with a small context window. See `run-core.md` §Hybrid Mode.
 
 ---
 

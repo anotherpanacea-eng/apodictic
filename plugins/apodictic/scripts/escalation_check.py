@@ -15,7 +15,8 @@ Triggers (per ROADMAP Adaptive Mid-Run Mode Escalation):
 
 A signal absent from the sidecar is reported UNEVALUABLE (not fired) — conservative:
 under-trigger, never over-trigger. T4 is always computed. The recommendation follows the
-escalation paths (single-agent->sequential; sequential->hybrid/swarm). Advisory by default
+escalation paths (single-agent->sequential; sequential->swarm when the complexity is architectural).
+Hybrid is never recommended: it runs only when the author asks for it. Advisory by default
 (exit 0 — escalation is a recommendation, never automatic); --strict exits 1 when an
 escalation is recommended, for a host that wants the checkpoint to halt.
 
@@ -161,8 +162,9 @@ def evaluate(mode, signals, t1count):
             pov_complex = pst == "ok" and pov > 3
             nl_complex = nst == "ok" and nl
             architectural = pov_complex and (t1count > 20 or nl_complex)
-            rec = ("sequential", "swarm" if architectural else "hybrid")
-        # hybrid / swarm: already at/above the ceiling -> no recommendation
+            if architectural:
+                rec = ("sequential", "swarm")
+        # hybrid is author opt-in only; hybrid / swarm: at/above the ceiling -> no recommendation
     return fired, uneval, rec
 
 
@@ -208,7 +210,7 @@ def check(ledger_text, sidecar_text, strict=False):
         lines.append("escalation-check: RECOMMEND escalate %s -> %s (%d trigger(s) fired); "
                      "present to the author, switch only on confirmation" % (rec[0], rec[1], len(fired)))
         return (1 if strict else 0), lines
-    if fired and mode in ("hybrid", "swarm"):
+    if fired and mode in ("sequential", "hybrid", "swarm"):
         lines.append("escalation-check: %d trigger(s) fired, but mode '%s' is at/above the escalation "
                      "ceiling — no change" % (len(fired), mode))
         return 0, lines
@@ -312,10 +314,10 @@ def run_self_test():
     chk("sequential_to_swarm_architectural",
         any("escalate sequential -> swarm" in ln for ln in lines))
 
-    # sequential + only T4 (findings>20), pov not >3 -> hybrid (focus map)
+    # sequential + only T4 (findings>20), pov not >3 -> no recommendation (hybrid is author opt-in)
     code, lines = check(ledger(25), sidecar("sequential", pov_count=2))
-    chk("sequential_to_hybrid_density",
-        any("escalate sequential -> hybrid" in ln for ln in lines))
+    chk("sequential_density_never_recommends_hybrid",
+        not any("RECOMMEND escalate" in ln for ln in lines))
 
     # T3: belief/orientation density fires
     code, lines = check(ledger(3), sidecar("single-agent", belief_failures=6))

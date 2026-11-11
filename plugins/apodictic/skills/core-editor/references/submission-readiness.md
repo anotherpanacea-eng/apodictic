@@ -52,7 +52,7 @@ The standard intake axis model applies, but with pre-filled values:
    - If yes → include in Pass 11 assessment; test compression fidelity
    - If no → generate compression test from manuscript (can the book's identity be captured in pitch-length form?)
 
-3. **Execution mode:** Offer per §2b of `intake-router-runtime.md`. For submission readiness, the large-context version defaults to single-agent with swarm mentioned as upgrade; the standard-context version recommends hybrid or swarm.
+3. **Execution mode:** Offer per §2b of `intake-router-runtime.md`. For submission readiness, the large-context version defaults to single-agent with swarm mentioned as upgrade; the standard-context version recommends swarm. Hybrid runs only if the writer asks for it.
 
 ### Phase 2: Core DE
 

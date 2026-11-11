@@ -138,22 +138,21 @@ Options change based on the Artifact answer.
 
 **Standard-context version (<1M tokens):**
 
-"Your manuscript is long enough that how I read it matters. Three options:"
+"Your manuscript is long enough that how I read it matters. Two options:"
 
 | Option | Label | Plain-language description | Internal value |
 |--------|-------|---------------------------|----------------|
 | A | Standard read (fastest) | I read the whole manuscript once, then run all my analysis in sequence. Good for most drafts. Some findings may be thinner on very long novels because earlier analysis fades as I work. | `execution:sequential` |
-| B | Targeted deep read (recommended for novels) | I read the whole manuscript once to map it, then send each analytical lens to the specific scenes that need it most. Each lens works independently, so they can't parrot each other. Costs roughly 2–3x as much as a standard read. | `execution:hybrid` |
-| C | Full independent read (final-round insurance) | Every analytical lens reads the entire manuscript independently — an independent-lens verification pass. Roughly 5x the cost of a standard read (a 2026-06 re-test measured ~8.5×+ on long fiction). Best for final submission prep, not everyday depth. | `execution:swarm` |
+| B | Full independent read (final-round insurance) | Every analytical lens reads the entire manuscript independently — an independent-lens verification pass. Roughly 5x the cost of a standard read (a 2026-06 re-test measured ~8.5×+ on long fiction). Best for final submission prep, not everyday depth. | `execution:swarm` |
 
 **Standard-context recommendation by context:**
 
 | Condition | Recommendation |
 |-----------|---------------|
-| 40k–80k words, goal = `repair` | Mention option B exists; don't push it. Sequential handles this range adequately. |
-| 80k+ words, goal = `repair` | Recommend B. "For a manuscript this length, the targeted read catches things the standard read misses." |
-| Any length, goal = `submit` | Recommend B or C. "Since you're checking submission readiness, the independent-lens verification read is worth the cost." |
-| User selects B or C | Confirm: "That adds to the token cost — just making sure you're good with that." |
+| Any length, goal = `repair` | Default to A. Mention B exists for final polish. |
+| Any length, goal = `submit` | Recommend B. "Since you're checking submission readiness, the independent-lens verification read is worth the cost." |
+| User selects B | Confirm: "That adds to the token cost — just making sure you're good with that." |
+| User asks for a targeted or excerpt-based read | That is hybrid (`execution:hybrid`, option H below). It is never offered unprompted; run it only on the author's request. |
 | User selects A or skips | Proceed with sequential. No friction. |
 
 **What this question does NOT do:**
@@ -162,11 +161,9 @@ Options change based on the Artifact answer.
 - It does not ask about token budgets. The user rarely knows their budget in tokens. "Roughly 2–3x" and "roughly 5x" are sufficient framing.
 - It does not override the user's choice. If they pick standard read on a 120k novel, that's their call.
 
-**Quality-risk overlay (router-side detection).** Before presenting §2b options, the router scans the contract draft and intake answers for the five quality-risk triggers (Q1-Q5) defined in `run-core.md` §Quality-Risk Mode Selection. Detection is mechanical — based on contract fields and intake values, not model judgment:
+**Quality-risk overlay (router-side detection).** Before presenting §2b options, the router scans the contract draft and intake answers for the quality-risk triggers (Q3-Q5; Q1 and Q2 are retired) defined in `run-core.md` §Quality-Risk Mode Selection. Detection is mechanical — based on contract fields and intake values, not model judgment:
 
-- **Q1 — Consent/governance risk:** genre = Horror or Erotic; OR `Consent Complexity` / `Reception Risk` audits on the recommended list; OR `darkness level: HIGH` in contract.
-- **Q2 — Argument-shaped nonfiction with high stakes:** `constraint:nonfiction` set AND form is policy brief / testimony / op-ed / academic argument / open letter / white paper (per §4a Form table); OR `Dialectical Clarity` audit recommended with submission readiness signaled.
-- **Q3 — Many POVs or non-linear structure:** contract POV count ≥3; OR intake notes non-linear chronology / fragmented structure / nested narratives.
+- **Q3 — Six or more POVs:** contract POV count ≥6.
 - **Q4 — Prior thin synthesis:** prior-run `Diagnostic_State.meta.json` shows Underdiagnosis Retry Loop fired in prior runs; OR user states "last round felt thin."
 - **Q5 — Submission readiness:** Q2 goal = `submit`; OR Pass 11 in resolved pass set.
 
@@ -199,7 +196,7 @@ Always asked after routing, before work begins. Multiple selections allowed.
 | E | I'm editing someone else's work | `operator:editor` | **Overlay** (output) | Shift output to editor scaffolding (editor-facing reframe of the synthesis letter). **Built** — see `references/editor-scaffolding.md`. |
 | F | I'm facilitating a writing group | `operator:facilitator` | **Overlay** (output) | Shift to diagnostic vocabulary mode (produce a teaching Vocabulary Guide: glossary + discussion prompts). **Built** — see `references/diagnostic-vocabulary.md`. |
 | G | We're co-authoring (multiple writers) | `operator:team` | **Fork** (intake) | Note conflicting-vision risk. **Gap: multi-party intake not yet built.** |
-| H | Use hybrid mode (better analysis, moderate token cost) | `execution:hybrid` | **Overlay** (execution) | Pass 0+1 reads full manuscript and builds a focus map; later passes read the outline + targeted excerpts as independent subagents. ~2–3x token cost. See `run-core.md` §Execution Mode. |
+| H | Use hybrid mode (author request only; never offered unprompted) | `execution:hybrid` | **Overlay** (execution) | Pass 0+1 reads full manuscript and builds a focus map; later passes read the outline + targeted excerpts as independent subagents. ~2–3x token cost. See `run-core.md` §Execution Mode. |
 | I | Use swarm mode (final-round verification, highest token cost) | `execution:swarm` | **Overlay** (execution) | Each pass runs as an independent subagent with full manuscript — architectural isolation for a verification pass. ~5x token cost (a 2026-06 N=1 re-test measured ~8.5×+ on long fiction and did not reproduce a depth advantage); reserve for final submission prep. See `run-core.md` §Execution Mode. |
 | J | No constraints — let's go | (none) | — | Proceed with standard workflow. |
 

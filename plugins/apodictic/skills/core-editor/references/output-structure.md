@@ -179,6 +179,7 @@ The model tag is **required**, not optional. It identifies which model generated
 | Claude Opus 5.5 | `opus55` |
 | Claude Sonnet 5.5 | `sonnet55` |
 | Claude Opus 5 | `opus5` |
+| Claude Fable 5.2 | `fable52` |
 | Claude Fable 5.1 | `fable51` |
 | Claude Opus 4.6 (historical compatibility) | `opus46` |
 | Claude Sonnet 4.6 (historical compatibility) | `sonnet46` |

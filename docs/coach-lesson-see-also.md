@@ -1,6 +1,8 @@
-# Learning Mode: see-also links between lessons (proposed)
+# Learning Mode: see-also links between lessons (admitted)
 
-**Status: proposed, not admitted.** Written 2026-10-30 for fleet card AP-LRN-2 ("Coach: see-also links
+**Status: admitted; plan written.** Owner rulings 2026-11-05: keep the proposed links; the writer may take any See also lesson next. Implementation: `coach-learning-implementation-plan.md` (PR 1).
+
+Originally: Written 2026-10-30 for fleet card AP-LRN-2 ("Coach: see-also links
 between lessons from each audit's neighbor boundaries"). Its dependency, OCA-A6, landed 2026-10-29.
 Its done bar: each syllabus lesson ends with 2–3 see-also lessons and its deeper reading, derived from
 existing non-duplication boundaries.
