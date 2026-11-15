@@ -1,0 +1,3 @@
+### Coach — lessons as a map
+
+`/coach learn` with no lesson named no longer defaults to the next uncleared lesson. It offers up to three doors and the writer chooses: the lesson matching the highest-leverage open finding, a See also of the last lesson taken, or the Sequence tables as a map to browse. "Next" or "just pick" still takes the Sequence order. A session plan may add one optional lesson line under a target whose finding came from a lesson's audit; the editorial letter is unchanged. `Syllabus_Progress.md` now opens with a Trail of lessons in the order taken, keeps its status table, and shows no cleared count (AP-LRN-1, `docs/coach-lessons-as-map.md`).

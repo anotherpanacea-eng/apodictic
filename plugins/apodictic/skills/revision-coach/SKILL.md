@@ -120,6 +120,7 @@ The coach operates in several modes (Loop Dispatch above can select among them).
 4. Match leverage ranking against available time and energy
 5. Produce session plan using `references/session-plan-template.md`
 6. **Surface idiolect preservation list (optional, voice-preservation guardrail).** When the session plan includes line-editing or polish work, run the **Idiolect Preservation List** audit (see `../prose-measurements/references/craft/idiolect-preservation.md`) against the writer's prior work (or against the manuscript itself if no separate baseline exists) and include the resulting "do not normalize" list at the head of the session plan. Goal: keep line-editing passes from sanding off the moves the writer is actually known for. This step is **advisory**, not gating — the audit produces signature/habit candidates the writer reads against the revision targets. Skip when no reference corpus is available, when the session is structural-only, or when AIC-7 (Lexical Convergence) findings already specify the targets.
+7. **Offer a lesson door (optional).** When a planned target's finding came from the audit or pass that a syllabus lesson's Assignment runs (for example `/audit stakes` for L2, or the Pass 5 Character Audit for L8), add one line under that target: `Optional lesson: L2 Stakes (/coach learn L2)`. To find the match, read only the two Sequence tables in `references/syllabus.md`, and judge it from the finding's origin: the `ORIGIN` code in its `F-<ORIGIN>-<NN>` id (`../core-editor/references/findings-ledger-format.md`), read with the ledger context. This is the same judgment as syllabus step 1; do not build a table of origin codes for it. Offer at most one door per plan, for the highest-leverage target that has one. Offer none for a lesson that `Syllabus_Progress.md` shows as cleared or skipped, and none when the writer is depleted (a No-Prompt Zone, `references/structural-prompt-library.md`). The door belongs to the session plan only. It never goes in the editorial letter, which is the Core Editor's deliverable.
 
 **Output:** `[Project]_Session_Plan_[runlabel].md`
 
@@ -267,7 +268,7 @@ Caveat phrasing: say plainly the streak is from *your own running session notes*
 
 **When:** Writer asks to learn a craft concept, take a lesson, or work through the syllabus (`/coach learn`). Works with or without a diagnosis; the No-Diagnostic Fallback does not apply.
 
-**Process:** One lesson per session, per `references/syllabus.md`: teach the concept from the opening section of its audit file, give one firewall-passing exercise, name the audit or process that tests it on the writer's pages, and record progress. Load `syllabus.md` only in this mode. The coach teaches concepts and never produces findings; the writer runs the assignment.
+**Process:** One lesson per session, per `references/syllabus.md`: teach the concept from the opening section of its audit file, give one firewall-passing exercise, name the audit or process that tests it on the writer's pages, and record progress. Learning Mode loads `syllabus.md`; Session Planning may read only its Sequence tables, to offer a lesson door. The coach teaches concepts and never produces findings; the writer runs the assignment.
 
 **Output:** `Syllabus_Progress.md` at the project root.
 
