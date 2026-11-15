@@ -1,6 +1,6 @@
-# Learning Mode: lessons raised by findings, not a linear course (admitted)
+# Learning Mode: lessons raised by findings, not a linear course (built)
 
-**Status: admitted; plan written.** Owner rulings 2026-11-05: the lesson door stays in the coach's session plan, not the editorial letter; keep both the trail and the status table. Implementation: `coach-learning-implementation-plan.md` (PR 2).
+**Status: built at merge.** Session Planning offers the lesson door (`revision-coach/SKILL.md` §1), `/coach learn` offers doors with no default lesson, and `Syllabus_Progress.md` opens with a Trail. Owner rulings 2026-11-05: the lesson door stays in the coach's session plan, not the editorial letter; keep both the trail and the status table. Plan: `coach-learning-implementation-plan.md` (PR 2).
 
 Originally: Written 2026-10-30 for fleet card AP-LRN-1. Its dependency, OCA-A6
 (the syllabus dry run), landed 2026-10-29.
