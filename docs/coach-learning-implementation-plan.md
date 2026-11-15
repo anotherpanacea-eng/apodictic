@@ -1,6 +1,6 @@
 # Coach learning: implementation plan for AP-LRN-1, AP-LRN-2 and AP-LRN-3
 
-**Status: plan, not built.** Written 2026-11-06 for the three fleet cards. The specs are `coach-lessons-as-map.md`
+**Status: built at merge.** Built as #450 (AP-LRN-2), #451 (AP-LRN-1) and #452 (AP-LRN-3); PR 3 also follows the owner's 2026-11-15 rulings, recorded in `coach-brain-breaks.md`. Written 2026-11-06 for the three fleet cards. The specs are `coach-lessons-as-map.md`
 (AP-LRN-1, #418), `coach-lesson-see-also.md` (AP-LRN-2, #417) and `coach-brain-breaks.md` (AP-LRN-3, #419). The
 owner made each spec's open calls on 2026-11-05. Their wording is recorded on the fleet cards, and each spec now
 carries them. No execution or deployment approval is inferred: each build below is its own PR, in its own checkout.

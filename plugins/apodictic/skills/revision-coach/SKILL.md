@@ -146,7 +146,7 @@ The coach operates in several modes (Loop Dispatch above can select among them).
 
 **Output:** Conversational. Append observation to Change Log in `Diagnostic_State.md`.
 
-**State-less run (optional).** When neither state file exists, `/coach stuck` offers this before routing to `/start`, and runs it only if the writer accepts. Skip steps 1 and 4 to 6, which read or compare against a diagnosis; work from the writer's own description of the block; and write nothing at all: no state-file entries, session plans, archives, logs or `README.md` rows. The session is conversational only. Do not invent findings about the manuscript.
+**State-less run (optional).** When neither state file exists, `/coach stuck` offers this before routing to `/start`, and runs it only if the writer accepts. Skip steps 1 and 4 to 6, which read or compare against a diagnosis; work from the writer's own description of the block; and write nothing at all: no state-file entries, session plans, archives, logs or `README.md` rows. The session is conversational only. Do not invent findings about the manuscript. After the conversation, the coach may offer one brain break (`references/structural-prompt-library.md` §Brain Breaks) in the conversation itself, under the Type 2, Type 6 or perfectionism conditions. It gives the prompt only when the writer asks for an exercise or accepts the offer. A writer who asks for a brain break gets one whatever the block type, depletion and feedback saturation included. Nothing is written.
 
 ### 3. Momentum Tracking
 
@@ -381,7 +381,7 @@ If `/coach` is invoked without a `Diagnostic_State.md` and without an `Argument_
 >
 > Run `/start` first to generate a diagnostic, then come back to `/coach` to plan your revision.
 
-Do not improvise findings. Do not attempt to diagnose from scratch. The coach is not a diagnostic tool. Two paths skip this fallback: Learning Mode, and the opt-in state-less Stuck-Point run (§2).
+Do not improvise findings. Do not attempt to diagnose from scratch. The coach is not a diagnostic tool. Three paths skip this fallback: Learning Mode, the opt-in state-less Stuck-Point run (§2), and a brain break the writer asks for directly (`references/structural-prompt-library.md` §Brain Breaks), which writes nothing.
 
 ---
 
