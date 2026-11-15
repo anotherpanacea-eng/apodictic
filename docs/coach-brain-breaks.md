@@ -1,6 +1,6 @@
-# Coach: brain breaks unconnected to the manuscript (admitted)
+# Coach: brain breaks unconnected to the manuscript (built)
 
-**Status: admitted; plan written.** Owner rulings 2026-11-05: yes to brain breaks with no state file; yes to a Learning Mode exercise without a named passage, preferring the writer's own prose with a verified, attributed public-domain fallback; no unsolicited exercise during depletion or feedback saturation. Implementation: `coach-learning-implementation-plan.md` (PR 3).
+**Status: built at merge.** The prompt library has a Brain Breaks section, the block taxonomy offers one for Type 2, Type 6 and the Perfectionism Modifier, the state-less run may offer one, and syllabus step 3 covers a writer with no passage. Owner rulings 2026-11-05: yes to brain breaks with no state file; yes to a Learning Mode exercise without a named passage, preferring the writer's own prose with a verified, attributed public-domain fallback; no unsolicited exercise during depletion or feedback saturation. Plan: `coach-learning-implementation-plan.md` (PR 3).
 
 Originally: Written 2026-10-30 for fleet card AP-LRN-3. Its dependency, OCA-A6
 (the syllabus dry run), landed 2026-10-29.

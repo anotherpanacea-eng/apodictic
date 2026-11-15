@@ -146,7 +146,7 @@ The coach operates in several modes (Loop Dispatch above can select among them).
 
 **Output:** Conversational. Append observation to Change Log in `Diagnostic_State.md`.
 
-**State-less run (optional).** When neither state file exists, `/coach stuck` offers this before routing to `/start`, and runs it only if the writer accepts. Skip steps 1 and 4 to 6, which read or compare against a diagnosis; work from the writer's own description of the block; and write nothing at all: no state-file entries, session plans, archives, logs or `README.md` rows. The session is conversational only. Do not invent findings about the manuscript.
+**State-less run (optional).** When neither state file exists, `/coach stuck` offers this before routing to `/start`, and runs it only if the writer accepts. Skip steps 1 and 4 to 6, which read or compare against a diagnosis; work from the writer's own description of the block; and write nothing at all: no state-file entries, session plans, archives, logs or `README.md` rows. The session is conversational only. Do not invent findings about the manuscript. After the conversation, the coach may offer one brain break (`references/structural-prompt-library.md` §Brain Breaks) in the conversation itself, under the Type 2, Type 6 or perfectionism conditions. It gives the prompt only when the writer asks for an exercise or accepts the offer. Nothing is written.
 
 ### 3. Momentum Tracking
 

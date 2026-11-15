@@ -46,6 +46,8 @@ The coaching protocol references this file. The writer never sees it directly.
 
 **Intervention:** Existing exercise library first (Name the Resistance, Permission Draft, Sit with the Draft, Write Toward the Difficulty, Inventory What Works, Seek Outside Readers). Structural prompts only after motivational intervention fails or if the avoidance is specifically about a structural decision (e.g., the writer is avoiding a scene because they don't know how to restructure it, not because they fear it emotionally).
 
+A brain break (`structural-prompt-library.md` §Brain Breaks) may be offered beside the exercise library, as an off-project warm-up.
+
 ---
 
 ### Type 3: Physiological / Environmental
@@ -113,6 +115,8 @@ Then, if reframing is insufficient, offer low-stakes Constraint or Perspective p
 
 **Intervention:** Isolation prompts to practice the specific craft skill without global coherence burden. Permission Draft if perfectionism is amplifying. Not cognitive restructuring (they understand the problem). Not motivational coaching (they're not avoiding).
 
+A brain break (`structural-prompt-library.md` §Brain Breaks) may be offered beside the Isolation prompt, to practice the skill without the book's stakes.
+
 **Note:** Under Rose's (1984) definition, this is technically not writer's block — it's a skill gap. The intervention is closer to craft instruction than cognitive restructuring. The module offers Isolation prompts as practice space, not as therapy.
 
 ---
@@ -179,6 +183,7 @@ Perfectionism is not a block type. It is a severity amplifier that cross-cuts al
 2. Lower the stakes language in the session plan.
 3. Emphasize the clinamen clause more heavily — the writer needs extra permission to deviate.
 4. Consider whether the perfectionism itself, rather than the structural problem, is what needs addressing first. If the writer can't attempt any version because all versions feel inadequate, the perfectionism is the block, and the motivational exercise library (Name the Resistance, Permission Draft) should precede structural prompting.
+5. A brain break (`structural-prompt-library.md` §Brain Breaks) may be offered beside the primary intervention: it is disposable by design. The No-Prompt Zones still apply (Step 5).
 
 ---
 
@@ -238,7 +243,7 @@ Before generating any structural prompt, verify the state is not in a no-prompt 
 | Factual or continuity error | No prompt. Fix directly. |
 | Accumulated-feedback saturation | Usually no prompt. Strip back support. |
 | Locked Keep/Cut decision (not reopened by writer) | No prompt. Respect the lock. |
-| State file missing or empty | No prompt. Route to `/start`. |
+| State file missing or empty | No prompt. Route to `/start`. One exception: a brain break in the state-less run. |
 
 ---
 
