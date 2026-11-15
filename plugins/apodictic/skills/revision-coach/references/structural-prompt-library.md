@@ -270,7 +270,9 @@ These states explicitly suppress prompt generation. The coach must recognize the
 | Factual or continuity error | Issue is correction, not invention | Fix directly |
 | Accumulated-feedback saturation | Another layer of mediation worsens the state | Strip back support, reread, outside reader |
 | Locked Keep/Cut decision (not reopened) | Prompting would quietly relitigate a settled choice | Respect the lock |
-| State file missing or empty | No diagnostic basis for structural prompts | Route to `/start`, except a brain break in the state-less run (`../SKILL.md` §2) |
+| State file missing or empty | No diagnostic basis for structural prompts | Route to `/start`, except a brain break offered in the state-less run (`../SKILL.md` §2) |
+
+A brain break the writer asks for is given in any of these states (§Brain Breaks, delivery rule 4).
 
 ---
 
@@ -319,7 +321,7 @@ The prompt is a focusing constraint, not a mandate. A writer who violates the co
 
 ## Brain Breaks
 
-A brain break is a prompt that steps away from the book. It exercises one craft concept on material the writer invents on the spot. The coach may offer one beside the usual intervention for a Type 2 or Type 6 block or under the Perfectionism Modifier (`writers-block-taxonomy.md`), and as a Learning Mode exercise when the writer has no passage (`syllabus.md` step 3).
+A brain break is a prompt that steps away from the book. It exercises one craft concept on material the writer invents on the spot. The coach may offer one beside the usual intervention for a Type 2 or Type 6 block or under the Perfectionism Modifier (`writers-block-taxonomy.md`), and as a Learning Mode exercise when the writer has no passage (`syllabus.md` step 3). A writer may also ask for one directly (`/coach brain break`), with or without a saved project. If the writer names no concept, pick one.
 
 **Firewall.** A brain break has its own test 1. Tests 2 to 5 apply unchanged.
 
@@ -339,7 +341,7 @@ A brain break is a prompt that steps away from the book. It exercises one craft 
 1. **One choice, never a list.** Where a block type allows both, ask which the writer wants, a manuscript-connected prompt or a brain break, and give only that one.
 2. **Low-stakes and disposable,** with the clinamen clause: if the writer finds a better move by breaking the constraint, that counts.
 3. **Nothing is stored.** What the writer writes for a brain break never enters the manuscript, a state file, a finding or a log.
-4. **No-Prompt Zones still hold.** Give no brain break in any of them. The one exception is a missing state file: a brain break may be offered in the state-less run (`../SKILL.md` §2) and in Learning Mode (`syllabus.md` step 3). Depletion and feedback saturation stay as they are.
+4. **No-Prompt Zones bar an unsolicited brain break.** Offer none in any of them. The one exception is a missing state file: a brain break may be offered in the state-less run (`../SKILL.md` §2) and in Learning Mode (`syllabus.md` step 3). A brain break the writer asks for is given in any zone, depletion and feedback saturation included.
 
 ---
 

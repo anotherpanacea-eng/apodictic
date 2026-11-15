@@ -64,6 +64,8 @@ A brain break (`structural-prompt-library.md` §Brain Breaks) may be offered bes
 
 **Intervention:** Coach away from the desk. Recommend a real break (days, not hours). Adjust session scope to match diminished capacity. If a deadline exists, use deadline coaching to draw an honest achievability line. Do not motivational-coach a burned-out writer. Do not generate structural prompts — more structure becomes more pressure.
 
+Offer no brain break. If the writer asks for one, give it (`structural-prompt-library.md` §Brain Breaks, delivery rule 4).
+
 ---
 
 ### Type 4: Decisional / Equipoise
@@ -141,6 +143,8 @@ A brain break (`structural-prompt-library.md` §Brain Breaks) may be offered bes
 5. Short break from the project.
 
 If anything is offered at all, one very low-load Isolation prompt is the maximum — and only when the writer explicitly asks for something structural to do.
+
+Offer no brain break either. If the writer asks for one, give it (`structural-prompt-library.md` §Brain Breaks, delivery rule 4).
 
 **Iatrogenic risk:** This block type can be caused by the diagnostic tool itself. The module must recognize when APODICTIC's own output is the problem and respond by reducing output, not adding more.
 
@@ -223,12 +227,12 @@ Based on the refined type, select the intervention layer:
 | Block type | Primary intervention | Prompt family if prompted |
 |-----------|---------------------|--------------------------|
 | 1 — Cognitive overload | Structural prompt | Constraint, Isolation, Scale-shift |
-| 2 — Motivational/avoidance | Existing exercise library | Prompt only if avoidance is about a structural decision |
-| 3 — Physiological | Coach away from desk | **No prompt** |
+| 2 — Motivational/avoidance | Existing exercise library | Manuscript-connected prompt only if avoidance is about a structural decision; a brain break may be offered either way |
+| 3 — Physiological | Coach away from desk | **No prompt**; a brain break only if the writer asks |
 | 4 — Decisional | Structural prompt | Scale-shift, Temporal, Constraint |
 | 5 — Identity/vision | Reframe first, then low-stakes prompt | Constraint, Perspective (clinamen critical) |
 | 6 — Aesthetic/execution | Isolation prompt | Isolation, Permission Draft framing |
-| 7 — Accumulated-feedback | Strip support, existing exercises | **Usually no prompt** |
+| 7 — Accumulated-feedback | Strip support, existing exercises | **Usually no prompt**; a brain break only if the writer asks |
 | 8 — Stage-mismatch | Reframe first, then Scale-shift | Scale-shift |
 
 ### Step 5: No-Prompt Check
@@ -243,7 +247,9 @@ Before generating any structural prompt, verify the state is not in a no-prompt 
 | Factual or continuity error | No prompt. Fix directly. |
 | Accumulated-feedback saturation | Usually no prompt. Strip back support. |
 | Locked Keep/Cut decision (not reopened by writer) | No prompt. Respect the lock. |
-| State file missing or empty | No prompt. Route to `/start`. One exception: a brain break in the state-less run. |
+| State file missing or empty | No prompt. Route to `/start`. One exception: a brain break offered in the state-less run. |
+
+A brain break the writer asks for is given in any of these states (`structural-prompt-library.md` §Brain Breaks, delivery rule 4).
 
 ---
 

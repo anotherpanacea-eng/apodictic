@@ -1,6 +1,6 @@
 ---
 description: Plan revision sessions from diagnostic state
-argument-hint: [time] or [deadline DATE] or [stuck SCENE] or [learn LESSON] or no argument
+argument-hint: [time] or [deadline DATE] or [stuck SCENE] or [learn LESSON] or [brain break] or no argument
 ---
 
 Post-diagnostic revision coaching. Helps plan revision sessions, work through stuck points, track momentum, and manage deadlines.
@@ -10,6 +10,8 @@ Load `../skills/revision-coach/SKILL.md`. Follow the coaching protocol in `../sk
 **Mode selection:**
 
 0. **First word of the argument is "learn", "lesson", or "syllabus"** → Learning Mode. Follow `../skills/revision-coach/references/syllabus.md`. Works with or without a diagnosis, so check this before rule 1.
+
+0b. **The writer asks for a brain break** (an exercise away from the manuscript, for example `/coach brain break`) → give one, per `../skills/revision-coach/references/structural-prompt-library.md` §Brain Breaks. Works with or without a diagnosis, so check this before rule 1 too. Writes nothing.
 
 1. **Neither `Diagnostic_State.md` nor `Argument_State.md` found at the project root** → No-diagnostic fallback. Do not improvise. Route to `/start`. One exception: if the argument includes "stuck", offer a state-less Stuck-Point run first (`../skills/revision-coach/SKILL.md` §2), and run it only if the writer chooses it.
 
@@ -29,7 +31,7 @@ Load `../skills/revision-coach/SKILL.md`. Follow the coaching protocol in `../sk
 - On session completion, archive the plan: create `runs/YYYY-MM-DD_{model}_coaching/` and move the completed session plan there, along with any revision calendars or momentum reports
 - Update `Diagnostic_State.md` coaching log at the project root
 - Learning Mode writes only `Syllabus_Progress.md` (at the project root, or the folder the writer names); it skips the other steps in this list
-- A state-less Stuck-Point run writes nothing and skips every step in this list
+- A state-less Stuck-Point run writes nothing and skips every step in this list. So does a brain break the writer asked for
 - Append row to `README.md` run archive table
 - Never write to the plugin repo
 
