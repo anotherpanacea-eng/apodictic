@@ -31,7 +31,7 @@ Learning Mode loads this file; Session Planning may read only its Sequence table
       - **Its exact text is in the session.** The writer pasted it, or it is in a file the session has. Never quote from memory.
       - **The session can show a public-domain basis for that source and edition.** For example, a Project Gutenberg text carrying its public-domain notice, or an edition (and translation, if any) first published before the current US cutoff, which is before 1931 as of 2026.
 
-      Name the author, the work and the edition.
+      Name the author, the work and the edition. The passage serves the exercise only; the assignment still runs on the writer's own pages.
    3. Otherwise, a brain break on the lesson's concept (`structural-prompt-library.md` §Brain Breaks).
 
    Depletion and feedback saturation still mean teach and stop.

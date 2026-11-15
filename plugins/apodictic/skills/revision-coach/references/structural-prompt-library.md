@@ -325,7 +325,7 @@ A brain break is a prompt that steps away from the book. It exercises one craft 
 
 | # | Test | Pass condition | Fail condition |
 |---|------|----------------|----------------|
-| 1 | **Concept-grounded** | The prompt exercises one named syllabus concept (stakes, a scene turn, compression) on material the writer invents now | The prompt touches the manuscript, its characters, or its argument |
+| 1 | **Concept-grounded** | The prompt exercises one named craft concept (such as stakes, a scene turn or compression) on material the writer invents now | The prompt touches the manuscript, its characters, or its argument |
 
 **How to make one.** Take a prompt family and a lesson concept, and apply the family's move to invented material. Deletion with compression: "Write 150 words about anyone doing anything. Then cut a third without losing what the reader needs. Check: what did the cut make clearer?"
 
@@ -336,10 +336,10 @@ A brain break is a prompt that steps away from the book. It exercises one craft 
 
 **Delivery.**
 
-1. **One choice, never a list.** Where a block type allows both, offer one manuscript-connected prompt or one brain break, and the writer picks.
+1. **One choice, never a list.** Where a block type allows both, ask which the writer wants, a manuscript-connected prompt or a brain break, and give only that one.
 2. **Low-stakes and disposable,** with the clinamen clause: if the writer finds a better move by breaking the constraint, that counts.
 3. **Nothing is stored.** What the writer writes for a brain break never enters the manuscript, a state file, a finding or a log.
-4. **No-Prompt Zones still hold.** Do not offer a brain break in any of them. The one exception is a missing state file: a brain break may be offered in the state-less run (`../SKILL.md` §2) and in Learning Mode (`syllabus.md` step 3). Depletion and feedback saturation stay as they are.
+4. **No-Prompt Zones still hold.** Give no brain break in any of them. The one exception is a missing state file: a brain break may be offered in the state-less run (`../SKILL.md` §2) and in Learning Mode (`syllabus.md` step 3). Depletion and feedback saturation stay as they are.
 
 ---
 
