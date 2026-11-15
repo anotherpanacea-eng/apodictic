@@ -10,17 +10,22 @@
 
 The audit files already define one craft concept each: what it is, how it fails, and how it differs from its neighbours. Learning Mode teaches those concepts one lesson at a time, on the writer's own pages, so a writer can build the skill an audit checks for instead of only receiving its findings.
 
-Load this file only in Learning Mode. Normal runs and the other coach modes never open it.
+Learning Mode loads this file; Session Planning may read only its Sequence tables, to offer a lesson door. Normal runs and the other coach modes never open it.
 
 ---
 
 ## One lesson per session
 
-1. **Pick the lesson.** If the last lesson is `practiced` and its assignment has since run, apply the clear rule to it first. Then default to the first lesson in the sequence that `Syllabus_Progress.md` does not show as cleared or skipped. The writer may pick any lesson instead. If `Diagnostic_State.md` exists and its highest-leverage open finding matches a lesson, offer that lesson first, since practice on a live problem sticks.
+1. **Pick the lesson.** If the last lesson is `practiced` and its assignment has since run, apply the clear rule to it first. The writer may name any lesson. When the writer names none, there is no default: offer up to three doors and let the writer choose.
+   - **A live problem.** If `Diagnostic_State.md` exists and its highest-leverage open finding matches a lesson, offer that lesson first, since practice on a live problem sticks.
+   - **A neighbour.** One See also of the last lesson on the Trail (below), or the first lesson in the writer's track if no lesson has been taken.
+   - **The map.** The Sequence tables, as a list to browse.
+
+   If the writer says "next" or "just pick", take the first lesson in the writer's track, in Sequence order, that `Syllabus_Progress.md` does not show as cleared or skipped.
 2. **Teach (about 400 words).** Read only the concept file's opening section: §1 or Purpose, through its non-duplication boundaries where it has them, and stop there. Where the Sequence names a teach range for the lesson, read that range instead. Do not load the scoring procedure, logic gates, or output templates outside it. Explain the concept in plain language, name its main failure, and say how it differs from the nearest neighbouring concept. If the writer has named a passage, point to where the concept is visible in it, as an observation and never as a finding. Close by naming the lesson's See also entries with their reasons and offering its deeper reading. The writer may take any See also lesson next.
 3. **Exercise.** Give one prompt from the lesson's prompt family in `structural-prompt-library.md`. It must pass the 5-part firewall, with one adaptation: in Learning Mode "state-grounded" means grounded in the lesson's concept applied to a passage the writer named. Include the clinamen clause and end with the structural self-check. Of the No-Prompt Zones, only depletion and feedback saturation apply here: if the writer is depleted or saturated with feedback, teach and stop. The missing-state-file zone does not apply in Learning Mode. Delivery rule 2 and the family selection rule do not apply either: asking for a lesson is asking for the experiment. Read "diagnosed" in a clinamen as the lesson's concept, and for Inversion name the passage's habitual move neutrally. If the family is `none` or `none (planning)`, give no prompt: the assignment is the practice.
 4. **Assignment.** Name the command that tests the skill on the writer's own pages (the Assignment column). The writer runs it; the coach does not run audits or produce findings (Delegation principle). Lessons with no audit use the process named instead. Without a diagnosis, give the full invocation text, so the audit sees these terms in its arguments: run on the chosen pages at passage scale; missing pass inputs and run-sequence prerequisites are noted, not required; write only the run folder (A1's `/audit dialectical` also writes the `Argument_State.md` that A2 to A4 need).
-5. **Record.** Update `Syllabus_Progress.md` (below).
+5. **Record.** Update `Syllabus_Progress.md` (below): add the lesson to the Trail and update its row in the table.
 
 The writer can stop after any step. A lesson that was taught but not tested is `practiced`, which is a fine place to leave it.
 
@@ -32,14 +37,14 @@ Keep `Syllabus_Progress.md` at the project root (or the folder the writer names 
 
 ```markdown
 # Syllabus Progress
-Cleared 3 of 15 · Next: L5 Choosing a structure
+Trail: L2 → L3 → L10
 
 | Lesson | Status | Date | Note |
 |---|---|---|---|
 | L2 Stakes | cleared | 2026-10-25 | Ch 3 re-run after revision: no Should-Fix stakes finding |
 ```
 
-The argument track counts 6 lessons (A1 to A4, L14, L15) instead of 15.
+The Trail lists the lessons in the order the writer took them, cleared or not. A lesson taken twice appears twice.
 
 Statuses: `open`, `practiced` (taught, and exercised where the lesson has an exercise), `cleared`, `skipped`.
 
@@ -49,7 +54,7 @@ Where the assignment covers more than the lesson's concept, only these count: L6
 
 Process lessons (L5, L14, L15) clear when the named process is completed once.
 
-Keep the game light. Show the cleared count and the next lesson as the writer's place in the course, never as a judgment of the writer (the same transference-health rule as Coaching History in `../SKILL.md`). Do not add scores, streaks, or deadlines: pressure is itself a block type (`writers-block-taxonomy.md`), and the syllabus should never become one.
+Keep the game light. Show the Trail and the table as a record of where the writer has been, never as a judgment of the writer (the same transference-health rule as Coaching History in `../SKILL.md`). Do not add counts, scores, streaks, or deadlines: pressure is itself a block type (`writers-block-taxonomy.md`), and the syllabus should never become one.
 
 ---
 
