@@ -287,6 +287,8 @@ This work is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licens
 
 You can use, adapt, and share this framework for non-commercial purposes, with attribution and under the same license.
 
+**Additional permission.** You may install, run, and use APODICTIC to edit or evaluate your own work, or work you are editing for someone else, including work that will be published or sold. Editors and book coaches may charge clients for editorial services they perform with it. Reports, notes, and revised manuscripts belong to the author and are not adaptations of APODICTIC. You still may not sell or commercially redistribute APODICTIC itself, or charge others for access to the tool. This permission applies to v2.16.0 and all later releases; the full wording is at the top of [LICENSE](LICENSE).
+
 ## Author
 
 Joshua A. Miller, PhD
