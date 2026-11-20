@@ -96,7 +96,7 @@ python3 plugins/apodictic/skills/prose-measurements/scripts/ai_prose_agd_move_sc
 pipes a request JSON (`{system, no_verdict, content}`) to the transport's stdin
 and reads the model's JSON text back from stdout:
 
-- The standalone `codex` transport defaults to `gpt-6.1-sol` with
+- The standalone `codex` transport defaults to `gpt-6.2-sol` with
   `model_reasoning_effort="medium"`. Callers may set `SETEC_HOST_MODEL` and
   `SETEC_HOST_REASONING_EFFORT`; the model metadata selects the actual model.
   The frozen R3B `acquire.py` driver explicitly supplies its historical
