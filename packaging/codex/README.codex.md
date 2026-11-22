@@ -229,7 +229,7 @@ This work is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licens
 
 You can use, adapt, and share this framework for non-commercial purposes, with attribution and under the same license. See [LICENSE](LICENSE) for details.
 
-**Additional permission.** You may install, run, and use APODICTIC to edit or evaluate your own work, or work you are editing for someone else, including work that will be published or sold. Editors and book coaches may charge clients for editorial services they perform with it. Reports, notes, and revised manuscripts belong to the author and are not adaptations of APODICTIC. You still may not sell or commercially redistribute APODICTIC itself, or charge others for access to the tool. This permission applies to v2.16.0 and all later releases; the full wording is at the top of [LICENSE](LICENSE).
+**Additional permission.** You may install, run, and use APODICTIC to edit or evaluate your own work, or work you are editing for someone else, including work that will be published or sold. Editors and book coaches may charge clients for editorial services they perform with it. The license puts no conditions on reports, notes, editorial letters, or revised manuscripts just because they were made with APODICTIC; it does not decide who owns them, and it grants no rights in third-party or APODICTIC material quoted in them. You still may not sell or commercially redistribute APODICTIC itself, or charge others for access to the tool. This permission applies to v2.16.0 and all later releases; the full wording is at the top of [LICENSE](LICENSE).
 
 ## Author
 
